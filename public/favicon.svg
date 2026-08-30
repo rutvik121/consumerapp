@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Mahakhanij">
+  <rect width="32" height="32" rx="7" fill="#133750"/>
+  <!-- Quarry face: stepped excavation profile, the source of the journey. -->
+  <path d="M6 23h5v-4h5v-4h5v-4h5v12H6z" fill="#4A87B4" opacity=".55"/>
+  <path d="M6 23h5v-4h5v-4h5v-4h5" fill="none" stroke="#FFFFFF" stroke-width="1.8"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="26" cy="11" r="2.4" fill="#FFFFFF"/>
+</svg>

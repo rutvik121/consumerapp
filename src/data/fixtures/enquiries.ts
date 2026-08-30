@@ -1,0 +1,110 @@
+import type { Enquiry } from '@/domain';
+import { CONSUMER_USER_ID, ORGANIZATION_USER_ID } from './users';
+import { dateDaysAhead, daysAgo, q } from './_helpers';
+
+/**
+ * Requirement → Enquiry. The start of every acquisition.
+ *
+ * CONTEXT RULE demonstrated here: organization enquiries carry
+ * organizationId + projectId + packageId. Consumer enquiries carry none of
+ * them — the fields are absent, not empty.
+ */
+export const enquiries: Enquiry[] = [
+  {
+    id: 'enq-001',
+    enquiryNumber: 'ENQ/2026/008841',
+    raisedByUserId: ORGANIZATION_USER_ID,
+    raisedByUserType: 'ORGANIZATION',
+    organizationId: 'org-001',
+    projectId: 'proj-001',
+    packageId: 'pkg-001',
+    stockPointId: 'sp-001',
+    mineralId: 'min-grit',
+    requiredQuantity: q(500),
+    requiredByDate: dateDaysAhead(4),
+    remarks: 'Required for sub-base layer, Km 18 to Km 22.',
+    status: 'CONVERTED_TO_ORDER',
+    createdAt: daysAgo(12),
+    updatedAt: daysAgo(10),
+    orderId: 'ord-001',
+  },
+  {
+    id: 'enq-002',
+    enquiryNumber: 'ENQ/2026/009003',
+    raisedByUserId: ORGANIZATION_USER_ID,
+    raisedByUserType: 'ORGANIZATION',
+    organizationId: 'org-001',
+    projectId: 'proj-001',
+    packageId: 'pkg-001',
+    stockPointId: 'sp-002',
+    mineralId: 'min-sand',
+    requiredQuantity: q(300),
+    requiredByDate: dateDaysAhead(9),
+    status: 'RESPONDED',
+    createdAt: daysAgo(5),
+    updatedAt: daysAgo(2),
+  },
+  {
+    id: 'enq-003',
+    enquiryNumber: 'ENQ/2026/009117',
+    raisedByUserId: ORGANIZATION_USER_ID,
+    raisedByUserType: 'ORGANIZATION',
+    organizationId: 'org-001',
+    projectId: 'proj-002',
+    packageId: 'pkg-003',
+    stockPointId: 'sp-004',
+    mineralId: 'min-murum',
+    requiredQuantity: q(800),
+    requiredByDate: dateDaysAhead(2),
+    remarks: 'Backfilling for station box CH-04.',
+    status: 'CONVERTED_TO_ORDER',
+    createdAt: daysAgo(8),
+    updatedAt: daysAgo(6),
+    orderId: 'ord-002',
+  },
+  {
+    id: 'enq-004',
+    enquiryNumber: 'ENQ/2026/009204',
+    raisedByUserId: ORGANIZATION_USER_ID,
+    raisedByUserType: 'ORGANIZATION',
+    organizationId: 'org-001',
+    projectId: 'proj-001',
+    packageId: 'pkg-002',
+    stockPointId: 'sp-001',
+    mineralId: 'min-trap',
+    requiredQuantity: q(250),
+    requiredByDate: dateDaysAhead(14),
+    status: 'SUBMITTED',
+    createdAt: daysAgo(1),
+    updatedAt: daysAgo(1),
+  },
+
+  /* --- Normal Consumer enquiries: NO project/package/organization. --- */
+  {
+    id: 'enq-005',
+    enquiryNumber: 'ENQ/2026/009088',
+    raisedByUserId: CONSUMER_USER_ID,
+    raisedByUserType: 'NORMAL_CONSUMER',
+    stockPointId: 'sp-006',
+    mineralId: 'min-sand',
+    requiredQuantity: q(12),
+    requiredByDate: dateDaysAhead(3),
+    remarks: 'For house plinth work.',
+    status: 'CONVERTED_TO_ORDER',
+    createdAt: daysAgo(6),
+    updatedAt: daysAgo(4),
+    orderId: 'ord-003',
+  },
+  {
+    id: 'enq-006',
+    enquiryNumber: 'ENQ/2026/009231',
+    raisedByUserId: CONSUMER_USER_ID,
+    raisedByUserType: 'NORMAL_CONSUMER',
+    stockPointId: 'sp-006',
+    mineralId: 'min-grit',
+    requiredQuantity: q(8),
+    status: 'SUBMITTED',
+    createdAt: daysAgo(1),
+    updatedAt: daysAgo(1),
+  },
+];

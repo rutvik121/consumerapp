@@ -1,0 +1,211 @@
+/* =============================================================================
+ * MAHAKHANIJ CONSUMER APP — DESIGN TOKENS
+ * -----------------------------------------------------------------------------
+ * Single source of truth for the visual language.
+ *
+ * Every token below is emitted as a CSS custom property AND as a Tailwind
+ * utility, so there is exactly one place to change a design decision.
+ *
+ * FOR THE FUTURE FLUTTER TEAM:
+ *   These map 1:1 onto a Flutter ThemeData / ColorScheme + TextTheme.
+ *   See docs/design-tokens.md for the mapping table.
+ *
+ * PALETTE DISCIPLINE:
+ *   Tailwind's default colours are intentionally wiped (`--color-*: initial`).
+ *   The palette is exactly: one neutral scale, one primary, three status hues.
+ *   If a colour is not defined here, it must not appear in the UI.
+ * ========================================================================== */
+
+@theme {
+  /* ---------------------------------------------------------------------------
+   * RESET DEFAULT PALETTE
+   * ------------------------------------------------------------------------ */
+  --color-*: initial;
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* ---------------------------------------------------------------------------
+   * NEUTRAL — cool slate. Carries ~90% of the interface.
+   * ------------------------------------------------------------------------ */
+  --color-neutral-0: #ffffff;
+  --color-neutral-25: #fafbfc;
+  --color-neutral-50: #f5f7f9;
+  --color-neutral-100: #eceff3;
+  --color-neutral-200: #dde3ea;
+  --color-neutral-300: #c6cfd9;
+  --color-neutral-400: #9aa7b4;
+  --color-neutral-500: #71808f;
+  --color-neutral-600: #55636f;
+  --color-neutral-700: #3e4a55;
+  --color-neutral-800: #2a343d;
+  --color-neutral-900: #182027;
+
+  /* ---------------------------------------------------------------------------
+   * PRIMARY — deep institutional blue.
+   * Chosen to read as government-connected and trustworthy rather than
+   * promotional. Deliberately not a saturated consumer-app blue.
+   * ------------------------------------------------------------------------ */
+  --color-primary-50: #eef4f9;
+  --color-primary-100: #d6e5f0;
+  --color-primary-200: #aecbe1;
+  --color-primary-300: #7caacd;
+  --color-primary-400: #4a87b4;
+  --color-primary-500: #2c6e9e;
+  --color-primary-600: #1f5680;
+  --color-primary-700: #184566;
+  --color-primary-800: #133750;
+  --color-primary-900: #0e2839;
+
+  /* ---------------------------------------------------------------------------
+   * SEMANTIC STATUS — exactly three hues. Never decorative; always meaning.
+   *   success  → verified, received, available, approved, operational
+   *   warning  → attention required, awaiting action, discrepancy, under review
+   *   danger   → critical, shortage, failed verification, rejected
+   * ------------------------------------------------------------------------ */
+  --color-success-50: #eaf5ef;
+  --color-success-100: #cde8da;
+  --color-success-200: #a3d4ba;
+  --color-success-500: #1e7f4f;
+  --color-success-600: #17663f;
+  --color-success-700: #12512f;
+
+  --color-warning-50: #fdf4e7;
+  --color-warning-100: #f9e4c0;
+  --color-warning-200: #f0cd8d;
+  --color-warning-500: #b26b00;
+  --color-warning-600: #8f5500;
+  --color-warning-700: #6f4200;
+
+  --color-danger-50: #fceeec;
+  --color-danger-100: #f7d5d0;
+  --color-danger-200: #eeb0a8;
+  --color-danger-500: #c0392f;
+  --color-danger-600: #9c2c24;
+  --color-danger-700: #7c231c;
+
+  /* ---------------------------------------------------------------------------
+   * SEMANTIC ROLES — always prefer these over raw scale values in components.
+   * ------------------------------------------------------------------------ */
+  --color-canvas: #f5f7f9;          /* page background                        */
+  --color-surface: #ffffff;         /* default raised content surface         */
+  --color-surface-sunken: #eceff3;  /* inset / recessed area                  */
+  --color-line: #dde3ea;            /* hairline separator (default)           */
+  --color-line-strong: #c6cfd9;     /* emphasised separator / input border    */
+
+  --color-ink: #182027;             /* primary text                           */
+  --color-ink-secondary: #55636f;   /* supporting text                        */
+  --color-ink-muted: #71808f;       /* metadata, placeholders, disabled        */
+  --color-ink-inverse: #ffffff;     /* text on dark / primary surfaces         */
+
+  /* ---------------------------------------------------------------------------
+   * TYPOGRAPHY
+   * System stack: renders natively on device, no web-font payload, and keeps
+   * the prototype feeling like a real mobile app rather than a web page.
+   * ------------------------------------------------------------------------ */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+
+  /* Large operational numbers: quantities, metric values */
+  --text-display: 1.75rem;
+  --text-display--line-height: 2.125rem;
+  --text-display--font-weight: 700;
+  --text-display--letter-spacing: -0.02em;
+
+  /* Screen titles */
+  --text-title-lg: 1.25rem;
+  --text-title-lg--line-height: 1.625rem;
+  --text-title-lg--font-weight: 600;
+  --text-title-lg--letter-spacing: -0.01em;
+
+  /* Section / row titles */
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.375rem;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.005em;
+
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.4375rem;
+  --text-body-lg--font-weight: 400;
+
+  /* Default body size */
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.3125rem;
+  --text-body--font-weight: 400;
+
+  --text-body-sm: 0.8125rem;
+  --text-body-sm--line-height: 1.125rem;
+  --text-body-sm--font-weight: 400;
+
+  /* Form labels, badge text */
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1rem;
+  --text-label--font-weight: 500;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-caption--font-weight: 400;
+
+  /* Section headers — uppercase, tracked */
+  --text-overline: 0.6875rem;
+  --text-overline--line-height: 0.875rem;
+  --text-overline--font-weight: 600;
+  --text-overline--letter-spacing: 0.06em;
+
+  /* ---------------------------------------------------------------------------
+   * SPACING — 4px base grid. `--spacing` drives every padding, margin and
+   * gap utility.
+   * Standard screen gutter is 16px (`px-4`).
+   * ------------------------------------------------------------------------ */
+  --spacing: 0.25rem;
+  --gutter: 1rem;
+
+  /* ---------------------------------------------------------------------------
+   * RADIUS
+   * ------------------------------------------------------------------------ */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-full: 9999px;
+
+  /* ---------------------------------------------------------------------------
+   * ELEVATION — deliberately restrained.
+   * Default to hairline separation (`border-line`), NOT stacked cards.
+   *   e1 → resting surface that must lift off the canvas
+   *   e2 → bottom sheets, sticky bars
+   *   e3 → modal dialogs
+   * ------------------------------------------------------------------------ */
+  --shadow-e1: 0 1px 2px 0 rgb(24 32 39 / 0.06), 0 1px 1px -1px rgb(24 32 39 / 0.04);
+  --shadow-e2: 0 4px 12px -2px rgb(24 32 39 / 0.08), 0 2px 4px -2px rgb(24 32 39 / 0.06);
+  --shadow-e3: 0 16px 40px -8px rgb(24 32 39 / 0.18), 0 4px 12px -4px rgb(24 32 39 / 0.10);
+
+  /* ---------------------------------------------------------------------------
+   * TOUCH TARGETS — field usage: gloved hands, sunlight, movement.
+   * 44px is the hard floor for anything tappable.
+   * ------------------------------------------------------------------------ */
+  --touch-min: 44px;
+  --touch-comfortable: 48px;
+  --control-h-sm: 36px;
+  --control-h-md: 44px;
+  --control-h-lg: 52px;
+
+  /* ---------------------------------------------------------------------------
+   * LAYOUT — mobile shell
+   * ------------------------------------------------------------------------ */
+  --appbar-h: 52px;
+  --bottomnav-h: 60px;
+  --device-w: 390px;
+  --device-h: 844px;
+
+  /* ---------------------------------------------------------------------------
+   * MOTION — quick and functional. Never decorative.
+   * ------------------------------------------------------------------------ */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+}

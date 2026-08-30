@@ -1,0 +1,99 @@
+/* =============================================================================
+ * BASE LAYER — global resets and app-shell behaviour.
+ * Keep this file small. Anything component-specific belongs in the component.
+ * ========================================================================== */
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* Device safe areas. Resolve to 0px outside a notched viewport. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-neutral-100);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* App-like: no rubber-band chaining, no long-press callout. */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Quantities and identifiers must align vertically when stacked in lists. */
+  :where(.tabular) {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Visible focus for keyboard users only — never a mouse/touch ring. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Headings/paragraphs inherit from the type scale rather than UA defaults. */
+  :where(h1, h2, h3, h4, h5, h6, p, figure) {
+    margin: 0;
+  }
+
+  :where(button) {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer utilities {
+  /* Scroll containers inside the app shell hide their scrollbar the way a
+     native mobile scroll view does. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Guarantees the 44px minimum tappable area regardless of visual size. */
+  .touch-target {
+    min-height: var(--touch-min);
+    min-width: var(--touch-min);
+  }
+
+  /* Standard press feedback for tappable surfaces. */
+  .pressable {
+    transition: background-color var(--duration-fast) var(--ease-standard),
+      transform var(--duration-fast) var(--ease-standard);
+  }
+  .pressable:active {
+    transform: scale(0.985);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pressable {
+      transition: none;
+    }
+    .pressable:active {
+      transform: none;
+    }
+  }
+}

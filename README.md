@@ -1,0 +1,134 @@
+# Mahakhanij Consumer App — V1 Prototype
+
+A high-fidelity functional prototype of the Mahakhanij Consumer App, the
+destination-and-consumption side of the Government of Maharashtra's minor
+mineral ecosystem.
+
+> **This is a prototype, not the production application.** The production build
+> will be implemented in Flutter/Dart by a separate team. This repository exists
+> to demonstrate the product, validate UX, and serve as an implementation
+> reference: screens, navigation, user flows, business rules, permissions, data
+> requirements, context passed between screens, and states.
+
+## Getting started
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+```
+
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Dev server with HMR |
+| `npm run build` | Typecheck + production build |
+| `npm run typecheck` | Types only |
+| `npm run preview` | Serve the production build |
+
+Open it on a phone, or in a desktop browser where it renders inside a device
+frame. On first load you pick a demo persona — Organization or Normal Consumer.
+That picker is prototype scaffolding and is replaced by real authentication in
+Increment 1.
+
+## The product in one paragraph
+
+Mahakhanij tracks minor minerals from quarry to destination using electronic
+transport permits (e-TP) carrying source, destination, vehicle, mineral,
+quantity and a unique QR code. This app owns the destination side: discover a
+stock point, raise a mineral enquiry, follow the order, track the vehicle,
+verify the permit on arrival, record the actual quantity received, surface any
+discrepancy, and manage inventory through to consumption. It is **not** a
+mineral marketplace.
+
+## Two experiences, one application
+
+| | Normal Consumer | Organization |
+|---|---|---|
+| Scope | Flat — mineral belongs to the person | `Organization → Project → Package` |
+| Tabs | Home · Mineral · Orders · More | Home · Projects · Orders · More |
+| Temporary Excavation | Never | Yes |
+
+The operational lifecycle is identical for both. Role selects a tab set, gates
+a route, and decides whether Project/Package context is attached — it never
+forks the screens. See [`docs/role-permissions.md`](docs/role-permissions.md).
+
+## Layout
+
+```
+src/
+├── domain/         12 product entities as TypeScript types
+├── rules/          business rules as pure functions (access, quantity,
+│                   inventory, discrepancy, status presentation, geo)
+├── data/           fixtures → in-memory db → async repositories
+├── state/          session + organization context + operating context
+├── design-system/  tokens.css + reusable components
+├── navigation/     routes, role-driven tabs, guards, app shell, screen frame
+├── content/        centralized UI text (localization seam)
+├── screens/        one file per route
+├── app/            router + application root
+└── prototype/      demo scaffolding — deleted before hand-off
+```
+
+Full detail in [`docs/architecture.md`](docs/architecture.md).
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [architecture.md](docs/architecture.md) | Layers, dependency rules, Flutter mapping |
+| [domain-model.md](docs/domain-model.md) | Entities, relationships, modelling decisions |
+| [role-permissions.md](docs/role-permissions.md) | The complete permission matrix |
+| [navigation-map.md](docs/navigation-map.md) | Route table and user journeys |
+| [design-tokens.md](docs/design-tokens.md) | Colour, type, spacing, elevation, touch |
+| [src/prototype/README.md](src/prototype/README.md) | What to delete before hand-off |
+
+## Build status
+
+| Increment | Scope | Status |
+|---|---|---|
+| 0 | Architecture and design system | **Done** |
+| 1 | Authentication and the role split | Next |
+| 2 | Organization structure and context | |
+| 3 | Mineral acquisition | |
+| 4 | Orders and transport | |
+| 5 | Receiving | |
+| 6 | Inventory and consumption | |
+| 7 | Temporary Excavation | |
+| 8 | Quality and hand-off | |
+
+Routes not yet built render an honest scaffold marker naming the increment that
+builds them and what will be on them. There are no placeholder dashboards.
+
+## Verifying the foundation
+
+`scripts/verify-foundation.mjs` asserts the Increment 0 guarantees against the
+running app — routing, role-driven navigation, route-level access control,
+session persistence, mobile layout, touch targets and design tokens.
+
+```bash
+npm run build
+npx vite preview --port 4173 --host 127.0.0.1 &
+npm i -D playwright        # not a project dependency
+node scripts/verify-foundation.mjs
+```
+
+The access-control assertions matter most: *"a Normal Consumer must never reach
+Temporary Excavation"* is the kind of rule that quietly breaks when a route is
+added later, so it is an executable check rather than a note in a document.
+
+## Open questions
+
+Eleven product questions are unresolved and are **not** silently invented. Each
+provisional decision is isolated to one type or one function and marked with the
+question it depends on — see the table in
+[`docs/domain-model.md`](docs/domain-model.md#provisional--confirm-before-the-increment-that-uses-it).
+
+## Decisions taken for V1
+
+- **English only.** Marathi is not implemented; the seam for it is in
+  `src/content/`.
+- **Light theme only**, by decision rather than omission.
+- **No pricing or payment** anywhere — consistent with "not a marketplace".
+- **QR scanning is simulated** (mock scan plus manual permit entry). The
+  *validation logic* is real.
+- **Operational data is in-memory** and resets on reload. Session and
+  organization context persist, so a refresh keeps you signed in and in scope.
