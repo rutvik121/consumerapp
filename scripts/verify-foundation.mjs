@@ -45,6 +45,16 @@ async function tabs() {
   return page.$$eval('nav[aria-label="Main"] a', (els) => els.map((e) => e.textContent.trim()));
 }
 
+/** Signs in as a demo persona, whatever the current state. */
+async function persona(name) {
+  await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+  if (!page.url().includes('persona')) {
+    await page.getByRole('button', { name: 'Switch persona' }).click();
+  }
+  await page.getByRole('button', { name: new RegExp(name) }).first().click();
+  await page.waitForURL('**/home');
+}
+
 // 1. Unauthenticated root redirects to the entry point.
 await page.goto(BASE + '/', { waitUntil: 'networkidle' });
 check('Unauthenticated root redirects to persona picker',
@@ -169,9 +179,92 @@ const frameW = await desktop.evaluate(() => {
 check('Desktop renders a 390px device frame, not a full-width page', frameW === 390, `${frameW}px`);
 
 
-// Screenshots for review.
-await page.goto(BASE + '/more', { waitUntil: 'networkidle' });
+/* ===========================================================================
+ * 19. ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
+ * ---------------------------------------------------------------------------
+ * Government departments, builders, contractors and any other organization
+ * type share ONE identical experience. There is no Builder App, no Contractor
+ * App, no Government App.
+ *
+ * This is the rule most likely to be broken quietly six months from now by a
+ * single innocuous `if (organization.type === 'GOVERNMENT')`. So it is asserted
+ * here rather than left as a convention: the organization is cycled through
+ * every type and the entire signed-in experience must come back byte-identical
+ * apart from the one subtitle that displays the type by design.
+ * ======================================================================== */
 
+const ORG_TYPES = ['BUILDER', 'CONTRACTOR', 'GOVERNMENT', 'OTHER'];
+const EXPECTED_LABEL = { BUILDER: 'Builder', CONTRACTOR: 'Contractor', GOVERNMENT: 'Government', OTHER: 'Organization' };
+
+/** Rewrites the persisted session's organization type and reloads. */
+async function setOrganizationType(type) {
+  await page.evaluate((nextType) => {
+    const raw = localStorage.getItem('mahakhanij.session');
+    if (!raw) throw new Error('no persisted session');
+    const parsed = JSON.parse(raw);
+    parsed.state.organization.type = nextType;
+    localStorage.setItem('mahakhanij.session', JSON.stringify(parsed));
+  }, type);
+  await page.reload({ waitUntil: 'networkidle' });
+}
+
+/**
+ * Captures the whole experience: tab set, every reachable route, and the full
+ * text of More with the one legitimate type-bearing element removed.
+ */
+async function captureExperience() {
+  await page.goto(BASE + '/more', { waitUntil: 'networkidle' });
+
+  const more = await page.evaluate(() => {
+    const main = document.querySelector('main').cloneNode(true);
+    // The organization row's subtitle is the ONE place type is shown by design.
+    // Take the DEEPEST matching node, not an ancestor that also wraps the name.
+    const candidates = [...main.querySelectorAll('span')]
+      .filter((el) => el.textContent.includes('MH/MK/ENT'));
+    const subtitle = candidates.sort(
+      (a, b) => a.textContent.length - b.textContent.length,
+    )[0];
+    const typeLabel = subtitle ? subtitle.textContent.split('\u00b7')[0].trim() : null;
+    subtitle?.remove();
+    return { typeLabel, rest: main.textContent.replace(/\s+/g, ' ').trim() };
+  });
+
+  const tabList = await tabs();
+
+  const reach = {};
+  for (const path of ['/home', '/projects', '/orders', '/temporary-excavation']) {
+    await page.goto(BASE + path, { waitUntil: 'networkidle' });
+    reach[path] = page.url().replace(BASE, '');
+  }
+
+  return { tabs: tabList, more: more.rest, typeLabel: more.typeLabel, reach };
+}
+
+await persona('Organization');
+const baseline = await captureExperience();
+
+for (const type of ORG_TYPES) {
+  await setOrganizationType(type);
+  const actual = await captureExperience();
+
+  check(`Org type ${type} — identical navigation`,
+    JSON.stringify(actual.tabs) === JSON.stringify(baseline.tabs), actual.tabs.join(' · '));
+
+  check(`Org type ${type} — identical route access`,
+    JSON.stringify(actual.reach) === JSON.stringify(baseline.reach),
+    JSON.stringify(actual.reach));
+
+  check(`Org type ${type} — identical screen content`,
+    actual.more === baseline.more,
+    actual.more === baseline.more ? '' : 'content diverged');
+
+  check(`Org type ${type} — only the type label changes`,
+    actual.typeLabel === EXPECTED_LABEL[type],
+    `label="${actual.typeLabel}"`);
+}
+
+// Restore the seeded type so later runs start from a clean state.
+await setOrganizationType('BUILDER');
 
 check('No console or page errors', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));
 

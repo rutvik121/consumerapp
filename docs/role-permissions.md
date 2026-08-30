@@ -49,6 +49,30 @@ enquiry, order, delivery, tracking, receiving, inventory, consumption. In the
 domain types these fields are **optional and absent** for consumer records — not
 present-but-empty — so a consumer record cannot accidentally render them.
 
+## Organization type is metadata, not architecture
+
+Government departments, builders, contractors and any other organization type
+share **one identical experience**. There is no Builder App, no Contractor App,
+no Government App — and structurally there cannot be one.
+
+`organization.type` appears in exactly four places in the codebase:
+
+| Location | Role |
+|---|---|
+| `domain/organization.ts` | the type union |
+| `domain/organization.ts` | the field on the entity |
+| `content/en.ts` | a table of display labels |
+| `screens/MoreScreen.tsx` | renders that label in one subtitle |
+
+There is no conditional anywhere that reads it — no `if`, no `switch`, no route
+or navigation decision. `scripts/verify-foundation.mjs` enforces this by cycling
+the organization through all four types and asserting that navigation, route
+access and screen content are identical each time, with only the subtitle label
+changing.
+
+Adding a single `if (organization.type === 'GOVERNMENT')` to any screen turns
+that suite red.
+
 ## Out of scope entirely
 
 Supervisor and Site Agent workflows belong to separate existing applications.

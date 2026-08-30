@@ -111,9 +111,20 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-The access-control assertions matter most: *"a Normal Consumer must never reach
-Temporary Excavation"* is the kind of rule that quietly breaks when a route is
-added later, so it is an executable check rather than a note in a document.
+40 checks. The access-control assertions matter most, because they cover the
+two rules most likely to break quietly months from now:
+
+- *"A Normal Consumer must never reach Temporary Excavation"* — asserted by
+  direct-URL navigation, not just by the tab bar.
+- *"Organization type is metadata, not architecture"* — the organization is
+  cycled through Builder, Contractor, Government and Other, and the entire
+  signed-in experience must come back identical apart from the one subtitle
+  that displays the type by design.
+
+Both are executable checks rather than notes in a document. The second has been
+verified to fail correctly: injecting a single
+`organization.type !== 'GOVERNMENT'` condition into one screen turns the suite
+red.
 
 ## Open questions
 
