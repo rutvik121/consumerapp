@@ -64,7 +64,10 @@ export function ListRow({
       )}
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-title text-ink">{title}</span>
+        {/* Wraps to two lines rather than truncating: the title is almost
+            always an identifier — a stock point, a vehicle, a package — and
+            cutting an identifier is worse than an uneven row height. */}
+        <span className="block line-clamp-2 text-title text-ink">{title}</span>
         {subtitle && (
           <span className="mt-0.5 block truncate text-body-sm text-ink-secondary">{subtitle}</span>
         )}

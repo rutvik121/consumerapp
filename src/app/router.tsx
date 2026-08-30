@@ -8,7 +8,9 @@ import {
   ROUTES,
 } from '@/navigation';
 import {
+  CreateEnquiryScreen,
   EnquiriesScreen,
+  EnquiryDetailsScreen,
   HomeScreen,
   InventoryScreen,
   LoginScreen,
@@ -23,6 +25,7 @@ import {
   ReceiveScreen,
   RegisterScreen,
   SplashScreen,
+  StockPointDetailsScreen,
   StockPointsScreen,
   TemporaryExcavationScreen,
   WelcomeScreen,
@@ -136,8 +139,17 @@ export function AppRouter() {
             decides whether project/package context is attached and displayed.
           */}
           <Route path={ROUTES.orders} element={<OrdersScreen />} />
+          {/*
+            Mineral acquisition, in the order the product context fixes:
+            Find Stock Point → Stock Point Details → Mineral Enquiry.
+            Raising an enquiry is only reachable FROM a stock point, which is
+            why its path is nested under one.
+          */}
           <Route path={ROUTES.stockPoints} element={<StockPointsScreen />} />
+          <Route path={ROUTES.stockPointDetails()} element={<StockPointDetailsScreen />} />
+          <Route path={ROUTES.createEnquiry()} element={<CreateEnquiryScreen />} />
           <Route path={ROUTES.enquiries} element={<EnquiriesScreen />} />
+          <Route path={ROUTES.enquiryDetails()} element={<EnquiryDetailsScreen />} />
           <Route path={ROUTES.receive} element={<ReceiveScreen />} />
           <Route path={ROUTES.inventory} element={<InventoryScreen />} />
 

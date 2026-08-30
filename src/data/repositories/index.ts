@@ -1,4 +1,7 @@
 import type {
+  ISODate,
+  Quantity,
+  UserType,
   ConsumptionEntry,
   Delivery,
   Enquiry,
@@ -144,7 +147,58 @@ export interface EnquiryQuery {
   packageId?: ID;
 }
 
+export interface CreateEnquiryInput {
+  raisedByUserId: ID;
+  raisedByUserType: UserType;
+  /** Built via `enquiryScopeFor()` — absent entirely for Normal Consumers. */
+  organizationId?: ID;
+  projectId?: ID;
+  packageId?: ID;
+  stockPointId: ID;
+  mineralId: ID;
+  requiredQuantity: Quantity;
+  requiredByDate?: ISODate;
+  remarks?: string;
+}
+
 export const enquiryRepository = {
+  /**
+   * Records a new mineral requirement against a stock point.
+   *
+   * Writes to the in-memory store, so the enquiry appears in the list
+   * immediately afterwards — the prototype behaves like a connected
+   * application rather than a set of screens that forget what you did.
+   */
+  create: (input: CreateEnquiryInput): Promise<Enquiry> =>
+    request(() => {
+      const now = new Date().toISOString();
+      const sequence = String(db.enquiries.length + 9241).padStart(6, '0');
+
+      const enquiry: Enquiry = {
+        id: `enq-${db.enquiries.length + 1}-${Date.now()}`,
+        enquiryNumber: `ENQ/2026/${sequence}`,
+        raisedByUserId: input.raisedByUserId,
+        raisedByUserType: input.raisedByUserType,
+        ...(input.organizationId ? { organizationId: input.organizationId } : {}),
+        ...(input.projectId ? { projectId: input.projectId } : {}),
+        ...(input.packageId ? { packageId: input.packageId } : {}),
+        stockPointId: input.stockPointId,
+        mineralId: input.mineralId,
+        requiredQuantity: input.requiredQuantity,
+        ...(input.requiredByDate ? { requiredByDate: input.requiredByDate } : {}),
+        ...(input.remarks ? { remarks: input.remarks } : {}),
+        /* PROVISIONAL (open question #2): SUBMITTED is the only status a newly
+           raised enquiry can truthfully have until the real vocabulary and the
+           enquiry-to-order transition are confirmed. */
+        status: 'SUBMITTED',
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      db.enquiries.unshift(enquiry);
+      return enquiry;
+    }),
+
   list: (query: EnquiryQuery = {}): Promise<Enquiry[]> =>
     request(() =>
       db.enquiries

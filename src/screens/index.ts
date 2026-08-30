@@ -28,8 +28,12 @@ export {
   PackageDetailsScreen,
 } from './organization';
 
-export { StockPointsScreen } from './StockPointsScreen';
-export { EnquiriesScreen } from './EnquiriesScreen';
+export { StockPointsScreen, StockPointDetailsScreen } from './discovery';
+export {
+  CreateEnquiryScreen,
+  EnquiriesScreen,
+  EnquiryDetailsScreen,
+} from './enquiry';
 export { ReceiveScreen } from './ReceiveScreen';
 export { InventoryScreen } from './InventoryScreen';
 export { MineralScreen } from './MineralScreen';

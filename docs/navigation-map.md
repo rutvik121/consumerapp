@@ -64,7 +64,10 @@ they are already inside.
 | `/projects/:projectId` | Project Details | `VIEW_PROJECTS` |
 | `/projects/:projectId/packages/:packageId` | Package Details | `VIEW_PACKAGES` |
 | `/stock-points` | Find stock point | session |
+| `/stock-points/:stockPointId` | Stock Point Details | session |
+| `/stock-points/:stockPointId/enquiry` | Mineral Enquiry | session |
 | `/enquiries` | Enquiries | session |
+| `/enquiries/:enquiryId` | Enquiry Details | session |
 | `/receive` | Receive mineral | session |
 | `/inventory` | Inventory | session |
 
@@ -84,14 +87,27 @@ one, because a package only has meaning inside its own project.
 From Package Details, every mineral operation inherits Project + Package and
 never asks again.
 
+## Mineral acquisition
+
+```
+Find Stock Point → Stock Point Details → Mineral Enquiry → Enquiry Details
+```
+
+Raising an enquiry is nested under a stock point (`/stock-points/:id/enquiry`)
+because an enquiry only exists in relation to a source. There is no route that
+opens a blank enquiry form, which is what keeps the flow from behaving like a
+generic "create record" screen.
+
+For an Organization the form is reached with Project, Package and Stock Point
+already known, and asks for none of them. For a Normal Consumer those fields do
+not exist at all.
+
 ## Reserved for later increments
 
 Defined in `routes.ts`, not yet registered:
 
 | Path | Increment |
 |---|---|
-| `/stock-points/:stockPointId` | 3 |
-| `/enquiries/:enquiryId` | 3 |
 | `/orders/:orderId` | 4 |
 | `/deliveries/:deliveryId/tracking` | 4 |
 | `/receive/:deliveryId` | 5 |

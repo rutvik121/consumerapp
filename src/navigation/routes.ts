@@ -33,6 +33,9 @@ export const ROUTES = {
   /* --- Shared operational flows --- */
   stockPoints: '/stock-points',
   stockPointDetails: (stockPointId: ID = ':stockPointId') => `/stock-points/${stockPointId}`,
+  /** Raising an enquiry always starts from a chosen stock point. */
+  createEnquiry: (stockPointId: ID = ':stockPointId') =>
+    `/stock-points/${stockPointId}/enquiry`,
   enquiries: '/enquiries',
   enquiryDetails: (enquiryId: ID = ':enquiryId') => `/enquiries/${enquiryId}`,
   orders: '/orders',

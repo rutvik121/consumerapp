@@ -92,8 +92,8 @@ Full detail in [`docs/architecture.md`](docs/architecture.md).
 | 0 | Architecture and design system | **Done** |
 | 1 | Authentication and the role split | **Done** |
 | 2 | Organization structure and context | **Done** |
-| 3 | Mineral acquisition | Next |
-| 4 | Orders and transport | |
+| 3 | Mineral acquisition | **Done** |
+| 4 | Orders and transport | Next |
 | 5 | Receiving | |
 | 6 | Inventory and consumption | |
 | 7 | Temporary Excavation | |
@@ -115,10 +115,10 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-81 checks, covering authentication end to end, the Organization Home, and
-context preservation through the hierarchy. The access-control and context
-assertions matter most, because they cover the rules most likely to break
-quietly months from now:
+102 checks, covering authentication end to end, the Organization Home, the
+project hierarchy, and mineral acquisition through to a created enquiry. The
+access-control and context assertions matter most, because they cover the
+rules most likely to break quietly months from now:
 
 - *"A Normal Consumer must never reach Temporary Excavation"* — asserted by
   direct-URL navigation, not just by the tab bar.
@@ -131,7 +131,11 @@ quietly months from now:
 
 - *"Do not ask for context the app already has"* — opening a project sets it,
   opening a package completes it, the scope survives navigating away, and
-  switching project clears a package chosen under the old one.
+  switching project clears a package chosen under the old one. The enquiry
+  form is asserted not to ask for project, package or stock point, and the
+  enquiry it creates is asserted to carry all three anyway.
+- *"This is not a marketplace"* — no cart, checkout, price or "book" anywhere
+  in the acquisition flow.
 
 These are executable checks rather than notes in a document. The second has
 been verified to fail correctly: injecting a single

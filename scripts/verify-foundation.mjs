@@ -502,6 +502,160 @@ check('Consumer Home shows none of the organization sections',
   !consumerHome.includes('Active packages'));
 
 /* ===========================================================================
+ * MINERAL ACQUISITION — Find Stock Point -> Details -> Enquiry
+ * ---------------------------------------------------------------------------
+ * Two rules are asserted here.
+ *
+ * 1. CONTEXT IS NOT RE-ASKED. An organization user who reached the enquiry
+ *    form through Project -> Package -> Stock Point has already answered
+ *    where, what for, and from whom. The form must ask none of it again, and
+ *    the enquiry it creates must still carry all of it.
+ *
+ * 2. THIS IS NOT A MARKETPLACE. No cart, no checkout, no price, and the word
+ *    "book" never appears.
+ * ======================================================================== */
+
+await persona('Organization');
+await page.waitForTimeout(900);
+
+// Discovery is ranked against the operating destination, so it needs one.
+await page.goto(BASE + '/stock-points', { waitUntil: 'networkidle' });
+await page.waitForTimeout(600);
+check('Discovery without a package asks for one instead of ranking against nothing',
+  (await mainText()).includes('Select a package first'));
+
+// Establish scope: Project -> Package.
+await page.goto(BASE + '/projects', { waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+await page.getByRole('button', { name: /Mumbai/ }).click();
+await page.waitForTimeout(800);
+await page.getByRole('button', { name: /Package A/ }).click();
+await page.waitForTimeout(800);
+
+// Enter discovery FROM the package — context comes with it.
+await page.getByRole('button', { name: 'Find stock point' }).click();
+await page.waitForURL('**/stock-points');
+await page.waitForTimeout(900);
+
+const discoveryText = await mainText();
+check('Discovery lists stock points ranked by distance from the package site',
+  discoveryText.includes('Kalyan Stock Point') && discoveryText.includes('31.3 km'));
+
+const headerText = await page.textContent('header');
+check('Discovery keeps the project and package context visible',
+  headerText.includes('Mumbai–Nashik Highway Widening') && headerText.includes('Package A'));
+
+// Filters narrow the results.
+await page.getByRole('button', { name: /Filters/ }).click();
+await page.waitForSelector('[role="dialog"]');
+await page.selectOption('[role="dialog"] select >> nth=0', { label: 'River Sand' });
+await page.getByRole('button', { name: 'Apply' }).click();
+await page.waitForTimeout(700);
+const filtered = await mainText();
+check('Filtering by mineral narrows the results',
+  filtered.includes('River Sand') && !filtered.includes('Kalyan Stock Point'),
+  filtered.includes('Kalyan Stock Point') ? 'Kalyan still listed' : '');
+
+// Clear the filter through its chip.
+await page.getByRole('button', { name: /Remove River Sand/ }).click();
+await page.waitForTimeout(700);
+check('Removing a filter chip restores the full result set',
+  (await mainText()).includes('Kalyan Stock Point'));
+
+// The map is a real view, not a decorative panel.
+await page.getByRole('button', { name: 'Map', exact: true }).click();
+await page.waitForTimeout(400);
+check('Map view renders points positioned around the destination',
+  (await page.$$('main svg circle')).length >= 6);
+check('Map states the destination it measures from',
+  (await mainText()).includes('Package A — Km 12 to Km 28'));
+
+await page.getByRole('button', { name: 'List', exact: true }).click();
+await page.waitForTimeout(300);
+
+// Stock Point Details: one primary action, and provenance shown.
+await page.getByRole('button', { name: /Kalyan Stock Point/ }).click();
+await page.waitForTimeout(900);
+const detailsText = await mainText();
+check('Stock Point Details shows availability and source provenance',
+  detailsText.includes('Available minerals') &&
+  detailsText.includes('Titwala Trap Quarry') &&
+  detailsText.includes('MH/TH/QRY/2024/0231'));
+check('Stock Point Details offers exactly one primary action',
+  (await page.getByRole('button', { name: 'Send enquiry' }).count()) === 1);
+
+// NOT A MARKETPLACE.
+const marketplaceWords = ['Book', 'Add to cart', 'Checkout', 'Buy now', 'Price', '₹'];
+const offenders = marketplaceWords.filter((word) => detailsText.includes(word));
+check('Stock Point Details uses no marketplace language or pricing',
+  offenders.length === 0, offenders.join(', '));
+
+/* --- The enquiry form asks only for what it does not already know --- */
+
+await page.getByRole('button', { name: 'Send enquiry' }).click();
+await page.waitForTimeout(900);
+const formText = await mainText();
+
+check('Enquiry form is titled as an enquiry, never a booking',
+  (await page.textContent('header')).includes('Mineral enquiry') && !formText.includes('Book'));
+
+const formLabels = await page.$$eval('main label', (els) =>
+  els.map((e) => e.textContent.replace('*', '').trim()));
+check('Enquiry form does not re-ask for project, package or stock point',
+  !formLabels.some((label) => /project|package|stock point/i.test(label)),
+  formLabels.join(' · '));
+check('Enquiry form asks only for the requirement itself',
+  formLabels.includes('Mineral') && formLabels.includes('Required quantity'),
+  formLabels.join(' · '));
+
+// Over-availability warns without blocking — an enquiry is a question.
+await page.selectOption('main select', { label: 'Crushed Stone Grit 20mm' });
+await page.locator('input[inputmode="decimal"]').fill('9999');
+await page.waitForTimeout(300);
+check('Requesting more than is held warns but does not block',
+  (await mainText()).includes('You can still enquire for more') &&
+  !(await page.getByRole('button', { name: 'Send enquiry' }).isDisabled()));
+
+// Submit, and the enquiry must carry the context that was never re-asked.
+await page.locator('input[inputmode="decimal"]').fill('120');
+await page.getByRole('button', { name: 'Send enquiry' }).click();
+await page.waitForTimeout(1200);
+check('Submitting an enquiry confirms it was sent',
+  (await mainText()).includes('Enquiry sent'));
+
+await page.getByRole('button', { name: 'View enquiry' }).click();
+await page.waitForTimeout(1000);
+const createdText = await mainText();
+check('The created enquiry carries the project and package it was raised under',
+  createdText.includes('Mumbai–Nashik Highway Widening') &&
+  createdText.includes('Package A — Km 12 to Km 28'),
+  'context missing from the created enquiry');
+check('The created enquiry records the requirement',
+  createdText.includes('120 MT') && createdText.includes('Kalyan Stock Point'));
+
+/* --- The same flow, without a hierarchy --- */
+
+await persona('Normal Consumer');
+await page.goto(BASE + '/stock-points', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+check('Consumer discovery ranks from the registered delivery address',
+  (await mainText()).includes('Nashik Road Stock Point'));
+check('Consumer discovery shows no project or package context',
+  !(await page.textContent('header')).includes('Package'));
+
+await page.goto(BASE + '/enquiries', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+check('Consumer sees only their own enquiries',
+  (await mainText()).includes('ENQ/2026/009088'));
+
+await page.getByRole('button', { name: /River Sand/ }).first().click();
+await page.waitForTimeout(900);
+const consumerEnquiry = await mainText();
+check('Consumer enquiry detail shows no project or package fields',
+  !consumerEnquiry.includes('Project') && !consumerEnquiry.includes('Package'),
+  'organization fields leaked into the consumer view');
+
+/* ===========================================================================
  * ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
  * ---------------------------------------------------------------------------
  * Government departments, builders, contractors and any other organization

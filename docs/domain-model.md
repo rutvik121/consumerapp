@@ -47,7 +47,10 @@ producing a wrong figure. These are compliance numbers.
 
 **Organization context is optional and absent.** `organizationId`, `projectId`
 and `packageId` are optional on Enquiry, Order and Delivery. Consumer records
-omit them entirely, so consumer screens cannot render them by accident.
+omit them entirely, so consumer screens cannot render them by accident. Every
+enquiry is built through `enquiryScopeFor()` in `rules/enquiry.ts` — the single
+point where operating context becomes record data, and the reason a Normal
+Consumer cannot acquire these fields even by mistake.
 
 **Inventory scope is a discriminated union.** `InventoryScope` is either
 `PACKAGE` (organization) or `CONSUMER`. One inventory concept, two scopes —
