@@ -25,7 +25,7 @@ screens/          one file per route; composes the design system
 |---|---|---|
 | `domain/` | The twelve product entities | Import UI, state, or data |
 | `rules/` | Every business rule, once | Import React or any store |
-| `data/` | Mock records + repository access | Be imported by a screen's render body directly |
+| `data/` | Mock records, repository access, `useAsync` | Be imported by a screen's render body directly |
 | `state/` | Who is signed in, what scope, auth in flight | Cache operational data |
 | `design-system/` | Visual vocabulary | Know what a Package is |
 | `navigation/` | Paths, tabs, guards, shell | Contain product screens |
@@ -55,7 +55,15 @@ across screens.
 **The mock layer behaves like a network.** Repositories are async and slow
 enough to be perceptible, so screens are built with loading and error states
 from the start instead of retrofitting them later. `data/client.ts` is the only
-seam that changes when a real API arrives.
+seam that changes when a real API arrives, and every screen reads through
+`useAsync`, so the three states are handled consistently rather than each
+screen inventing its own.
+
+**Screens compose, they do not derive.** Filtering, summing, sorting and
+prioritising are product rules and live in `rules/`. A screen that needs
+several sources composes them in a co-located read model — see
+`screens/organization/useOrganizationOverview.ts`, which is also the
+specification for the dashboard endpoint a real backend would expose.
 
 ## Mapping to Flutter
 

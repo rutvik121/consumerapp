@@ -12,7 +12,7 @@
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Surface, type SurfaceProps, type SurfaceVariant } from './Surface';
-export { ListRow, ListGroup, type ListRowProps } from './ListRow';
+export { ListRow, ListGroup, type ListRowProps, type LeadingTone } from './ListRow';
 export { StatusBadge, type StatusBadgeProps } from './StatusBadge';
 export { MetricTile, type MetricTileProps, type MetricTone } from './MetricTile';
 export { SectionHeader, type SectionHeaderProps } from './SectionHeader';

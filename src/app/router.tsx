@@ -8,16 +8,22 @@ import {
   ROUTES,
 } from '@/navigation';
 import {
+  EnquiriesScreen,
   HomeScreen,
+  InventoryScreen,
   LoginScreen,
   MineralScreen,
   MoreScreen,
   NotFoundScreen,
   OrdersScreen,
   OtpScreen,
+  PackageDetailsScreen,
+  ProjectDetailsScreen,
   ProjectsScreen,
+  ReceiveScreen,
   RegisterScreen,
   SplashScreen,
+  StockPointsScreen,
   TemporaryExcavationScreen,
   WelcomeScreen,
 } from '@/screens';
@@ -84,12 +90,33 @@ export function AppRouter() {
           {/* Shared route, role-resolved content. One path, two experiences. */}
           <Route path={ROUTES.home} element={<HomeScreen />} />
 
-          {/* ORGANIZATION ONLY — the hierarchy consumers do not have. */}
+          {/*
+            ORGANIZATION ONLY — the hierarchy consumers do not have.
+            Projects → Project Details → Package Details. Opening a project
+            sets the active project; opening a package completes the operating
+            context that every downstream operation inherits.
+          */}
           <Route
             path={ROUTES.projects}
             element={
               <RoleGuard capability="VIEW_PROJECTS">
                 <ProjectsScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.projectDetails()}
+            element={
+              <RoleGuard capability="VIEW_PROJECTS">
+                <ProjectDetailsScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.packageDetails()}
+            element={
+              <RoleGuard capability="VIEW_PACKAGES">
+                <PackageDetailsScreen />
               </RoleGuard>
             }
           />
@@ -104,8 +131,15 @@ export function AppRouter() {
             }
           />
 
-          {/* Shared operational flow. */}
+          {/*
+            Shared operational flows. Built once for both roles — role only
+            decides whether project/package context is attached and displayed.
+          */}
           <Route path={ROUTES.orders} element={<OrdersScreen />} />
+          <Route path={ROUTES.stockPoints} element={<StockPointsScreen />} />
+          <Route path={ROUTES.enquiries} element={<EnquiriesScreen />} />
+          <Route path={ROUTES.receive} element={<ReceiveScreen />} />
+          <Route path={ROUTES.inventory} element={<InventoryScreen />} />
 
           {/*
             ORGANIZATION ONLY — the rule this guard exists for.

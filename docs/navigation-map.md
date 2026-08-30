@@ -61,20 +61,40 @@ An authenticated user is redirected away from every authentication route —
 otherwise an old link to `/login` would offer a sign-in form for an account
 they are already inside.
 
+| `/projects/:projectId` | Project Details | `VIEW_PROJECTS` |
+| `/projects/:projectId/packages/:packageId` | Package Details | `VIEW_PACKAGES` |
+| `/stock-points` | Find stock point | session |
+| `/enquiries` | Enquiries | session |
+| `/receive` | Receive mineral | session |
+| `/inventory` | Inventory | session |
+
+## Where context is set
+
+```
+/projects                       browse
+/projects/:id                   → sets the ACTIVE PROJECT
+/projects/:id/packages/:id      → sets the ACTIVE PACKAGE  ← scope complete
+```
+
+Navigating into a scope is what selects it. Making the user confirm it
+afterwards with a separate picker would be exactly the repetition the product
+context rules out. Switching project clears any package chosen under the old
+one, because a package only has meaning inside its own project.
+
+From Package Details, every mineral operation inherits Project + Package and
+never asks again.
+
 ## Reserved for later increments
 
-Already defined in `routes.ts`, not yet registered:
+Defined in `routes.ts`, not yet registered:
 
 | Path | Increment |
 |---|---|
-| `/projects/:projectId` | 2 |
-| `/projects/:projectId/packages/:packageId` | 2 |
-| `/stock-points`, `/stock-points/:stockPointId` | 3 |
-| `/enquiries`, `/enquiries/:enquiryId` | 3 |
+| `/stock-points/:stockPointId` | 3 |
+| `/enquiries/:enquiryId` | 3 |
 | `/orders/:orderId` | 4 |
 | `/deliveries/:deliveryId/tracking` | 4 |
-| `/receive`, `/receive/:deliveryId` | 5 |
-| `/inventory` | 6 |
+| `/receive/:deliveryId` | 5 |
 
 ## Organization journey
 

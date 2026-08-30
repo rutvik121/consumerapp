@@ -41,6 +41,8 @@ collect. It is not offered as an editable setting afterwards.
 | `/prototype/persona` | **no** session (prototype shortcut) |
 | `/home` | session |
 | `/projects` | session + `VIEW_PROJECTS` |
+| `/projects/:projectId` | session + `VIEW_PROJECTS` |
+| `/projects/:projectId/packages/:packageId` | session + `VIEW_PACKAGES` |
 | `/mineral` | session + `VIEW_MINERAL_TAB` |
 | `/orders` | session |
 | `/temporary-excavation` | session + `TEMPORARY_EXCAVATION` |

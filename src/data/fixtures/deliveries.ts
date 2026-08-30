@@ -16,8 +16,11 @@ import { daysAgo, hoursAgo, q } from './_helpers';
  *   del-002  RECEIVED_WITH_DISCREPANCY   — 50 dispatched, 47 received, 3 short
  *   del-003  ARRIVED_AT_DESTINATION      — waiting to be received RIGHT NOW
  *   del-004  IN_TRANSIT                  — consumer delivery, still moving
+ *   del-005  IN_TRANSIT                  — organization, en route
+ *   del-006  DISPATCHED                  — organization, just left the source
  *
- * del-003 is what drives "Attention Required" on the Organization Home.
+ * del-003 and del-002 are what drive "Attention Required" on the Organization
+ * Home: one vehicle physically waiting, one recorded shortage.
  * del-004 is what the Normal Consumer tracks.
  */
 export const deliveries: Delivery[] = [
@@ -233,6 +236,99 @@ export const deliveries: Delivery[] = [
     tracking: [
       { at: hoursAgo(3), status: 'DISPATCHED', locationLabel: 'Nashik Road Stock Point', geo: { latitude: 19.949, longitude: 73.84 } },
       { at: hoursAgo(1), status: 'IN_TRANSIT', locationLabel: 'Dwarka Circle, Nashik', geo: { latitude: 19.9793, longitude: 73.8143 } },
+    ],
+  },
+
+  {
+    id: 'del-005',
+    deliveryNumber: 'DLV/2026/020140',
+    orderId: 'ord-002',
+    organizationId: 'org-001',
+    projectId: 'proj-002',
+    packageId: 'pkg-003',
+    permit: {
+      etpNumber: 'ETP/2026/MH/0436781',
+      qrPayload: 'MHKNJ:ETP:2026:MH:0436781',
+      issuedAt: hoursAgo(4),
+      validUntil: hoursAgo(-20),
+      sourceQuarryName: 'Lonikand Murum Quarry',
+      sourceStockPointId: 'sp-004',
+      destinationLabel: 'Package C — Station Box CH-04',
+      destinationGeo: { latitude: 18.5308, longitude: 73.8475 },
+      mineralId: 'min-murum',
+      permittedQuantity: q(40),
+      vehicleNumber: 'MH-12-XY-3391',
+    },
+    vehicle: {
+      registrationNumber: 'MH-12-XY-3391',
+      transporterName: 'Deccan Carriers',
+      driverName: 'Sachin Kale',
+      driverMobileNumber: '9764110238',
+    },
+    destination: {
+      label: 'Package C — Station Box CH-04',
+      address: {
+        line1: 'Shivajinagar Station Box, Ganeshkhind Road',
+        taluka: 'Haveli',
+        district: 'Pune',
+        state: 'Maharashtra',
+        pincode: '411005',
+      },
+      geo: { latitude: 18.5308, longitude: 73.8475 },
+    },
+    dispatchedQuantity: q(40),
+    status: 'IN_TRANSIT',
+    dispatchedAt: hoursAgo(3),
+    expectedArrivalAt: hoursAgo(-1),
+    tracking: [
+      { at: hoursAgo(3), status: 'DISPATCHED', locationLabel: 'Wagholi Stock Point', geo: { latitude: 18.5793, longitude: 73.9781 } },
+      { at: hoursAgo(1), status: 'IN_TRANSIT', locationLabel: 'Kharadi Bypass', geo: { latitude: 18.5515, longitude: 73.935 } },
+    ],
+  },
+
+  {
+    id: 'del-006',
+    deliveryNumber: 'DLV/2026/020163',
+    orderId: 'ord-001',
+    organizationId: 'org-001',
+    projectId: 'proj-001',
+    packageId: 'pkg-001',
+    permit: {
+      etpNumber: 'ETP/2026/MH/0436902',
+      qrPayload: 'MHKNJ:ETP:2026:MH:0436902',
+      issuedAt: hoursAgo(2),
+      validUntil: hoursAgo(-22),
+      sourceQuarryName: 'Titwala Trap Quarry',
+      sourceStockPointId: 'sp-001',
+      destinationLabel: 'Package A — Km 12 to Km 28',
+      destinationGeo: { latitude: 19.45, longitude: 73.33 },
+      mineralId: 'min-grit',
+      permittedQuantity: q(50),
+      vehicleNumber: 'MH-04-AB-5567',
+    },
+    vehicle: {
+      registrationNumber: 'MH-04-AB-5567',
+      transporterName: 'Konkan Roadlines',
+      driverName: 'Ganesh Bhoir',
+      driverMobileNumber: '9833270145',
+    },
+    destination: {
+      label: 'Package A — Km 12 to Km 28',
+      address: {
+        line1: 'NH-160 Km 18, Vashind',
+        taluka: 'Shahapur',
+        district: 'Thane',
+        state: 'Maharashtra',
+        pincode: '421604',
+      },
+      geo: { latitude: 19.45, longitude: 73.33 },
+    },
+    dispatchedQuantity: q(50),
+    status: 'DISPATCHED',
+    dispatchedAt: hoursAgo(1),
+    expectedArrivalAt: hoursAgo(-2),
+    tracking: [
+      { at: hoursAgo(1), status: 'DISPATCHED', locationLabel: 'Kalyan Stock Point', geo: { latitude: 19.2403, longitude: 73.1305 } },
     ],
   },
 ];

@@ -12,6 +12,8 @@ export * from './access';
 export * from './auth';
 export * from './quantity';
 export * from './inventoryRules';
+export * from './inventorySummary';
+export * from './attention';
 export * from './discrepancyRules';
 export * from './statusPresentation';
 export * from './geo';

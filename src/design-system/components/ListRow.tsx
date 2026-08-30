@@ -2,6 +2,9 @@ import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '../utils/cn';
 
+/** Colours the leading slot to carry meaning — urgency, state, category. */
+export type LeadingTone = 'primary' | 'neutral' | 'success' | 'warning' | 'danger';
+
 export interface ListRowProps {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -9,6 +12,7 @@ export interface ListRowProps {
   detail?: ReactNode;
   /** Left slot: icon, avatar, or index. */
   leading?: ReactNode;
+  leadingTone?: LeadingTone;
   /** Right slot above the chevron: status badge, quantity, timestamp. */
   meta?: ReactNode;
   /** Replaces the default chevron. Pass `null` to remove it entirely. */
@@ -24,11 +28,20 @@ export interface ListRowProps {
  * Renders as a <button> when interactive so keyboard and screen-reader
  * semantics are correct without extra work at the call site.
  */
+const LEADING_TONE: Record<LeadingTone, string> = {
+  primary: 'bg-primary-50 text-primary-600',
+  neutral: 'bg-neutral-100 text-ink-muted',
+  success: 'bg-success-50 text-success-600',
+  warning: 'bg-warning-50 text-warning-600',
+  danger: 'bg-danger-50 text-danger-600',
+};
+
 export function ListRow({
   title,
   subtitle,
   detail,
   leading,
+  leadingTone = 'primary',
   meta,
   trailing,
   onClick,
@@ -40,7 +53,12 @@ export function ListRow({
   const content = (
     <>
       {leading && (
-        <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+        <span
+          className={cn(
+            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md',
+            LEADING_TONE[leadingTone],
+          )}
+        >
           {leading}
         </span>
       )}

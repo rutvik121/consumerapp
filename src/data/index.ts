@@ -9,3 +9,4 @@
 export * from './repositories';
 export { resetDatabase } from './db';
 export { NotFoundError } from './client';
+export { useAsync, type AsyncState } from './useAsync';

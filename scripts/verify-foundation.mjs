@@ -41,6 +41,18 @@ const consoleErrors = [];
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 page.on('pageerror', (e) => consoleErrors.push(String(e)));
 
+/**
+ * Reads the current screen's text.
+ *
+ * waitForURL resolves the moment the URL changes, which on a client-side
+ * navigation is BEFORE React has rendered the new screen. Reading main
+ * immediately can therefore return the previous screen's content.
+ */
+async function mainText() {
+  await page.waitForTimeout(250);
+  return page.textContent('main');
+}
+
 async function tabs() {
   return page.$$eval('nav[aria-label="Main"] a', (els) => els.map((e) => e.textContent.trim()));
 }
@@ -303,7 +315,7 @@ await page.getByLabel('Full name').fill('K. R. Patil');
 await page.locator('input[type="tel"]').fill('9812345678');
 await page.getByRole('button', { name: 'Continue' }).click();
 check('Organization registration asks for organization details',
-  (await page.textContent('main')).includes('Organization name'));
+  (await mainText()).includes('Organization name'));
 await page.getByLabel('Organization name').fill('Nagpur Municipal Corporation');
 await page.selectOption('select', 'GOVERNMENT');
 await page.getByLabel(/registration number/i).fill('MH/MK/ENT/2026/000123');
@@ -322,7 +334,7 @@ check('Newly registered GOVERNMENT organization gets the Organization experience
 await page.getByRole('link', { name: 'More' }).click();
 await page.waitForURL('**/more');
 check('Newly registered GOVERNMENT organization sees Temporary Excavation in More',
-  (await page.textContent('main')).includes('Temporary Excavation'));
+  (await mainText()).includes('Temporary Excavation'));
 
 await page.getByRole('button', { name: /Temporary Excavation/ }).click();
 await page.waitForURL('**/temporary-excavation');
@@ -340,7 +352,7 @@ await page.getByLabel('Full name').fill('Duplicate Person');
 await page.locator('input[type="tel"]').fill('9812345678');
 await page.getByRole('button', { name: 'Continue' }).click();
 check('Consumer registration asks for a delivery location, not organization details',
-  (await page.textContent('main')).includes('Where should mineral be delivered?'));
+  (await mainText()).includes('Where should mineral be delivered?'));
 await page.getByLabel('Address').fill('12 Civil Lines');
 await page.getByLabel('Taluka').fill('Nagpur');
 await page.getByLabel('District').fill('Nagpur');
@@ -350,12 +362,147 @@ await page.waitForURL('**/verify');
 await page.locator('input[autocomplete="one-time-code"]').fill('123456');
 await page.waitForSelector('[role="alert"]', { timeout: 5000 });
 check('Registering an existing number is refused',
-  (await page.textContent('main')).includes('account already exists'));
+  (await mainText()).includes('account already exists'));
 
 await signOut();
 
 /* ===========================================================================
- * 19. ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
+ * ORGANIZATION STRUCTURE AND CONTEXT PRESERVATION
+ * ---------------------------------------------------------------------------
+ * The product rule: "do not repeatedly ask the user to select a Project or
+ * Package when that information is already known."
+ *
+ * What is asserted here is that navigating INTO a scope is what sets it.
+ * Opening a project makes it active; opening a package completes the operating
+ * context that every downstream operation inherits.
+ * ======================================================================== */
+
+await persona('Organization');
+await page.waitForTimeout(1000);
+
+// The six Home sections, in the order the product context fixes.
+const homeSections = await page.$$eval('main h2', (els) =>
+  els.map((e) => e.textContent.trim().toUpperCase()));
+const expectedSections = [
+  'ATTENTION REQUIRED', 'BUSINESS OVERVIEW', 'QUICK ACTIONS',
+  'ACTIVE DELIVERIES', 'INVENTORY SNAPSHOT', 'TEMPORARY EXCAVATION',
+];
+check('Organization Home renders the six sections in the specified order',
+  JSON.stringify(homeSections) === JSON.stringify(expectedSections),
+  homeSections.join(' -> '));
+
+const homeText = await mainText();
+
+// Attention Required must derive real, actionable items from the dataset.
+check('Attention Required surfaces the vehicle waiting to be received',
+  homeText.includes('Vehicle waiting to be received') && homeText.includes('MH-12-KL-7788'));
+check('Attention Required surfaces the recorded quantity shortage',
+  homeText.includes('Shortage of 3 MT recorded') && homeText.includes('MH-04-JK-8891'));
+check('Attention Required surfaces the application query',
+  homeText.includes('Query raised on an application') && homeText.includes('TEA/2026/001347'));
+
+// Business Overview figures are derived from the data, not hardcoded.
+check('Business Overview reports the derived inventory total',
+  homeText.includes('414'), 'expected 414 MT available');
+check('Inventory Snapshot breaks the total down per mineral',
+  homeText.includes('309') && homeText.includes('Crushed Stone Grit 20mm'));
+
+// Receive is offered only where the delivery state allows it.
+const receiveButtons = await page.$$eval('main button', (els) =>
+  els.map((e) => e.textContent.trim()).filter((t) => t === 'Receive'));
+check('Receive is offered on exactly the one arrived delivery',
+  receiveButtons.length === 1, `${receiveButtons.length} Receive buttons`);
+
+// No quick action is a dead end.
+for (const [label, expected] of [
+  ['Find stock point', '/stock-points'],
+  ['Create enquiry', '/enquiries'],
+  ['Receive mineral', '/receive'],
+]) {
+  await page.goto(BASE + '/home', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(800);
+  await page.getByRole('button', { name: label, exact: true }).click();
+  await page.waitForTimeout(300);
+  check(`Quick action "${label}" leads somewhere real`,
+    page.url().endsWith(expected), page.url().replace(BASE, ''));
+}
+
+/* --- Context: navigating in is what sets scope --- */
+
+const readContext = () => page.evaluate(() => {
+  const raw = localStorage.getItem('mahakhanij.organization-context');
+  if (!raw) return { project: null, activePackage: null };
+  const { state } = JSON.parse(raw);
+  return {
+    project: state.project?.name ?? null,
+    activePackage: state.activePackage?.name ?? null,
+  };
+});
+
+await page.goto(BASE + '/projects', { waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+const projectRows = await page.$$eval('main button', (els) => els.length);
+check('Projects lists the organization projects', projectRows >= 3, `${projectRows} rows`);
+
+await page.getByRole('button', { name: /Mumbai/ }).click();
+await page.waitForTimeout(900);
+let scope = await readContext();
+check('Opening a project sets it as the active project',
+  scope.project === 'Mumbai–Nashik Highway Widening' && scope.activePackage === null,
+  JSON.stringify(scope));
+
+await page.getByRole('button', { name: /Package A/ }).click();
+await page.waitForTimeout(900);
+scope = await readContext();
+check('Opening a package completes the operating context',
+  scope.project === 'Mumbai–Nashik Highway Widening' &&
+  scope.activePackage === 'Package A — Km 12 to Km 28',
+  JSON.stringify(scope));
+
+check('Package Details shows the parent project as context',
+  (await mainText()).includes('Mineral operations') &&
+  (await page.textContent('header')).includes('Mumbai–Nashik Highway Widening'));
+
+// Supervisor is read-only context, never an actionable row.
+const supervisorButtons = await page.$$eval('main button', (els) =>
+  els.map((e) => e.textContent).filter((t) => t.includes('S. R. Pawar')).length);
+check('Supervisor is shown as read-only, with nothing to tap', supervisorButtons === 0);
+
+// Context survives leaving the hierarchy for an operation.
+await page.getByRole('link', { name: 'Orders' }).click();
+await page.waitForURL('**/orders');
+scope = await readContext();
+check('Operating context survives navigating away',
+  scope.activePackage === 'Package A — Km 12 to Km 28', JSON.stringify(scope));
+
+// Switching project invalidates a package chosen under the old one.
+await page.goto(BASE + '/projects', { waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+await page.getByRole('button', { name: /Pune Metro/ }).click();
+await page.waitForTimeout(900);
+scope = await readContext();
+check('Switching project clears the package selected under the previous one',
+  scope.project === 'Pune Metro Line 3 — Civil Works' && scope.activePackage === null,
+  JSON.stringify(scope));
+
+/* --- The hierarchy stays closed to Normal Consumers --- */
+
+await persona('Normal Consumer');
+for (const path of ['/projects/proj-001', '/projects/proj-001/packages/pkg-001']) {
+  await page.goto(BASE + path, { waitUntil: 'networkidle' });
+  check(`Consumer is redirected away from ${path}`,
+    page.url().endsWith('/home'), 'landed on ' + page.url().replace(BASE, ''));
+}
+
+await page.goto(BASE + '/home', { waitUntil: 'networkidle' });
+const consumerHome = await mainText();
+check('Consumer Home shows none of the organization sections',
+  !consumerHome.includes('Business overview') &&
+  !consumerHome.includes('Temporary excavation') &&
+  !consumerHome.includes('Active packages'));
+
+/* ===========================================================================
+ * ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
  * ---------------------------------------------------------------------------
  * Government departments, builders, contractors and any other organization
  * type share ONE identical experience. There is no Builder App, no Contractor

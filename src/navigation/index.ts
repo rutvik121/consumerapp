@@ -18,3 +18,4 @@ export {
 } from './RoleGuard';
 export { AppShell } from './AppShell';
 export { Screen, type ScreenProps } from './Screen';
+export { OrganizationContextBar } from './OrganizationContextBar';

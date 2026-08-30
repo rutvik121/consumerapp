@@ -92,6 +92,52 @@ export const en = {
     OTHER: 'Organization',
   },
 
+  /** Organization Home — the fixed section order from the product context. */
+  organizationHome: {
+    attentionRequired: 'Attention required',
+    attentionClear: 'Nothing needs your attention',
+    attentionClearBody: 'Deliveries, discrepancies and applications that need action will appear here.',
+    businessOverview: 'Business overview',
+    activeProjects: 'Active projects',
+    activePackages: 'Active packages',
+    activeOrders: 'Active orders',
+    availableInventory: 'Available inventory',
+    quickActions: 'Quick actions',
+    findStockPoint: 'Find stock point',
+    createEnquiry: 'Create enquiry',
+    receiveMineral: 'Receive mineral',
+    activeDeliveries: 'Active deliveries',
+    noActiveDeliveries: 'No deliveries in transit',
+    noActiveDeliveriesBody: 'Vehicles on the way to your sites will appear here.',
+    trackLive: 'Track live',
+    receive: 'Receive',
+    inventorySnapshot: 'Inventory snapshot',
+    acrossActivePackages: 'Across active packages',
+    temporaryExcavation: 'Temporary excavation',
+    activeApplications: 'Active applications',
+    needingAttention: 'Needing attention',
+    viewApplications: 'View applications',
+  },
+
+  /** Projects → Project → Packages → Package. */
+  projects: {
+    title: 'Projects',
+    noProjects: 'No projects yet',
+    noProjectsBody: 'Projects assigned to your organization will appear here.',
+    packages: 'Packages',
+    packageCount: (count: number) => `${count} ${count === 1 ? 'package' : 'packages'}`,
+    noPackages: 'No packages in this project',
+    noPackagesBody: 'Packages will appear here once they are created.',
+    projectDetails: 'Project details',
+    packageDetails: 'Package details',
+    site: 'Site',
+    mineralOperations: 'Mineral operations',
+    operationsHint: 'Everything below is scoped to this package.',
+    supervisorNote: 'Assigned supervisor. Supervisors work in a separate app.',
+    viewInventory: 'Inventory',
+    viewOrders: 'Orders',
+  },
+
   /** Authentication — Splash → Login/Register → Mobile → OTP → Experience. */
   auth: {
     welcomeTitle: 'Mineral, from source to site',
