@@ -12,6 +12,14 @@
  * `_scaffold/` holds honest markers for routes not yet built. It disappears
  * once every screen exists.
  */
+export {
+  SplashScreen,
+  WelcomeScreen,
+  LoginScreen,
+  OtpScreen,
+  RegisterScreen,
+} from './auth';
+
 export { HomeScreen } from './HomeScreen';
 export { ProjectsScreen } from './ProjectsScreen';
 export { MineralScreen } from './MineralScreen';

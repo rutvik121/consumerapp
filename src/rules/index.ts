@@ -9,6 +9,7 @@
  */
 
 export * from './access';
+export * from './auth';
 export * from './quantity';
 export * from './inventoryRules';
 export * from './discrepancyRules';

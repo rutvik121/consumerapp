@@ -26,7 +26,7 @@ screens/          one file per route; composes the design system
 | `domain/` | The twelve product entities | Import UI, state, or data |
 | `rules/` | Every business rule, once | Import React or any store |
 | `data/` | Mock records + repository access | Be imported by a screen's render body directly |
-| `state/` | Who is signed in, what scope | Cache operational data |
+| `state/` | Who is signed in, what scope, auth in flight | Cache operational data |
 | `design-system/` | Visual vocabulary | Know what a Package is |
 | `navigation/` | Paths, tabs, guards, shell | Contain product screens |
 | `screens/` | One route each | Define new visual patterns or restate rules |
@@ -78,6 +78,8 @@ seam that changes when a real API arrives.
 
 State that will be added when the increment that needs it arrives — not before:
 
-- Repository mutations (Increment 3 creates enquiries; Increment 5 writes receipts)
+- Repository mutations for enquiries (Increment 3) and receipts (Increment 5).
+  `authRepository.registerAndVerify` is the first mutation and already writes
+  to the in-memory database.
 - Persistence of operational data (Increment 5, when the first real mutation exists)
 - Any form state (screen-local `useState`, not a store)

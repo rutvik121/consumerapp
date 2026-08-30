@@ -25,11 +25,20 @@ Projects and Packages never appear for Normal Consumers.
 Temporary Excavation appears in neither tab bar — it is reached from within the
 Organization experience.
 
+## Where user type is established
+
+Registration, step 1. It is the first question asked, because it determines the
+entire post-login experience and what the rest of registration needs to
+collect. It is not offered as an editable setting afterwards.
+
 ## Route protection
 
 | Route | Guard |
 |---|---|
-| `/prototype/persona` | none (prototype entry point) |
+| `/` | none — splash resolves the session |
+| `/welcome`, `/login`, `/register` | **no** session |
+| `/verify` | no session + a verification in progress |
+| `/prototype/persona` | **no** session (prototype shortcut) |
 | `/home` | session |
 | `/projects` | session + `VIEW_PROJECTS` |
 | `/mineral` | session + `VIEW_MINERAL_TAB` |

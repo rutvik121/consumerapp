@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import type { Capability } from '@/rules';
 import { userCan } from '@/rules';
-import { useCurrentUser } from '@/state';
+import { useCurrentUser, useHasPendingVerification } from '@/state';
 import { ROUTES } from './routes';
 
 /**
@@ -42,14 +42,48 @@ export function RoleGuard({
  * Gate for the whole authenticated application. Anyone without a session is
  * sent to the entry point.
  *
- * Increment 1 replaces the persona picker with real authentication; this guard
- * keeps working unchanged because it only asks "is there a user?".
+ * It only ever asks "is there a user?", which is why it survived the switch
+ * from the prototype persona picker to real authentication unchanged.
  */
 export function RequireSession({ children }: { children: ReactNode }) {
   const user = useCurrentUser();
 
   if (!user) {
-    return <Navigate to={ROUTES.personaPicker} replace />;
+    return <Navigate to={ROUTES.welcome} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * Keeps an authenticated user out of the authentication screens.
+ *
+ * Without this, a signed-in user following an old link to /login would be
+ * offered a sign-in form for an account they are already inside.
+ */
+export function RequireNoSession({ children }: { children: ReactNode }) {
+  const user = useCurrentUser();
+
+  if (user) {
+    return <Navigate to={ROUTES.home} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * Guards the OTP screen.
+ *
+ * The auth flow store is deliberately not persisted, so refreshing on /verify
+ * leaves nothing to verify. Rather than render an empty screen, send the user
+ * back to the start — which is also what real authentication does when a
+ * verification session expires.
+ */
+export function RequirePendingVerification({ children }: { children: ReactNode }) {
+  const hasPending = useHasPendingVerification();
+
+  if (!hasPending) {
+    return <Navigate to={ROUTES.login} replace />;
   }
 
   return <>{children}</>;

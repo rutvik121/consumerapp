@@ -1,24 +1,37 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
-import { AppShell, RequireSession, RoleGuard, ROUTES } from '@/navigation';
+import { Outlet, Route, Routes } from 'react-router-dom';
+import {
+  AppShell,
+  RequireNoSession,
+  RequirePendingVerification,
+  RequireSession,
+  RoleGuard,
+  ROUTES,
+} from '@/navigation';
 import {
   HomeScreen,
+  LoginScreen,
   MineralScreen,
   MoreScreen,
   NotFoundScreen,
   OrdersScreen,
+  OtpScreen,
   ProjectsScreen,
+  RegisterScreen,
+  SplashScreen,
   TemporaryExcavationScreen,
+  WelcomeScreen,
 } from '@/screens';
 import { PersonaPickerScreen } from '@/prototype/PersonaPickerScreen';
 
 /**
  * THE ROUTE TABLE.
  *
- * Three layers, outermost first:
+ * Three concentric layers:
  *
- *   AppShell         device frame, role-driven navigation, overlay root
- *   RequireSession   no session → entry point
- *   RoleGuard        no capability → redirected home
+ *   AppShell                     device frame, role-driven navigation, overlays
+ *   RequireSession /             a session is required — or forbidden
+ *     RequireNoSession
+ *   RoleGuard                    no capability → redirected home
  *
  * Access rules are never written here. Each guard names a capability, and the
  * capability matrix in @/rules/access decides — the same source navigation
@@ -31,9 +44,36 @@ export function AppRouter() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        {/* PROTOTYPE ONLY — replaced by Splash → Login → OTP in Increment 1. */}
-        <Route path={ROUTES.personaPicker} element={<PersonaPickerScreen />} />
+        {/* --- Splash resolves the persisted session and routes onward. --- */}
+        <Route index element={<SplashScreen />} />
 
+        {/* --- Authentication. Forbidden once a session exists. --- */}
+        <Route
+          element={
+            <RequireNoSession>
+              <Outlet />
+            </RequireNoSession>
+          }
+        >
+          <Route path={ROUTES.welcome} element={<WelcomeScreen />} />
+          <Route path={ROUTES.login} element={<LoginScreen />} />
+          <Route path={ROUTES.register} element={<RegisterScreen />} />
+
+          {/* Needs a verification actually in progress, not just no session. */}
+          <Route
+            path={ROUTES.verify}
+            element={
+              <RequirePendingVerification>
+                <OtpScreen />
+              </RequirePendingVerification>
+            }
+          />
+
+          {/* PROTOTYPE ONLY — a review shortcut past authentication. */}
+          <Route path={ROUTES.personaPicker} element={<PersonaPickerScreen />} />
+        </Route>
+
+        {/* --- The authenticated application. --- */}
         <Route
           element={
             <RequireSession>
@@ -41,8 +81,6 @@ export function AppRouter() {
             </RequireSession>
           }
         >
-          <Route index element={<Navigate to={ROUTES.home} replace />} />
-
           {/* Shared route, role-resolved content. One path, two experiences. */}
           <Route path={ROUTES.home} element={<HomeScreen />} />
 

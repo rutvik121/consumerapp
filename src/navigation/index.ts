@@ -10,6 +10,11 @@
 export { ROUTES } from './routes';
 export { TABS_BY_USER_TYPE, tabsFor, type TabItem } from './tabs';
 export { BottomNavigation } from './BottomNavigation';
-export { RoleGuard, RequireSession } from './RoleGuard';
+export {
+  RoleGuard,
+  RequireSession,
+  RequireNoSession,
+  RequirePendingVerification,
+} from './RoleGuard';
 export { AppShell } from './AppShell';
 export { Screen, type ScreenProps } from './Screen';

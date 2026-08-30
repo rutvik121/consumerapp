@@ -92,15 +92,69 @@ export const en = {
     OTHER: 'Organization',
   },
 
+  /** Authentication — Splash → Login/Register → Mobile → OTP → Experience. */
+  auth: {
+    welcomeTitle: 'Mineral, from source to site',
+    welcomeBody:
+      'Find a stock point, raise an enquiry, track the vehicle, verify what arrives, and manage what you use.',
+    signIn: 'Sign in',
+    createAccount: 'Create account',
+
+    mobileLabel: 'Mobile number',
+    mobilePlaceholder: '10-digit number',
+    mobileHint: 'We will send a 6-digit verification code to this number.',
+    mobileInvalid: 'Enter a valid 10-digit Indian mobile number.',
+
+    verifyTitle: 'Verify your number',
+    verifySentTo: 'Enter the 6-digit code sent to',
+    changeNumber: 'Change',
+    resendIn: 'Resend code in',
+    resend: 'Resend code',
+    resent: 'A new code has been sent.',
+    otpInvalid: 'That code is not correct. Please try again.',
+    noAccount: 'No account exists for this number.',
+    alreadyRegistered: 'An account already exists for this number.',
+
+    registerTitle: 'Create account',
+    userTypeQuestion: 'How will you use Mahakhanij?',
+    userTypeHelp: 'This decides what the app shows you. It cannot be changed later.',
+    consumerSummary: 'For an individual buying mineral for personal use.',
+    organizationSummary:
+      'For a builder, contractor, government body or any other organization working across projects and packages.',
+
+    detailsTitle: 'Your details',
+    fullNameLabel: 'Full name',
+
+    organizationTitle: 'Organization details',
+    organizationNameLabel: 'Organization name',
+    organizationTypeLabel: 'Organization type',
+    organizationTypeHint: 'Every organization type uses the same experience.',
+    registrationNumberLabel: 'Mahakhanij registration number',
+
+    deliveryTitle: 'Where should mineral be delivered?',
+    deliveryHelp: 'Used to find nearby stock points and to verify deliveries on arrival.',
+    addressLabel: 'Address',
+    talukaLabel: 'Taluka',
+    districtLabel: 'District',
+    pincodeLabel: 'PIN code',
+    pincodeInvalid: 'Enter a valid 6-digit PIN code.',
+
+    required: 'This field is required.',
+    haveAccount: 'Already have an account?',
+    noAccountYet: 'New to Mahakhanij?',
+  },
+
   /** PROTOTYPE-ONLY copy. Delete alongside @/prototype. */
   prototype: {
     banner: 'Prototype',
     choosePersona: 'Choose a persona',
     personaIntro:
-      'Increment 1 replaces this with real authentication. For now, pick who you are signing in as.',
+      'A review shortcut that skips authentication. The real sign-in flow is on the entry screen.',
     switchPersona: 'Switch persona',
     demoSection: 'Prototype controls',
     notBuiltYet: 'Not built yet',
+    otpHint: 'Prototype — the code is 123456. Any other code shows the error state.',
+    seededAccounts: 'Seeded accounts: 9822014576 (Organization) · 9730845120 (Normal Consumer)',
   },
 } as const;
 

@@ -45,27 +45,67 @@ async function tabs() {
   return page.$$eval('nav[aria-label="Main"] a', (els) => els.map((e) => e.textContent.trim()));
 }
 
-/** Signs in as a demo persona, whatever the current state. */
+/** Signs in as a demo persona via the prototype shortcut. */
 async function persona(name) {
-  await page.goto(BASE + '/', { waitUntil: 'networkidle' });
-  if (!page.url().includes('persona')) {
+  await page.goto(BASE + '/welcome', { waitUntil: 'networkidle' });
+  if (!page.url().includes('/welcome')) {
+    // Already signed in — use the in-app switcher.
     await page.getByRole('button', { name: 'Switch persona' }).click();
+  } else {
+    await page.goto(BASE + '/prototype/persona', { waitUntil: 'networkidle' });
   }
   await page.getByRole('button', { name: new RegExp(name) }).first().click();
   await page.waitForURL('**/home');
 }
 
-// 1. Unauthenticated root redirects to the entry point.
+/** Signs in through the REAL flow: mobile number → OTP. */
+async function signInWithOtp(mobile, code = '123456') {
+  await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
+  await page.locator('input[type="tel"]').fill(mobile);
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.waitForURL('**/verify');
+  await page.locator('input[autocomplete="one-time-code"]').fill(code);
+}
+
+/**
+ * Signs out THROUGH THE UI, without reloading.
+ *
+ * The mock database lives in memory, so any page.goto() resets it to the
+ * seeded fixtures and discards accounts created during the run. Checks that
+ * depend on a just-registered account must stay on the same document.
+ */
+async function signOutInApp() {
+  await page.getByRole('link', { name: 'More' }).click();
+  await page.waitForURL('**/more');
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  const dialog = page.getByRole('alertdialog');
+  await dialog.waitFor();
+  await dialog.getByRole('button', { name: 'Sign out' }).click();
+  await page.waitForURL('**/welcome');
+}
+
+/** Clears the session so the next check starts from the entry point. */
+async function signOut() {
+  await page.goto(BASE + '/welcome', { waitUntil: 'networkidle' });
+  if (page.url().includes('/welcome')) return;
+  await page.evaluate(() => {
+    localStorage.removeItem('mahakhanij.session');
+    localStorage.removeItem('mahakhanij.organization-context');
+  });
+  await page.goto(BASE + '/welcome', { waitUntil: 'networkidle' });
+}
+
+// 1. Splash resolves an absent session and routes to the real entry point.
 await page.goto(BASE + '/', { waitUntil: 'networkidle' });
-check('Unauthenticated root redirects to persona picker',
-  page.url().endsWith('/prototype/persona'), page.url().replace(BASE, ''));
+await page.waitForURL('**/welcome', { timeout: 5000 });
+check('Splash routes an unauthenticated visitor to Welcome',
+  page.url().endsWith('/welcome'), page.url().replace(BASE, ''));
 
 // 2. No bottom navigation before sign-in.
 check('No bottom navigation while signed out', (await page.$('nav[aria-label="Main"]')) === null);
 
-// 3. Sign in as Organization.
-await page.getByRole('button', { name: /Organization/ }).first().click();
-await page.waitForURL('**/home');
+// 3. Sign in as Organization (via the prototype shortcut).
+await persona('Organization');
 check('Organization persona lands on Home', page.url().endsWith('/home'));
 
 const orgTabs = await tabs();
@@ -89,9 +129,7 @@ check('Operating context starts unscoped for Organization',
   orgMoreText.includes('No project selected') && orgMoreText.includes('Fully scoped'));
 
 // 7. Switch persona to Normal Consumer.
-await page.getByRole('button', { name: 'Switch persona' }).click();
-await page.getByRole('button', { name: /Normal Consumer/ }).click();
-await page.waitForURL('**/home');
+await persona('Normal Consumer');
 check('Consumer persona lands on Home', page.url().endsWith('/home'));
 
 const conTabs = await tabs();
@@ -178,6 +216,143 @@ const frameW = await desktop.evaluate(() => {
 });
 check('Desktop renders a 390px device frame, not a full-width page', frameW === 390, `${frameW}px`);
 
+
+/* ===========================================================================
+ * AUTHENTICATION — Splash → Welcome → Login/Register → OTP → Experience
+ * ======================================================================== */
+
+await signOut();
+
+// Welcome offers exactly two ways in.
+await page.goto(BASE + '/welcome', { waitUntil: 'networkidle' });
+const welcomeButtons = await page.$$eval('button', (els) =>
+  els.map((e) => e.textContent.trim()).filter((t) => t === 'Sign in' || t === 'Create account'));
+check('Welcome offers Sign in and Create account',
+  welcomeButtons.length === 2, welcomeButtons.join(' · '));
+
+// Mobile validation rejects a malformed number.
+await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
+await page.locator('input[type="tel"]').fill('12345');
+await page.getByRole('button', { name: 'Continue' }).click();
+check('Login rejects an invalid mobile number',
+  (await page.textContent('main')).includes('valid 10-digit'));
+
+// A wrong OTP shows the error state rather than signing anyone in.
+await signInWithOtp('9822014576', '000000');
+await page.waitForSelector('[role="alert"]', { timeout: 5000 });
+check('Wrong OTP is rejected with a visible error',
+  page.url().endsWith('/verify') && (await page.textContent('main')).includes('not correct'));
+
+// An unknown number is told there is no account, not signed in.
+await signInWithOtp('9000000001');
+await page.waitForSelector('[role="alert"]', { timeout: 5000 });
+check('Unknown number reports no account',
+  (await page.textContent('main')).includes('No account exists'));
+
+// The real flow signs in the seeded ORGANIZATION account.
+await signInWithOtp('9822014576');
+await page.waitForURL('**/home', { timeout: 5000 });
+const orgAuthTabs = await tabs();
+check('OTP sign-in resolves the Organization experience',
+  JSON.stringify(orgAuthTabs) === JSON.stringify(['Home', 'Projects', 'Orders', 'More']),
+  orgAuthTabs.join(' · '));
+
+// Splash now sends the returning user straight in.
+await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+await page.waitForURL('**/home', { timeout: 5000 });
+check('Splash routes a returning user to Home', page.url().endsWith('/home'));
+
+// Auth screens are closed to an authenticated user.
+for (const path of ['/welcome', '/login', '/register', '/verify']) {
+  await page.goto(BASE + path, { waitUntil: 'networkidle' });
+  check(`Authenticated user is kept out of ${path}`,
+    page.url().endsWith('/home'), 'landed on ' + page.url().replace(BASE, ''));
+}
+
+// The real flow signs in the seeded NORMAL CONSUMER account.
+await signOut();
+await signInWithOtp('9730845120');
+await page.waitForURL('**/home', { timeout: 5000 });
+const conAuthTabs = await tabs();
+check('OTP sign-in resolves the Normal Consumer experience',
+  JSON.stringify(conAuthTabs) === JSON.stringify(['Home', 'Mineral', 'Orders', 'More']),
+  conAuthTabs.join(' · '));
+check('Consumer signed in via OTP still cannot see Projects',
+  !conAuthTabs.includes('Projects'));
+
+// /verify is unreachable without a verification actually in progress.
+await signOut();
+await page.goto(BASE + '/verify', { waitUntil: 'networkidle' });
+check('/verify without a pending verification redirects to Login',
+  page.url().endsWith('/login'), page.url().replace(BASE, ''));
+
+/* --- REGISTRATION: the step that establishes the user type --- */
+
+await page.goto(BASE + '/register', { waitUntil: 'networkidle' });
+check('Registration asks for user type first',
+  (await page.textContent('main')).includes('How will you use Mahakhanij?'));
+
+// Continue is blocked until a type is chosen.
+check('Registration cannot proceed without choosing a user type',
+  await page.getByRole('button', { name: 'Continue' }).isDisabled());
+
+// Register a NEW Organization whose type is GOVERNMENT.
+await page.getByRole('radio', { name: /Organization/ }).click();
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.getByLabel('Full name').fill('K. R. Patil');
+await page.locator('input[type="tel"]').fill('9812345678');
+await page.getByRole('button', { name: 'Continue' }).click();
+check('Organization registration asks for organization details',
+  (await page.textContent('main')).includes('Organization name'));
+await page.getByLabel('Organization name').fill('Nagpur Municipal Corporation');
+await page.selectOption('select', 'GOVERNMENT');
+await page.getByLabel(/registration number/i).fill('MH/MK/ENT/2026/000123');
+await page.getByRole('button', { name: /Verify your number/ }).click();
+await page.waitForURL('**/verify');
+await page.locator('input[autocomplete="one-time-code"]').fill('123456');
+await page.waitForURL('**/home', { timeout: 5000 });
+
+const govTabs = await tabs();
+check('Newly registered GOVERNMENT organization gets the Organization experience',
+  JSON.stringify(govTabs) === JSON.stringify(['Home', 'Projects', 'Orders', 'More']),
+  govTabs.join(' · '));
+
+// Reached through the UI, not by page.goto — a reload would reset the
+// in-memory database and discard the account just created.
+await page.getByRole('link', { name: 'More' }).click();
+await page.waitForURL('**/more');
+check('Newly registered GOVERNMENT organization sees Temporary Excavation in More',
+  (await page.textContent('main')).includes('Temporary Excavation'));
+
+await page.getByRole('button', { name: /Temporary Excavation/ }).click();
+await page.waitForURL('**/temporary-excavation');
+check('Newly registered GOVERNMENT organization reaches Temporary Excavation',
+  page.url().endsWith('/temporary-excavation'), page.url().replace(BASE, ''));
+
+// Registering the same number twice must be refused.
+// Signed out through the UI so the account just created survives.
+await signOutInApp();
+await page.getByRole('button', { name: 'Create account' }).click();
+await page.waitForURL('**/register');
+await page.getByRole('radio', { name: /Normal Consumer/ }).click();
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.getByLabel('Full name').fill('Duplicate Person');
+await page.locator('input[type="tel"]').fill('9812345678');
+await page.getByRole('button', { name: 'Continue' }).click();
+check('Consumer registration asks for a delivery location, not organization details',
+  (await page.textContent('main')).includes('Where should mineral be delivered?'));
+await page.getByLabel('Address').fill('12 Civil Lines');
+await page.getByLabel('Taluka').fill('Nagpur');
+await page.getByLabel('District').fill('Nagpur');
+await page.getByLabel('PIN code').fill('440001');
+await page.getByRole('button', { name: /Verify your number/ }).click();
+await page.waitForURL('**/verify');
+await page.locator('input[autocomplete="one-time-code"]').fill('123456');
+await page.waitForSelector('[role="alert"]', { timeout: 5000 });
+check('Registering an existing number is refused',
+  (await page.textContent('main')).includes('account already exists'));
+
+await signOut();
 
 /* ===========================================================================
  * 19. ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE

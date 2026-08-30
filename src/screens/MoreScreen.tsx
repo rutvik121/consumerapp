@@ -42,7 +42,7 @@ export function MoreScreen() {
   function handleSignOut() {
     clearContext();
     signOut();
-    navigate(ROUTES.personaPicker, { replace: true });
+    navigate(ROUTES.welcome, { replace: true });
   }
 
   return (

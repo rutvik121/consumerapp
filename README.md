@@ -25,9 +25,13 @@ npm run dev        # http://localhost:5173
 | `npm run preview` | Serve the production build |
 
 Open it on a phone, or in a desktop browser where it renders inside a device
-frame. On first load you pick a demo persona — Organization or Normal Consumer.
-That picker is prototype scaffolding and is replaced by real authentication in
-Increment 1.
+frame.
+
+Sign in with a seeded account — **9822014576** (Organization) or
+**9730845120** (Normal Consumer) — using code **123456**. Any other code shows
+the error state. Or create a new account and choose your own user type.
+
+A persona shortcut at `/prototype/persona` skips authentication during review.
 
 ## The product in one paragraph
 
@@ -86,8 +90,8 @@ Full detail in [`docs/architecture.md`](docs/architecture.md).
 | Increment | Scope | Status |
 |---|---|---|
 | 0 | Architecture and design system | **Done** |
-| 1 | Authentication and the role split | Next |
-| 2 | Organization structure and context | |
+| 1 | Authentication and the role split | **Done** |
+| 2 | Organization structure and context | Next |
 | 3 | Mineral acquisition | |
 | 4 | Orders and transport | |
 | 5 | Receiving | |
@@ -111,15 +115,19 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-40 checks. The access-control assertions matter most, because they cover the
-two rules most likely to break quietly months from now:
+61 checks, covering the authentication flows end to end — sign-in, wrong code,
+unknown number, registration for both user types, and duplicate registration.
+The access-control assertions matter most, because they cover the two rules
+most likely to break quietly months from now:
 
 - *"A Normal Consumer must never reach Temporary Excavation"* — asserted by
   direct-URL navigation, not just by the tab bar.
 - *"Organization type is metadata, not architecture"* — the organization is
   cycled through Builder, Contractor, Government and Other, and the entire
   signed-in experience must come back identical apart from the one subtitle
-  that displays the type by design.
+  that displays the type by design. A newly registered **Government**
+  organization is also checked end to end, from registration through to
+  reaching Temporary Excavation.
 
 Both are executable checks rather than notes in a document. The second has been
 verified to fail correctly: injecting a single

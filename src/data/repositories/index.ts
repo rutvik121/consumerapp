@@ -33,6 +33,8 @@ import { db } from '../db';
  * (Increment 3 creates enquiries; Increment 5 writes receipts and inventory).
  */
 
+export * from './authRepository';
+
 export const userRepository = {
   getById: (id: ID): Promise<User | null> =>
     request(() => db.users.find((user) => user.id === id) ?? null),

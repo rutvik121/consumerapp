@@ -8,7 +8,15 @@ import type { ID } from '@/domain';
  * future Flutter team reads to build the Navigator route table.
  */
 export const ROUTES = {
-  /** PROTOTYPE ONLY — replaced by real authentication in Increment 1. */
+  /* --- Authentication (Increment 1) ---
+     Splash → Welcome → Login/Register → Mobile Number → OTP → Experience */
+  splash: '/',
+  welcome: '/welcome',
+  login: '/login',
+  register: '/register',
+  verify: '/verify',
+
+  /** PROTOTYPE ONLY — a review shortcut, no longer the entry point. */
   personaPicker: '/prototype/persona',
 
   home: '/home',

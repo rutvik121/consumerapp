@@ -48,7 +48,8 @@ export function PersonaPickerScreen() {
       </ListGroup>
 
       <p className="px-6 py-6 text-caption text-ink-muted">
-        Increment 1 replaces this screen with mobile number and OTP verification.
+        A review shortcut. The real flow is Welcome → Sign in → OTP, reachable
+        from the entry screen.
       </p>
     </div>
   );

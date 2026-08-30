@@ -1,10 +1,11 @@
 /**
  * APPLICATION STATE
  *
- * Two stores only, both deliberately small:
+ * Three stores, all deliberately small:
  *
  *   sessionStore              who is signed in → drives all role decisions
  *   organizationContextStore  which Project/Package they are operating inside
+ *   authFlowStore             data in flight between auth screens (not persisted)
  *
  * plus one derived hook:
  *
@@ -28,5 +29,7 @@ export {
   useActiveProject,
   useActivePackage,
 } from './organizationContextStore';
+
+export { useAuthFlowStore, useHasPendingVerification } from './authFlowStore';
 
 export { useOperatingContext, type OperatingContext } from './useOperatingContext';
