@@ -37,7 +37,11 @@ export {
 export { ReceiveScreen } from './ReceiveScreen';
 export { InventoryScreen } from './InventoryScreen';
 export { MineralScreen } from './MineralScreen';
-export { OrdersScreen } from './OrdersScreen';
+export {
+  OrdersScreen,
+  OrderDetailsScreen,
+  DeliveryTrackingScreen,
+} from './orders';
 export { MoreScreen } from './MoreScreen';
 export { TemporaryExcavationScreen } from './TemporaryExcavationScreen';
 export { NotFoundScreen } from './NotFoundScreen';

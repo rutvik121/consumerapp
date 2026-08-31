@@ -128,7 +128,11 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
                 </div>
 
                 <div className="mt-3 flex gap-2 pl-12">
-                  <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.orders)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => navigate(ROUTES.deliveryTracking(delivery.id))}
+                  >
                     {t.organizationHome.trackLive}
                   </Button>
                   {canReceiveDelivery(delivery) && (
@@ -204,7 +208,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
               title={`${mineralName(order.mineralId)} · ${formatQuantity(order.orderedQuantity)}`}
               subtitle={order.orderNumber}
               meta={<StatusBadge {...statusPresentation.receiving(order.receivingStatus)} size="sm" />}
-              onClick={() => navigate(ROUTES.orders)}
+              onClick={() => navigate(ROUTES.orderDetails(order.id))}
             />
           ))}
         </ListGroup>

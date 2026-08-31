@@ -53,6 +53,8 @@ determines what steps 2 and 3 need to ask:
 | `/projects` | Projects | `VIEW_PROJECTS` |
 | `/mineral` | Mineral | `VIEW_MINERAL_TAB` |
 | `/orders` | Orders | session |
+| `/orders/:orderId` | Order Details | session |
+| `/deliveries/:deliveryId/tracking` | Vehicle Tracking | session |
 | `/temporary-excavation` | Temporary Excavation | `TEMPORARY_EXCAVATION` |
 | `/more` | More | session |
 | `*` | Not found | session |
@@ -102,14 +104,23 @@ For an Organization the form is reached with Project, Package and Stock Point
 already known, and asks for none of them. For a Normal Consumer those fields do
 not exist at all.
 
+## Traceability, walkable in both directions
+
+```
+Requirement → Enquiry → Order → Delivery (e-TP + vehicle) → Receipt
+```
+
+Every screen in that chain links to its neighbours. Order Details links back
+to the enquiry that produced it; a delivery links forward to receiving. An
+attention item on Home opens the specific delivery rather than a list the user
+has to search.
+
 ## Reserved for later increments
 
 Defined in `routes.ts`, not yet registered:
 
 | Path | Increment |
 |---|---|
-| `/orders/:orderId` | 4 |
-| `/deliveries/:deliveryId/tracking` | 4 |
 | `/receive/:deliveryId` | 5 |
 
 ## Organization journey

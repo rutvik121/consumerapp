@@ -656,6 +656,117 @@ check('Consumer enquiry detail shows no project or package fields',
   'organization fields leaked into the consumer view');
 
 /* ===========================================================================
+ * ORDERS AND TRANSPORT
+ * ---------------------------------------------------------------------------
+ * Two rules are asserted here.
+ *
+ * 1. FULFILMENT IS DERIVED. An order is the commercial envelope; the
+ *    deliveries are the physical truth. Dispatched, received and pending are
+ *    computed from the deliveries, never stored on the order.
+ *
+ * 2. TRACKING IS OPERATIONAL, NOT A COURIER ETA. The screen must answer the
+ *    questions the product context lists -- vehicle, mineral, quantity,
+ *    source, destination, status, last update, permit -- and the route
+ *    progress must come from reported position rather than a timer.
+ * ======================================================================== */
+
+await persona('Organization');
+await page.waitForTimeout(900);
+
+await page.goto(BASE + '/orders', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+const ordersText = await mainText();
+check('Order list shows dispatch AND receiving status separately',
+  ordersText.includes('Partly received') && ordersText.includes('Partly dispatched'),
+  'both statuses must be visible; collapsing them hides the source/destination gap');
+
+await page.getByRole('button', { name: /Crushed Stone Grit/ }).first().click();
+await page.waitForTimeout(1000);
+const orderText = await mainText();
+
+// ord-001: 500 ordered, deliveries of 50 + 50 + 50 = 150 dispatched,
+// 50 + 47 received = 97, so 350 pending and a 3 MT shortfall.
+check('Order Details derives dispatched, received and pending from the deliveries',
+  orderText.includes('150') && orderText.includes('97') && orderText.includes('350'),
+  'expected 150 dispatched / 97 received / 350 pending');
+check('A recorded shortfall is surfaced on the order, not buried in one receipt',
+  orderText.includes('3 MT') && orderText.includes('short received'));
+check('Order Details lists the physical deliveries',
+  orderText.includes('MH-04-GG-1234') && orderText.includes('MH-04-JK-8891'));
+check('Order Details keeps the organization context',
+  orderText.includes('Mumbai–Nashik Highway Widening') && orderText.includes('Package A'));
+
+// Traceability walks backwards: Order -> Enquiry.
+await page.getByRole('button', { name: /From enquiry/ }).click();
+await page.waitForTimeout(900);
+check('The order links back to the enquiry that produced it',
+  page.url().includes('/enquiries/') && (await mainText()).includes('ENQ/2026/008841'),
+  page.url().replace(BASE, ''));
+
+/* --- Vehicle tracking --- */
+
+await page.goto(BASE + '/deliveries/del-003/tracking', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1000);
+const trackingText = await mainText();
+
+check('Tracking identifies the vehicle',
+  trackingText.includes('MH-12-KL-7788'));
+check('Tracking states mineral and quantity',
+  trackingText.includes('Murum') && trackingText.includes('40 MT'));
+check('Tracking states current status and how stale it is',
+  trackingText.includes('Arrived') && /Last update .*(ago|just now)/.test(trackingText));
+check('Tracking names source and destination',
+  trackingText.includes('Lonikand Murum Quarry') &&
+  trackingText.includes('Package C — Station Box CH-04'));
+check('Tracking shows the transport permit behind the movement',
+  trackingText.includes('ETP/2026/MH/0436610') && trackingText.includes('Permitted quantity'));
+check('Tracking shows the movement record, not just a map',
+  trackingText.includes('Movement') && trackingText.includes('Wagholi Stock Point'));
+check('Receive is offered on an arrived vehicle',
+  (await page.getByRole('button', { name: 'Receive mineral' }).count()) === 1);
+
+// Progress must be derived from reported position, not from a timer.
+await page.goto(BASE + '/deliveries/del-005/tracking', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+const inTransit = await mainText();
+const progressMatch = /(\d+)% of the route covered/.exec(inTransit);
+check('Route progress is derived from actual reported position',
+  progressMatch !== null && Number(progressMatch[1]) > 0 && Number(progressMatch[1]) < 100,
+  progressMatch ? progressMatch[0] : 'no derived progress found');
+check('Receive is NOT offered on a vehicle still in transit',
+  (await page.getByRole('button', { name: 'Receive mineral' }).count()) === 0);
+
+// Timestamps must stay fresh however long after authoring the demo is run.
+check('Fixture timestamps are relative to now, not a stale anchor date',
+  /Last update (just now|\d+ min ago|[1-9] hours? ago)/.test(inTransit),
+  /Last update ([^A-Z]{1,20})/.exec(inTransit)?.[1]?.trim() ?? 'not found');
+
+// Attention items land on the thing itself, not a list to search through.
+await page.goto(BASE + '/home', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1000);
+await page.getByRole('button', { name: /Vehicle waiting to be received/ }).click();
+await page.waitForTimeout(800);
+check('An attention item opens the specific delivery, not the orders list',
+  page.url().includes('/deliveries/del-003/tracking'), page.url().replace(BASE, ''));
+
+/* --- The same screens without a hierarchy --- */
+
+await persona('Normal Consumer');
+await page.goto(BASE + '/orders', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+check('Consumer sees only their own orders',
+  (await mainText()).includes('ORD/2026/004473'));
+
+await page.getByRole('button', { name: /River Sand/ }).first().click();
+await page.waitForTimeout(1000);
+const consumerOrder = await mainText();
+check('Consumer order detail shows no project or package fields',
+  !consumerOrder.includes('Project') && !consumerOrder.includes('Package'),
+  'organization fields leaked into the consumer view');
+check('Consumer order still shows the full traceability chain',
+  consumerOrder.includes('From enquiry') && consumerOrder.includes('MH-15-BN-4402'));
+
+/* ===========================================================================
  * ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
  * ---------------------------------------------------------------------------
  * Government departments, builders, contractors and any other organization

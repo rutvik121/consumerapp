@@ -286,9 +286,12 @@ function AttentionRow({ item }: { item: AttentionItem }) {
       title={item.title}
       subtitle={item.subject}
       {...(item.scope ? { detail: item.scope } : {})}
-      onClick={() =>
-        navigate(item.applicationId ? ROUTES.temporaryExcavation : ROUTES.orders)
-      }
+      onClick={() => {
+        // Land on the thing itself, not on a list the user must search.
+        if (item.applicationId) navigate(ROUTES.temporaryExcavation);
+        else if (item.deliveryId) navigate(ROUTES.deliveryTracking(item.deliveryId));
+        else navigate(ROUTES.orders);
+      }}
     />
   );
 }
@@ -337,7 +340,11 @@ function DeliveryRow({
       </div>
 
       <div className="mt-3 flex gap-2 pl-12">
-        <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.orders)}>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => navigate(ROUTES.deliveryTracking(delivery.id))}
+        >
           {t.organizationHome.trackLive}
         </Button>
         {canReceiveDelivery(delivery) && (

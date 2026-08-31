@@ -93,8 +93,8 @@ Full detail in [`docs/architecture.md`](docs/architecture.md).
 | 1 | Authentication and the role split | **Done** |
 | 2 | Organization structure and context | **Done** |
 | 3 | Mineral acquisition | **Done** |
-| 4 | Orders and transport | Next |
-| 5 | Receiving | |
+| 4 | Orders and transport | **Done** |
+| 5 | Receiving | Next |
 | 6 | Inventory and consumption | |
 | 7 | Temporary Excavation | |
 | 8 | Quality and hand-off | |
@@ -115,8 +115,9 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-102 checks, covering authentication end to end, the Organization Home, the
-project hierarchy, and mineral acquisition through to a created enquiry. The
+122 checks, covering authentication end to end, the Organization Home, the
+project hierarchy, mineral acquisition through to a created enquiry, and
+orders through to vehicle tracking. The
 access-control and context assertions matter most, because they cover the
 rules most likely to break quietly months from now:
 
@@ -136,6 +137,9 @@ rules most likely to break quietly months from now:
   enquiry it creates is asserted to carry all three anyway.
 - *"This is not a marketplace"* — no cart, checkout, price or "book" anywhere
   in the acquisition flow.
+- *"Tracking is operational, not a courier ETA"* — the screen is asserted to
+  answer every question the product context lists, and route progress is
+  asserted to be derived from reported position rather than a timer.
 
 These are executable checks rather than notes in a document. The second has
 been verified to fail correctly: injecting a single

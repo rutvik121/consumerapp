@@ -206,6 +206,48 @@ export const en = {
     available: 'Available',
   },
 
+  /** Orders and transport. Tracking is operational, never a courier ETA. */
+  orders: {
+    title: 'Orders',
+    noOrders: 'No orders yet',
+    noOrdersBody: 'Orders created from your enquiries will appear here.',
+    orderNumber: 'Order number',
+    fromEnquiry: 'From enquiry',
+    ordered: 'Ordered',
+    dispatched: 'Dispatched',
+    received: 'Received',
+    pendingDispatch: 'Pending dispatch',
+    awaitingReceipt: 'Awaiting receipt',
+    dispatchStatus: 'Dispatch',
+    receivingStatus: 'Receiving',
+    deliveries: 'Deliveries',
+    noDeliveries: 'No deliveries yet',
+    noDeliveriesBody: 'Vehicles dispatched against this order will appear here.',
+    placedOn: 'Placed on',
+    shortReceived: 'short received',
+  },
+
+  tracking: {
+    title: 'Vehicle tracking',
+    driver: 'Driver',
+    transporter: 'Transporter',
+    lastUpdate: 'Last update',
+    route: 'Route',
+    source: 'Source',
+    destination: 'Destination',
+    transportPermit: 'Transport permit',
+    permitNumber: 'e-TP number',
+    permittedQuantity: 'Permitted quantity',
+    validUntil: 'Valid until',
+    quarry: 'Quarry',
+    movement: 'Movement',
+    noUpdates: 'No movement recorded yet',
+    noUpdatesBody: 'Location updates will appear here once the vehicle is dispatched.',
+    receiveNow: 'Receive mineral',
+    arrivedNote: 'This vehicle has arrived and is waiting to be received.',
+    callDriver: 'Call driver',
+  },
+
   /** Authentication — Splash → Login/Register → Mobile → OTP → Experience. */
   auth: {
     welcomeTitle: 'Mineral, from source to site',

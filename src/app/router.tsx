@@ -9,6 +9,7 @@ import {
 } from '@/navigation';
 import {
   CreateEnquiryScreen,
+  DeliveryTrackingScreen,
   EnquiriesScreen,
   EnquiryDetailsScreen,
   HomeScreen,
@@ -17,6 +18,7 @@ import {
   MineralScreen,
   MoreScreen,
   NotFoundScreen,
+  OrderDetailsScreen,
   OrdersScreen,
   OtpScreen,
   PackageDetailsScreen,
@@ -139,6 +141,8 @@ export function AppRouter() {
             decides whether project/package context is attached and displayed.
           */}
           <Route path={ROUTES.orders} element={<OrdersScreen />} />
+          <Route path={ROUTES.orderDetails()} element={<OrderDetailsScreen />} />
+          <Route path={ROUTES.deliveryTracking()} element={<DeliveryTrackingScreen />} />
           {/*
             Mineral acquisition, in the order the product context fixes:
             Find Stock Point → Stock Point Details → Mineral Enquiry.
