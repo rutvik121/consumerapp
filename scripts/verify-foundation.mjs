@@ -984,6 +984,139 @@ check('Consumer inventory offers no package scope switcher',
   'a consumer has no hierarchy to scope by');
 
 /* ===========================================================================
+ * TEMPORARY EXCAVATION — the one ORGANIZATION-ONLY workflow
+ * ---------------------------------------------------------------------------
+ * Two rules are asserted here.
+ *
+ * 1. A Normal Consumer can reach NONE of it, by any route.
+ * 2. The app owns preparing and submitting an application, and nothing after
+ *    it. There is no approve, no reject, no respond-to-query, because those
+ *    are the department's decisions and not the applicant's.
+ * ======================================================================== */
+
+await persona('Organization');
+await page.waitForTimeout(1000);
+
+await page.goto(BASE + '/temporary-excavation', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1000);
+const excavationList = await mainText();
+check('Temporary Excavation summarises what is open and what needs action',
+  excavationList.includes('Active applications') && excavationList.includes('Needing attention'));
+check('Temporary Excavation lists the organization applications',
+  excavationList.includes('TEA/2026/001347') && excavationList.includes('TEA/2026/001284'));
+
+// A raised query is the one state where the organization owes a response.
+await page.getByRole('button', { name: /River Sand/ }).first().click();
+await page.waitForTimeout(1000);
+const application = await mainText();
+check('A raised query is promoted above the application details',
+  application.includes('The department has raised a query') &&
+  application.includes('Revised site plan required'));
+check('The app says where to respond rather than offering a control that cannot work',
+  application.includes('handled outside this app'));
+check('An application under review offers no approve or reject action',
+  (await page.getByRole('button', { name: /Approve|Reject/ }).count()) === 0,
+  'those are the department decisions, not the applicant\'s');
+check('A submitted application carries the project and package it was raised under',
+  application.includes('Pune Metro Line 3') && application.includes('Package C'));
+
+/* --- Creating an application --- */
+
+// Establish a package scope FIRST, so the context rule is actually exercised:
+// the form must not ask for what the user has already chosen, and the created
+// application must carry it anyway.
+await page.goto(BASE + '/projects', { waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+await page.getByRole('button', { name: /Mumbai/ }).click();
+await page.waitForTimeout(800);
+await page.getByRole('button', { name: /Package A/ }).click();
+await page.waitForTimeout(800);
+
+await page.goto(BASE + '/temporary-excavation', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+await page.getByRole('button', { name: 'New application' }).click();
+await page.waitForTimeout(900);
+check('A new application starts by asking where the excavation is',
+  (await mainText()).includes('Where will you excavate?'));
+check('The application form shows the package context it will attach',
+  (await page.textContent('header')).includes('Package A'));
+
+// Context is attached, never asked for.
+const applicationLabels = await page.$$eval('main label', (els) =>
+  els.map((e) => e.textContent.replace('*', '').trim()).filter(Boolean));
+check('The application form does not ask for project or package',
+  !applicationLabels.some((label) => /^project$|^package$/i.test(label)),
+  applicationLabels.join(' · '));
+
+// Validation stops an incomplete step.
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(400);
+check('An incomplete step cannot be advanced',
+  (await mainText()).includes('Enter the survey number'));
+
+await page.getByLabel(/Survey number/).fill('221/3');
+await page.getByLabel('Site address').fill('Survey No. 221/3, Vashind');
+await page.getByLabel('Taluka').fill('Shahapur');
+await page.getByLabel('District').fill('Thane');
+await page.getByLabel('PIN code').fill('421604');
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(600);
+check('Step two asks what will be extracted',
+  (await mainText()).includes('What will you extract?'));
+
+await page.selectOption('main select', { index: 3 });
+await page.locator('input[inputmode="decimal"]').first().fill('750');
+await page.getByLabel(/Area/).fill('2400');
+await page.getByLabel(/Depth/).fill('2');
+await page.getByLabel(/Purpose/).fill('Embankment filling for the widening works.');
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(600);
+check('Step three asks for the period and documents',
+  (await mainText()).includes('When, and with what documents?'));
+
+await page.getByLabel('From').fill('2026-09-15');
+await page.getByLabel('To').fill('2026-09-01');
+await page.getByRole('button', { name: 'Submit application' }).click();
+await page.waitForTimeout(500);
+check('An end date before the start date is refused',
+  (await mainText()).includes('cannot be before the start date'));
+
+await page.getByLabel('To').fill('2026-11-15');
+await page.selectOption('main select', 'SITE_PLAN');
+await page.waitForTimeout(300);
+check('An attached document is listed before submission',
+  (await mainText()).includes('Site plan'));
+
+await page.getByRole('button', { name: 'Submit application' }).click();
+await page.waitForTimeout(1700);
+check('Submitting an application confirms it was sent',
+  (await mainText()).includes('Application submitted'));
+
+await page.getByRole('button', { name: 'View application' }).click();
+await page.waitForTimeout(1200);
+const created = await mainText();
+check('The created application records the requirement',
+  created.includes('750 MT') && created.includes('221/3') && created.includes('2,400 sq m') ||
+  created.includes('750 MT') && created.includes('221/3') && created.includes('2400 sq m'));
+check('The created application carries the context it was raised in, unasked',
+  created.includes('Mumbai–Nashik Highway Widening') &&
+  created.includes('Package A — Km 12 to Km 28'),
+  'the form never asked for project or package, yet the record carries both');
+
+/* --- Closed to Normal Consumers by every route --- */
+
+await persona('Normal Consumer');
+for (const path of [
+  '/temporary-excavation',
+  '/temporary-excavation/new',
+  '/temporary-excavation/tea-001',
+]) {
+  await page.goto(BASE + path, { waitUntil: 'networkidle' });
+  check(`Consumer is redirected away from ${path}`,
+    page.url().endsWith('/home'), 'landed on ' + page.url().replace(BASE, ''));
+}
+
+/* ===========================================================================
  * ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
  * ---------------------------------------------------------------------------
  * Government departments, builders, contractors and any other organization

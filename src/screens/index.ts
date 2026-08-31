@@ -43,5 +43,9 @@ export {
   DeliveryTrackingScreen,
 } from './orders';
 export { MoreScreen } from './MoreScreen';
-export { TemporaryExcavationScreen } from './TemporaryExcavationScreen';
+export {
+  TemporaryExcavationScreen,
+  ApplicationDetailsScreen,
+  NewApplicationScreen,
+} from './excavation';
 export { NotFoundScreen } from './NotFoundScreen';

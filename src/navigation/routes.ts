@@ -48,6 +48,9 @@ export const ROUTES = {
 
   /** ORGANIZATION ONLY (Increment 7). Guarded by TEMPORARY_EXCAVATION. */
   temporaryExcavation: '/temporary-excavation',
+  newExcavationApplication: '/temporary-excavation/new',
+  excavationApplication: (applicationId: ID = ':applicationId') =>
+    `/temporary-excavation/${applicationId}`,
 
   more: '/more',
 } as const;

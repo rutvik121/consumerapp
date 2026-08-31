@@ -97,11 +97,11 @@ Full detail in [`docs/architecture.md`](docs/architecture.md).
 | 4 | Orders and transport | **Done** |
 | 5 | Receiving | **Done** |
 | 6 | Inventory and consumption | **Done** |
-| 7 | Temporary Excavation | Next |
-| 8 | Quality and hand-off | |
+| 7 | Temporary Excavation | **Done** |
+| 8 | Quality and hand-off | Next |
 
-Routes not yet built render an honest scaffold marker naming the increment that
-builds them and what will be on them. There are no placeholder dashboards.
+Every V1 flow is built. Increment 8 is a quality pass — accessibility, state
+coverage, and the hand-off documentation — not new features.
 
 ## Verifying the foundation
 
@@ -116,10 +116,11 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-158 checks, covering the full mineral lifecycle end to end: authentication,
-the Organization Home, the project hierarchy, acquisition through to a
-created enquiry, orders through to vehicle tracking, receiving through to the
-inventory it updates, and consumption drawing that inventory back down. The
+178 checks, covering every V1 flow end to end: authentication, the
+Organization Home, the project hierarchy, acquisition through to a created
+enquiry, orders through to vehicle tracking, receiving through to the
+inventory it updates, consumption drawing that inventory back down, and the
+organization-only Temporary Excavation workflow. The
 access-control and context assertions matter most, because they cover the
 rules most likely to break quietly months from now:
 

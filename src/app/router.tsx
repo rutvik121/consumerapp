@@ -31,6 +31,8 @@ import {
   SplashScreen,
   StockPointDetailsScreen,
   StockPointsScreen,
+  ApplicationDetailsScreen,
+  NewApplicationScreen,
   TemporaryExcavationScreen,
   WelcomeScreen,
 } from '@/screens';
@@ -170,6 +172,22 @@ export function AppRouter() {
             element={
               <RoleGuard capability="TEMPORARY_EXCAVATION">
                 <TemporaryExcavationScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.newExcavationApplication}
+            element={
+              <RoleGuard capability="TEMPORARY_EXCAVATION">
+                <NewApplicationScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.excavationApplication()}
+            element={
+              <RoleGuard capability="TEMPORARY_EXCAVATION">
+                <ApplicationDetailsScreen />
               </RoleGuard>
             }
           />

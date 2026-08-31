@@ -46,6 +46,8 @@ collect. It is not offered as an editable setting afterwards.
 | `/mineral` | session + `VIEW_MINERAL_TAB` |
 | `/orders` | session |
 | `/temporary-excavation` | session + `TEMPORARY_EXCAVATION` |
+| `/temporary-excavation/new` | session + `TEMPORARY_EXCAVATION` |
+| `/temporary-excavation/:applicationId` | session + `TEMPORARY_EXCAVATION` |
 | `/more` | session |
 
 A user without the capability is **redirected to Home**, not shown a "not

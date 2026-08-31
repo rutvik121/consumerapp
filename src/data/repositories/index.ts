@@ -1,4 +1,5 @@
 import type {
+  Address,
   ISODate,
   Quantity,
   UserType,
@@ -381,7 +382,96 @@ export const consumptionRepository = {
     ),
 };
 
+export interface CreateApplicationInput {
+  organizationId: ID;
+  /** Carried from operating context when present — never asked for again. */
+  projectId?: ID;
+  packageId?: ID;
+  mineralId: ID;
+  estimatedQuantity: Quantity;
+  purpose: string;
+  siteAddress: Address;
+  surveyNumber: string;
+  areaInSqm: number;
+  depthInMetres: number;
+  fromDate: ISODate;
+  toDate: ISODate;
+  documents: { fileName: string; documentType: string }[];
+  /** Submit immediately, or keep as a draft to finish later. */
+  submit: boolean;
+}
+
 export const temporaryExcavationRepository = {
+  /**
+   * Creates an application, optionally submitting it.
+   *
+   * ORGANIZATION-ONLY. Access is enforced by the TEMPORARY_EXCAVATION
+   * capability at the navigation and route level; by the time a call reaches
+   * here the caller has already been checked.
+   */
+  create: (input: CreateApplicationInput): Promise<TemporaryExcavationApplication> =>
+    request(() => {
+      const now = new Date().toISOString();
+      const sequence = String(db.temporaryExcavationApplications.length + 1401).padStart(6, '0');
+
+      const application: TemporaryExcavationApplication = {
+        id: `tea-${db.temporaryExcavationApplications.length + 1}-${Date.now()}`,
+        applicationNumber: input.submit
+          ? `TEA/2026/${sequence}`
+          : `TEA/2026/DRAFT-${sequence}`,
+        organizationId: input.organizationId,
+        ...(input.projectId ? { projectId: input.projectId } : {}),
+        ...(input.packageId ? { packageId: input.packageId } : {}),
+        mineralId: input.mineralId,
+        estimatedQuantity: input.estimatedQuantity,
+        purpose: input.purpose,
+        siteAddress: input.siteAddress,
+        /* PROVISIONAL: a real implementation geocodes the survey number. */
+        siteGeo: { latitude: 19.45, longitude: 73.33 },
+        surveyNumber: input.surveyNumber,
+        areaInSqm: input.areaInSqm,
+        depthInMetres: input.depthInMetres,
+        fromDate: input.fromDate,
+        toDate: input.toDate,
+        status: input.submit ? 'SUBMITTED' : 'DRAFT',
+        ...(input.submit ? { submittedAt: now } : {}),
+        statusUpdatedAt: now,
+        documents: input.documents.map((document, index) => ({
+          id: `doc-${Date.now()}-${index}`,
+          fileName: document.fileName,
+          documentType: document.documentType,
+          uploadedAt: now,
+        })),
+      };
+
+      db.temporaryExcavationApplications.unshift(application);
+      return application;
+    }),
+
+  /**
+   * Submits a draft.
+   *
+   * The ONLY status transition this app performs. Review, queries, approval
+   * and rejection belong to the department and arrive here as status — putting
+   * those in the applicant's hands would be a decision that is not theirs.
+   */
+  submit: (applicationId: ID): Promise<TemporaryExcavationApplication> =>
+    request(() => {
+      const application = db.temporaryExcavationApplications.find(
+        (candidate) => candidate.id === applicationId,
+      );
+      if (!application) throw new Error('Application not found');
+      if (application.status !== 'DRAFT') throw new Error('Only a draft can be submitted');
+
+      const now = new Date().toISOString();
+      application.status = 'SUBMITTED';
+      application.submittedAt = now;
+      application.statusUpdatedAt = now;
+      application.applicationNumber = application.applicationNumber.replace('DRAFT-', '');
+
+      return application;
+    }),
+
   /**
    * ORGANIZATION-ONLY. Callers must already hold the TEMPORARY_EXCAVATION
    * capability — access is enforced in navigation and route guards, not here.

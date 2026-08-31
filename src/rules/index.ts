@@ -17,6 +17,7 @@ export * from './attention';
 export * from './enquiry';
 export * from './orderFulfilment';
 export * from './receiving';
+export * from './excavation';
 export * from './discrepancyRules';
 export * from './statusPresentation';
 export * from './geo';

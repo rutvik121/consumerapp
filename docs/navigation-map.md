@@ -56,6 +56,8 @@ determines what steps 2 and 3 need to ask:
 | `/orders/:orderId` | Order Details | session |
 | `/deliveries/:deliveryId/tracking` | Vehicle Tracking | session |
 | `/temporary-excavation` | Temporary Excavation | `TEMPORARY_EXCAVATION` |
+| `/temporary-excavation/new` | New application | `TEMPORARY_EXCAVATION` |
+| `/temporary-excavation/:applicationId` | Application details | `TEMPORARY_EXCAVATION` |
 | `/more` | More | session |
 | `*` | Not found | session |
 
@@ -149,6 +151,21 @@ Consumption is a bottom sheet rather than a screen: it is a short, frequent
 task done while looking at the balance it draws down, and a full screen would
 push that balance out of sight at the moment it is needed to judge the number
 being typed.
+
+## Temporary Excavation — organization only
+
+```
+Applications → New application (site → excavation → period) → Submitted
+```
+
+Project and package are attached from the operating context and never asked
+for. An organization that reached the form from a package is applying for that
+package; one that did not is applying at organization level.
+
+**What this app owns:** preparing and submitting an application. Nothing after.
+Review, queries, approval and rejection are the department's and arrive here as
+status, which is why `DRAFT → SUBMITTED` is the only transition performed and
+why no approve, reject or respond-to-query control exists anywhere.
 
 ## Reserved for later increments
 
