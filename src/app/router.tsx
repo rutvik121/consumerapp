@@ -13,6 +13,7 @@ import {
   EnquiriesScreen,
   EnquiryDetailsScreen,
   HomeScreen,
+  InventoryBalanceScreen,
   InventoryScreen,
   LoginScreen,
   MineralScreen,
@@ -158,6 +159,7 @@ export function AppRouter() {
           <Route path={ROUTES.receive} element={<ReceiveScreen />} />
           <Route path={ROUTES.receiveDelivery()} element={<ReceiveDeliveryScreen />} />
           <Route path={ROUTES.inventory} element={<InventoryScreen />} />
+          <Route path={ROUTES.inventoryBalance()} element={<InventoryBalanceScreen />} />
 
           {/*
             ORGANIZATION ONLY — the rule this guard exists for.

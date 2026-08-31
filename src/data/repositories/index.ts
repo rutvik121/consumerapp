@@ -18,7 +18,12 @@ import type {
   TemporaryExcavationApplication,
   User,
 } from '@/domain';
-import { distanceInKm } from '@/rules';
+import {
+  addQuantity,
+  canRecordConsumption,
+  computeAvailableQuantity,
+  distanceInKm,
+} from '@/rules';
 import { request } from '../client';
 import { db } from '../db';
 
@@ -307,7 +312,67 @@ export const inventoryRepository = {
     request(() => db.inventoryBalances.find((balance) => balance.id === id) ?? null),
 };
 
+export interface RecordConsumptionInput {
+  inventoryBalanceId: ID;
+  recordedByUserId: ID;
+  quantity: Quantity;
+  purpose?: string;
+  remarks?: string;
+}
+
+export interface RecordConsumptionResult {
+  entry: ConsumptionEntry;
+  balance: InventoryBalance;
+  /** The balance remaining after this draw-down. */
+  availableQuantity: Quantity;
+}
+
 export const consumptionRepository = {
+  /**
+   * Records a draw-down against a balance.
+   *
+   *     Available Quantity → Enter Consumption → Remaining Quantity
+   *
+   * The policy decision — whether consumption may exceed what is available —
+   * is NOT made here. It lives in `canRecordConsumption()` in
+   * @/rules/inventoryRules, and is checked both by the screen (so the user is
+   * told before they act) and here (so the rule cannot be bypassed).
+   */
+  record: (input: RecordConsumptionInput): Promise<RecordConsumptionResult> =>
+    request(() => {
+      const balance = db.inventoryBalances.find(
+        (candidate) => candidate.id === input.inventoryBalanceId,
+      );
+      if (!balance) throw new Error('Inventory balance not found');
+
+      const check = canRecordConsumption(balance, input.quantity);
+      if (!check.allowed) throw new Error(check.reason ?? 'Consumption is not allowed');
+
+      const recordedAt = new Date().toISOString();
+
+      const entry: ConsumptionEntry = {
+        id: `con-${db.consumptionEntries.length + 1}-${Date.now()}`,
+        inventoryBalanceId: balance.id,
+        scope: balance.scope,
+        mineralId: balance.mineralId,
+        quantity: input.quantity,
+        recordedAt,
+        recordedByUserId: input.recordedByUserId,
+        ...(input.purpose ? { purpose: input.purpose } : {}),
+        ...(input.remarks ? { remarks: input.remarks } : {}),
+      };
+
+      db.consumptionEntries.unshift(entry);
+      balance.consumedQuantity = addQuantity(balance.consumedQuantity, input.quantity);
+      balance.lastUpdatedAt = recordedAt;
+
+      return {
+        entry,
+        balance,
+        availableQuantity: computeAvailableQuantity(balance),
+      };
+    }),
+
   listByBalance: (inventoryBalanceId: ID): Promise<ConsumptionEntry[]> =>
     request(() =>
       db.consumptionEntries

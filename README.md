@@ -96,8 +96,8 @@ Full detail in [`docs/architecture.md`](docs/architecture.md).
 | 3 | Mineral acquisition | **Done** |
 | 4 | Orders and transport | **Done** |
 | 5 | Receiving | **Done** |
-| 6 | Inventory and consumption | Next |
-| 7 | Temporary Excavation | |
+| 6 | Inventory and consumption | **Done** |
+| 7 | Temporary Excavation | Next |
 | 8 | Quality and hand-off | |
 
 Routes not yet built render an honest scaffold marker naming the increment that
@@ -116,10 +116,10 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-143 checks, covering authentication end to end, the Organization Home, the
-project hierarchy, mineral acquisition through to a created enquiry, orders
-through to vehicle tracking, and receiving through to the inventory it
-updates. The
+158 checks, covering the full mineral lifecycle end to end: authentication,
+the Organization Home, the project hierarchy, acquisition through to a
+created enquiry, orders through to vehicle tracking, receiving through to the
+inventory it updates, and consumption drawing that inventory back down. The
 access-control and context assertions matter most, because they cover the
 rules most likely to break quietly months from now:
 

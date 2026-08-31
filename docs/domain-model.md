@@ -58,7 +58,8 @@ which is why inventory is not built twice. Maps to a Dart sealed class.
 
 **Available quantity is derived, never stored.** `Received − Consumed =
 Available`, computed by `computeAvailableQuantity()`. A stored value could drift
-from the invariant.
+from the invariant. Receiving increases `receivedQuantity`; consumption
+increases `consumedQuantity`; nothing writes `available` because nothing can.
 
 **`DeliveryReceipt` stores the derived difference.** Unlike available quantity,
 the difference is persisted, because a receipt is an immutable audit record of

@@ -304,6 +304,40 @@ export const en = {
     },
   },
 
+  /** Inventory and consumption. Received − Consumed = Available. */
+  inventory: {
+    title: 'Inventory',
+    received: 'Received',
+    consumed: 'Consumed',
+    available: 'Available',
+    thisPackage: 'This package',
+    allPackages: 'All packages',
+    noStock: 'No inventory yet',
+    noStockBody: 'Mineral you receive will appear here, ready to draw down as you use it.',
+    noStockInScope: 'Nothing held for this package',
+    noStockInScopeBody: 'Receive a delivery against this package and it will appear here.',
+    balanceTitle: 'Mineral balance',
+    lastUpdated: 'Last updated',
+    recordConsumption: 'Record consumption',
+    history: 'Consumption history',
+    noHistory: 'Nothing recorded yet',
+    noHistoryBody: 'Consumption you record will be listed here.',
+    fullyConsumed: 'Fully consumed',
+  },
+
+  consumption: {
+    sheetTitle: 'Record consumption',
+    sheetBody: 'Enter the quantity used. This draws down the available balance.',
+    quantityLabel: 'Quantity used',
+    purposeLabel: 'Used for',
+    purposePlaceholder: 'Where or what it was used on',
+    remainingAfter: 'Remaining after this',
+    record: 'Record',
+    recording: 'Recording…',
+    recorded: 'Consumption recorded',
+    availableNow: 'Available',
+  },
+
   /** Authentication — Splash → Login/Register → Mobile → OTP → Experience. */
   auth: {
     welcomeTitle: 'Mineral, from source to site',

@@ -888,6 +888,102 @@ check('The order receiving status is recomputed from its deliveries',
   (await mainText()).includes('Discrepancy'));
 
 /* ===========================================================================
+ * INVENTORY AND CONSUMPTION
+ * ---------------------------------------------------------------------------
+ *     Received − Consumed = Available
+ *
+ * Three numbers, always together. Available alone invites "out of how much?",
+ * and that answer is what tells a site manager whether a package is running
+ * efficiently or bleeding mineral.
+ *
+ * As with receiving, navigation after sign-in stays client-side — a reload
+ * reseeds the in-memory database and would discard the consumption recorded.
+ * ======================================================================== */
+
+await persona('Organization');
+await page.waitForTimeout(1200);
+
+await page.goto(BASE + '/inventory', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1100);
+const inventoryText = await mainText();
+check('Inventory shows received, consumed and available together',
+  inventoryText.includes('Received') && inventoryText.includes('Consumed') &&
+  inventoryText.includes('Available'),
+  'available on its own invites "out of how much?"');
+check('Inventory lists balances per mineral',
+  inventoryText.includes('Crushed Stone Grit 20mm') && inventoryText.includes('River Sand'));
+
+// A depleted balance offers nothing to draw down.
+await page.getByRole('button', { name: /Black Trap Metal/ }).first().click();
+await page.waitForTimeout(1000);
+check('A fully consumed balance reports itself as such',
+  (await mainText()).includes('Fully consumed'));
+check('A fully consumed balance offers no consumption action',
+  (await page.getByRole('button', { name: 'Record consumption' }).count()) === 0);
+
+await page.goBack();
+await page.waitForTimeout(1000);
+
+/* --- Drawing down a balance --- */
+
+await page.getByRole('button', { name: /Crushed Stone Grit/ }).first().click();
+await page.waitForTimeout(1000);
+const balanceText = await mainText();
+check('A balance shows available, with received and consumed explaining it',
+  balanceText.includes('97') && balanceText.includes('32') && balanceText.includes('65'),
+  '97 received − 32 consumed = 65 available');
+check('A balance shows the consumption history behind its consumed figure',
+  balanceText.includes('Consumption history') && balanceText.includes('Sub-base layer'),
+  'a total nobody can decompose is a total nobody trusts');
+
+await page.getByRole('button', { name: 'Record consumption' }).click();
+await page.waitForSelector('[role="dialog"]');
+const sheet = page.getByRole('dialog');
+check('The consumption sheet keeps the available balance in view',
+  (await sheet.textContent()).includes('65 MT'));
+
+// The consequence is shown before the commitment.
+await page.locator('[role="dialog"] input[inputmode="decimal"]').fill('20');
+await page.waitForTimeout(400);
+check('Remaining quantity updates live as the amount is typed',
+  (await sheet.textContent()).includes('45 MT'), '65 − 20 = 45');
+
+// The policy is enforced, and the reason is specific.
+await page.locator('[role="dialog"] input[inputmode="decimal"]').fill('9999');
+await page.waitForTimeout(400);
+check('Consuming more than is available is refused with a specific reason',
+  (await sheet.textContent()).includes('Only 65 MT is available'));
+check('Recording is blocked while the amount is invalid',
+  await sheet.getByRole('button', { name: 'Record' }).isDisabled());
+
+await page.locator('[role="dialog"] input[inputmode="decimal"]').fill('20');
+await page.waitForTimeout(300);
+await sheet.getByRole('button', { name: 'Record' }).click();
+await page.waitForTimeout(1600);
+
+const afterConsumption = await mainText();
+check('Recording consumption draws down the available balance',
+  afterConsumption.includes('45'), '65 − 20 = 45');
+check('Recording consumption raises the consumed figure',
+  afterConsumption.includes('52'), '32 + 20 = 52');
+check('The new entry appears in the consumption history',
+  (await page.$$eval('main button', (els) =>
+    els.filter((e) => e.textContent.includes('20 MT')).length)) >= 0);
+
+/* --- The same screens without a hierarchy --- */
+
+await persona('Normal Consumer');
+await page.goto(BASE + '/inventory', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1100);
+const consumerInventory = await mainText();
+check('Consumer inventory shows their own balance',
+  consumerInventory.includes('River Sand') && consumerInventory.includes('15'),
+  '24 received − 9 consumed = 15 available');
+check('Consumer inventory offers no package scope switcher',
+  !consumerInventory.includes('This package') && !consumerInventory.includes('All packages'),
+  'a consumer has no hierarchy to scope by');
+
+/* ===========================================================================
  * ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
  * ---------------------------------------------------------------------------
  * Government departments, builders, contractors and any other organization

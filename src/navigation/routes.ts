@@ -44,6 +44,7 @@ export const ROUTES = {
   receive: '/receive',
   receiveDelivery: (deliveryId: ID = ':deliveryId') => `/receive/${deliveryId}`,
   inventory: '/inventory',
+  inventoryBalance: (balanceId: ID = ':balanceId') => `/inventory/${balanceId}`,
 
   /** ORGANIZATION ONLY (Increment 7). Guarded by TEMPORARY_EXCAVATION. */
   temporaryExcavation: '/temporary-excavation',

@@ -73,6 +73,7 @@ they are already inside.
 | `/receive` | Receive mineral — vehicles at your site | session |
 | `/receive/:deliveryId` | Receiving flow (scan → validate → quantity) | session |
 | `/inventory` | Inventory | session |
+| `/inventory/:balanceId` | Mineral balance and consumption | session |
 
 ## Where context is set
 
@@ -132,6 +133,22 @@ Confirming a receipt is the app's most consequential write: it records the
 receipt, settles the delivery, closes the movement record, recomputes the
 order's receiving status from all its deliveries, and credits inventory with
 the **received** quantity. One call, because those are one operational fact.
+
+## Inventory and consumption
+
+```
+Inventory → Mineral balance → Record consumption → Remaining quantity
+```
+
+Received − Consumed = Available, shown as three numbers together everywhere.
+An Organization operating inside a package sees that package by default with
+one tap to widen to the whole organization; a Normal Consumer has no hierarchy
+and so has no switcher.
+
+Consumption is a bottom sheet rather than a screen: it is a short, frequent
+task done while looking at the balance it draws down, and a full screen would
+push that balance out of sight at the moment it is needed to judge the number
+being typed.
 
 ## Reserved for later increments
 
