@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "build:standalone": "VITE_HASH_ROUTER=true tsc -b && VITE_HASH_ROUTER=true vite build --outDir dist-standalone",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {

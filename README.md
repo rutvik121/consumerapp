@@ -23,6 +23,7 @@ npm run dev        # http://localhost:5173
 | `npm run build` | Typecheck + production build |
 | `npm run typecheck` | Types only |
 | `npm run preview` | Serve the production build |
+| `npm run build:standalone` | Single-file static build (hash routing) |
 
 Open it on a phone, or in a desktop browser where it renders inside a device
 frame.
