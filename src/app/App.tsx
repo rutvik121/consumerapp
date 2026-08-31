@@ -13,6 +13,7 @@ import { AppRouter } from './router';
  * there is no server to rewrite unknown paths back to index.html, so a
  * refresh or a deep link would otherwise 404. Same app either way.
  */
+
 const Router = import.meta.env.VITE_HASH_ROUTER === 'true' ? HashRouter : BrowserRouter;
 
 export function App() {
