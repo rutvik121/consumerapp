@@ -51,6 +51,11 @@ export const ROUTES = {
   newExcavationApplication: '/temporary-excavation/new',
   excavationApplication: (applicationId: ID = ':applicationId') =>
     `/temporary-excavation/${applicationId}`,
+  /** Payment is always FOR an application, and always for one purpose. */
+  applicationPayment: (
+    applicationId: ID = ':applicationId',
+    purpose: string = ':purpose',
+  ) => `/temporary-excavation/${applicationId}/pay/${purpose}`,
 
   more: '/more',
 } as const;

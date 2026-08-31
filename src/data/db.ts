@@ -9,6 +9,7 @@ import type {
   Package,
   Project,
   StockPoint,
+  Payment,
   TemporaryExcavationApplication,
   User,
 } from '@/domain';
@@ -42,6 +43,7 @@ export interface Database {
   inventoryBalances: InventoryBalance[];
   consumptionEntries: ConsumptionEntry[];
   temporaryExcavationApplications: TemporaryExcavationApplication[];
+  payments: Payment[];
 }
 
 function seed(): Database {
@@ -58,6 +60,7 @@ function seed(): Database {
     inventoryBalances: fixtures.inventoryBalances,
     consumptionEntries: fixtures.consumptionEntries,
     temporaryExcavationApplications: fixtures.temporaryExcavationApplications,
+    payments: fixtures.payments,
   });
 }
 

@@ -26,3 +26,4 @@ export * from './deliveries';
 export * from './inventory';
 export * from './consumption';
 export * from './temporaryExcavation';
+export * from './payments';

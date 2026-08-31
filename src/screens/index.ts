@@ -47,5 +47,6 @@ export {
   TemporaryExcavationScreen,
   ApplicationDetailsScreen,
   NewApplicationScreen,
+  PaymentScreen,
 } from './excavation';
 export { NotFoundScreen } from './NotFoundScreen';

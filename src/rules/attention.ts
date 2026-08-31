@@ -1,4 +1,5 @@
 import type { Delivery, ID, TemporaryExcavationApplication } from '@/domain';
+import { formatMoney } from './excavation';
 import { formatQuantity } from './quantity';
 import type { StatusTone } from './statusPresentation';
 
@@ -20,7 +21,9 @@ export type AttentionKind =
   /** Received quantity did not match dispatched quantity. */
   | 'QUANTITY_DISCREPANCY'
   /** A Temporary Excavation application has a query to answer. */
-  | 'APPLICATION_QUERY_RAISED';
+  | 'APPLICATION_QUERY_RAISED'
+  /** A demand note is payable before the excavation order can be issued. */
+  | 'DEMAND_NOTE_DUE';
 
 export interface AttentionItem {
   id: ID;
@@ -55,12 +58,16 @@ export interface AttentionItem {
  *      the permit has a validity window.
  *   2. A discrepancy has been recorded. It is a compliance signal and someone
  *      has to account for it.
- *   3. An application query is blocking approval, but nothing is standing idle.
+ *   3. A demand note is due — money owed, with a deadline, and the excavation
+ *      order is blocked until it is paid.
+ *   4. An application query is blocking review, but nothing is standing idle
+ *      and nothing has a payment deadline attached.
  */
 const PRIORITY: Record<AttentionKind, number> = {
   DELIVERY_AWAITING_RECEIPT: 1,
   QUANTITY_DISCREPANCY: 2,
-  APPLICATION_QUERY_RAISED: 3,
+  DEMAND_NOTE_DUE: 3,
+  APPLICATION_QUERY_RAISED: 4,
 };
 
 export interface AttentionInput {
@@ -114,6 +121,26 @@ export function deriveAttentionItems({
   }
 
   for (const application of applications) {
+    const scopeIds = {
+      applicationId: application.id,
+      ...(application.projectId ? { projectId: application.projectId } : {}),
+      ...(application.packageId ? { packageId: application.packageId } : {}),
+    };
+
+    if (application.status === 'DEMAND_NOTE_ISSUED' && application.demandNote) {
+      items.push({
+        id: `attn-demand-note-${application.id}`,
+        kind: 'DEMAND_NOTE_DUE',
+        title: `Demand note of ${formatMoney(application.demandNote.totalAmount)} is due`,
+        subject: application.demandNote.demandNoteNumber,
+        scope: `Pay by ${formatDueDate(application.demandNote.dueDate)} to receive the excavation order`,
+        tone: 'warning',
+        priority: PRIORITY.DEMAND_NOTE_DUE,
+        ...scopeIds,
+      });
+      continue;
+    }
+
     if (application.status !== 'QUERY_RAISED') continue;
 
     items.push({
@@ -121,12 +148,10 @@ export function deriveAttentionItems({
       kind: 'APPLICATION_QUERY_RAISED',
       title: 'Query raised on an application',
       subject: application.applicationNumber,
-      scope: application.statusRemarks ?? 'A response is required before approval.',
+      scope: application.statusRemarks ?? 'A response is required before review continues.',
       tone: 'warning',
       priority: PRIORITY.APPLICATION_QUERY_RAISED,
-      applicationId: application.id,
-      ...(application.projectId ? { projectId: application.projectId } : {}),
-      ...(application.packageId ? { packageId: application.packageId } : {}),
+      ...scopeIds,
     });
   }
 
@@ -136,7 +161,7 @@ export function deriveAttentionItems({
 /** Applications that are still in flight — neither approved nor rejected. */
 export function isApplicationActive(application: TemporaryExcavationApplication): boolean {
   return (
-    application.status !== 'APPROVED' &&
+    application.status !== 'ORDER_ISSUED' &&
     application.status !== 'REJECTED'
   );
 }
@@ -149,4 +174,8 @@ export function isDeliveryActive(delivery: Delivery): boolean {
 /** Can this delivery be received right now? Drives the Receive action. */
 export function canReceiveDelivery(delivery: Delivery): boolean {
   return delivery.status === 'ARRIVED_AT_DESTINATION';
+}
+
+function formatDueDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }

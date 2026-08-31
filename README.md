@@ -116,11 +116,12 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-178 checks, covering every V1 flow end to end: authentication, the
+195 checks, covering every V1 flow end to end: authentication, the
 Organization Home, the project hierarchy, acquisition through to a created
 enquiry, orders through to vehicle tracking, receiving through to the
 inventory it updates, consumption drawing that inventory back down, and the
-organization-only Temporary Excavation workflow. The
+organization-only Temporary Excavation workflow through both of its payment
+gates. The
 access-control and context assertions matter most, because they cover the
 rules most likely to break quietly months from now:
 
@@ -165,7 +166,11 @@ question it depends on — see the table in
 - **English only.** Marathi is not implemented; the seam for it is in
   `src/content/`.
 - **Light theme only**, by decision rather than omission.
-- **No pricing or payment** anywhere — consistent with "not a marketplace".
+- **No mineral pricing** anywhere — no rate cards, no quotes, consistent with
+  "not a marketplace". Money enters only as the two statutory fees on the
+  Temporary Excavation workflow.
+- **Payment gateway is simulated**, but the shape is real: a payment is
+  initiated, control leaves the app, and a result is reconciled afterwards.
 - **QR scanning is simulated** (mock scan plus manual permit entry). The
   *validation logic* is real.
 - **Operational data is in-memory** and resets on reload. Session and

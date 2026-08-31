@@ -33,6 +33,7 @@ import {
   StockPointsScreen,
   ApplicationDetailsScreen,
   NewApplicationScreen,
+  PaymentScreen,
   TemporaryExcavationScreen,
   WelcomeScreen,
 } from '@/screens';
@@ -188,6 +189,18 @@ export function AppRouter() {
             element={
               <RoleGuard capability="TEMPORARY_EXCAVATION">
                 <ApplicationDetailsScreen />
+              </RoleGuard>
+            }
+          />
+          {/*
+            Payment is part of the organization-only workflow and carries the
+            same guard. A consumer has no application to pay for.
+          */}
+          <Route
+            path={ROUTES.applicationPayment()}
+            element={
+              <RoleGuard capability="TEMPORARY_EXCAVATION">
+                <PaymentScreen />
               </RoleGuard>
             }
           />

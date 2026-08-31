@@ -22,6 +22,10 @@ StockPoint ──► Enquiry ──► Order ──► Delivery ──► Delive
                                                 ConsumptionEntry
 
 Organization ──► TemporaryExcavationApplication   (organization only)
+                          │
+                          ├── Payment (APPLICATION_FEE) ──► SUBMITTED
+                          ├── DemandNote
+                          └── Payment (DEMAND_NOTE) ──► ExcavationOrder
 ```
 
 Follow any id in the fixtures and it resolves in another file. That connected

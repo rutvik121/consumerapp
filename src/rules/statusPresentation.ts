@@ -85,7 +85,9 @@ const TEMPORARY_EXCAVATION: Record<TemporaryExcavationStatus, StatusPresentation
   SUBMITTED: { label: 'Submitted', tone: 'info' },
   UNDER_REVIEW: { label: 'Under review', tone: 'info' },
   QUERY_RAISED: { label: 'Query raised', tone: 'warning' },
-  APPROVED: { label: 'Approved', tone: 'success' },
+  /* The applicant owes money — the same tone as any other "you must act". */
+  DEMAND_NOTE_ISSUED: { label: 'Payment due', tone: 'warning' },
+  ORDER_ISSUED: { label: 'Order issued', tone: 'success' },
   REJECTED: { label: 'Rejected', tone: 'danger' },
 };
 

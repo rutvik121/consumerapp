@@ -1076,7 +1076,7 @@ check('Step three asks for the period and documents',
 
 await page.getByLabel('From').fill('2026-09-15');
 await page.getByLabel('To').fill('2026-09-01');
-await page.getByRole('button', { name: 'Submit application' }).click();
+await page.getByRole('button', { name: /Pay & submit/ }).click();
 await page.waitForTimeout(500);
 check('An end date before the start date is refused',
   (await mainText()).includes('cannot be before the start date'));
@@ -1087,21 +1087,104 @@ await page.waitForTimeout(300);
 check('An attached document is listed before submission',
   (await mainText()).includes('Site plan'));
 
-await page.getByRole('button', { name: 'Submit application' }).click();
-await page.waitForTimeout(1700);
-check('Submitting an application confirms it was sent',
-  (await mainText()).includes('Application submitted'));
+/* --- PAYMENT GATE 1: the application fee submits the application --- */
+
+await page.getByRole('button', { name: /Pay & submit/ }).click();
+await page.waitForTimeout(1500);
+check('Completing the form leads to payment, not straight to submission',
+  page.url().includes('/pay/application-fee'), page.url().replace(BASE, ''));
+
+const feeSummary = await mainText();
+check('The fee screen states what is payable',
+  feeSummary.includes('Application fee') && feeSummary.includes('₹1,000'));
+check('The fee screen states that paying submits the application',
+  feeSummary.includes('submitted automatically once the fee is paid'));
+
+// A failed payment must change nothing about the application.
+await page.getByRole('button', { name: /Simulate a failed payment/ }).click();
+await page.waitForTimeout(3200);
+check('A failed payment is reported and takes no money',
+  (await mainText()).includes('Payment failed') &&
+  (await mainText()).includes('No money has been taken'));
 
 await page.getByRole('button', { name: 'View application' }).click();
+await page.waitForTimeout(1300);
+check('A failed payment leaves the application unsubmitted',
+  (await mainText()).includes('Application fee not yet paid'),
+  'a failed payment must never look like a successful one');
+
+// Now pay it properly.
+await page.getByRole('button', { name: /Pay & submit/ }).click();
 await page.waitForTimeout(1200);
+await page.getByRole('button', { name: /Proceed to pay/ }).click();
+check('The gateway hand-off is shown before the result',
+  (await mainText()).includes('Redirecting to secure payment gateway'));
+await page.waitForTimeout(3200);
+
+const paid = await mainText();
+check('A successful payment issues a receipt',
+  paid.includes('Payment successful') && paid.includes('RCPT/'));
+check('The receipt explains what the payment unlocked',
+  paid.includes('goes to the department for review'));
+
+await page.getByRole('button', { name: 'View application' }).click();
+await page.waitForTimeout(1300);
 const created = await mainText();
-check('The created application records the requirement',
-  created.includes('750 MT') && created.includes('221/3') && created.includes('2,400 sq m') ||
-  created.includes('750 MT') && created.includes('221/3') && created.includes('2400 sq m'));
+check('Paying the application fee submits the application automatically',
+  created.includes('Submitted') && !created.includes('Application fee not yet paid'),
+  'there is no separate submit step behind the payment');
+check('The submitted application records the requirement',
+  created.includes('750 MT') && created.includes('221/3'));
 check('The created application carries the context it was raised in, unasked',
   created.includes('Mumbai–Nashik Highway Widening') &&
   created.includes('Package A — Km 12 to Km 28'),
   'the form never asked for project or package, yet the record carries both');
+check('The application lists the payment that submitted it',
+  created.includes('₹1,000') && created.includes('Application fee'));
+
+/* --- PAYMENT GATE 2: the demand note issues the excavation order --- */
+
+await page.getByRole('link', { name: 'Home' }).click();
+await page.waitForTimeout(1400);
+check('A demand note that is due asks for attention on Home',
+  (await mainText()).includes('Demand note of ₹2,68,800 is due'),
+  'money owed, with a deadline, belongs in Attention Required');
+
+await page.goto(BASE + '/temporary-excavation', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1000);
+await page.getByRole('button', { name: /Murum · 600/ }).first().click();
+await page.waitForTimeout(1200);
+const demandNote = await mainText();
+check('A demand note is shown broken down, not as one figure',
+  demandNote.includes('Royalty') &&
+  demandNote.includes('District Mineral Foundation') &&
+  demandNote.includes('District cess'),
+  'an applicant checking against their own estimate needs the components');
+check('The demand note totals correctly',
+  demandNote.includes('₹2,40,000') && demandNote.includes('₹24,000') &&
+  demandNote.includes('₹4,800') && demandNote.includes('₹2,68,800'),
+  '240000 + 24000 + 4800 = 268800');
+check('The demand note states what paying it unlocks',
+  demandNote.includes('receive your excavation order'));
+
+await page.getByRole('button', { name: /Pay demand note/ }).click();
+await page.waitForTimeout(1200);
+await page.getByRole('button', { name: /Proceed to pay/ }).click();
+await page.waitForTimeout(3400);
+check('Paying the demand note succeeds',
+  (await mainText()).includes('Payment successful'));
+
+await page.getByRole('button', { name: 'View application' }).click();
+await page.waitForTimeout(1300);
+const ordered = await mainText();
+check('Paying the demand note issues the excavation order',
+  ordered.includes('Order issued') && ordered.includes('Excavation order') &&
+  ordered.includes('EXO/'));
+check('The excavation order states what it permits and for how long',
+  ordered.includes('Permitted quantity') && ordered.includes('600 MT') &&
+  ordered.includes('Valid until'));
+check('The application shows both payments that got it there',
+  ordered.includes('Application fee') && ordered.includes('Demand note'));
 
 /* --- Closed to Normal Consumers by every route --- */
 

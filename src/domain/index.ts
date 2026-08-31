@@ -10,7 +10,7 @@
  * The twelve V1 entities:
  *   User · Organization · Project · Package · StockPoint · Mineral ·
  *   Enquiry · Order · Delivery · Inventory · Consumption ·
- *   TemporaryExcavationApplication
+ *   TemporaryExcavationApplication · Payment
  */
 
 export * from './common';
@@ -26,3 +26,4 @@ export * from './delivery';
 export * from './inventory';
 export * from './consumption';
 export * from './temporaryExcavation';
+export * from './payment';

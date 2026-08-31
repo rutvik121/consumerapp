@@ -30,6 +30,21 @@ export interface Quantity {
   unit: MineralUnit;
 }
 
+/**
+ * A statutory amount in Indian rupees.
+ *
+ * NOTE ON PRICING: the app still has NO mineral pricing — no rate cards, no
+ * quotes, no marketplace. Money enters the product only as government fees on
+ * the Temporary Excavation workflow: the application fee paid before
+ * submission, and the demand note paid before the excavation order is issued.
+ * Those two are statutory charges, not a price for mineral.
+ */
+export interface Money {
+  /** Whole rupees. Statutory fees are not quoted in paise. */
+  amount: number;
+  currency: 'INR';
+}
+
 export interface GeoPoint {
   latitude: number;
   longitude: number;

@@ -58,6 +58,7 @@ determines what steps 2 and 3 need to ask:
 | `/temporary-excavation` | Temporary Excavation | `TEMPORARY_EXCAVATION` |
 | `/temporary-excavation/new` | New application | `TEMPORARY_EXCAVATION` |
 | `/temporary-excavation/:applicationId` | Application details | `TEMPORARY_EXCAVATION` |
+| `/temporary-excavation/:applicationId/pay/:purpose` | Payment | `TEMPORARY_EXCAVATION` |
 | `/more` | More | session |
 | `*` | Not found | session |
 
@@ -155,17 +156,31 @@ being typed.
 ## Temporary Excavation — organization only
 
 ```
-Applications → New application (site → excavation → period) → Submitted
+Applications → New application (site → excavation → period)
+             → Pay application fee → SUBMITTED (automatic)
+             → [department review]
+             → Demand note issued → Pay demand note → ORDER ISSUED
 ```
+
+**The workflow is gated by two payments**, and they are the only two points
+where the applicant advances the status:
+
+| Payment | Paid when | Consequence |
+|---|---|---|
+| Application fee | Before submission | The application is submitted **automatically** — there is no separate submit step behind it |
+| Demand note | After the department raises it | The **excavation order** is issued |
+
+A failed payment changes nothing about the application: it must never be left
+looking paid for when it was not.
 
 Project and package are attached from the operating context and never asked
 for. An organization that reached the form from a package is applying for that
 package; one that did not is applying at organization level.
 
-**What this app owns:** preparing and submitting an application. Nothing after.
-Review, queries, approval and rejection are the department's and arrive here as
-status, which is why `DRAFT → SUBMITTED` is the only transition performed and
-why no approve, reject or respond-to-query control exists anywhere.
+**What this app owns:** preparing the application, and the two payments.
+Everything between them — review, queries, raising the demand note, rejection —
+is the department's and arrives here as status. That is why no approve, reject
+or respond-to-query control exists anywhere.
 
 ## Reserved for later increments
 

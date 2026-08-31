@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, FileText, X } from 'lucide-react';
+import { FileText, X } from 'lucide-react';
 import {
   APPLICATION_STEPS,
   type ApplicationDraft,
@@ -55,7 +55,6 @@ export function NewApplicationScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [documents, setDocuments] = useState<AttachedDocument[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [created, setCreated] = useState<{ id: string; submitted: boolean } | null>(null);
 
   const [draft, setDraft] = useState<ApplicationDraft>({
     mineralId: '',
@@ -88,7 +87,13 @@ export function NewApplicationScreen() {
     if (!isLastStep) setStepIndex((index) => index + 1);
   }
 
-  async function persist(submit: boolean) {
+  /**
+   * Creates the application as a DRAFT and hands off to payment.
+   *
+   * Nothing is submitted here. Paying the application fee is what submits it,
+   * so this screen's job ends at "there is now something to pay for".
+   */
+  async function persist(goToPayment: boolean) {
     const found = validateApplicationStep(step, draft);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
@@ -117,50 +122,17 @@ export function NewApplicationScreen() {
         fromDate: draft.fromDate,
         toDate: draft.toDate,
         documents,
-        submit,
       });
 
-      setCreated({ id: application.id, submitted: submit });
+      navigate(
+        goToPayment
+          ? ROUTES.applicationPayment(application.id, 'application-fee')
+          : ROUTES.excavationApplication(application.id),
+        { replace: true },
+      );
     } finally {
       setSubmitting(false);
     }
-  }
-
-  /* ---------- Done ---------- */
-  if (created) {
-    return (
-      <Screen title={created.submitted ? t.excavation.createdTitle : t.excavation.draftedTitle}>
-        <div className="flex flex-col items-center px-6 py-16 text-center">
-          <span className="mb-4 flex size-14 items-center justify-center rounded-full bg-success-50 text-success-600">
-            <CheckCircle2 size={28} aria-hidden />
-          </span>
-          <h2 className="text-title-lg text-ink">
-            {created.submitted ? t.excavation.createdTitle : t.excavation.draftedTitle}
-          </h2>
-          <p className="mt-2 max-w-[34ch] text-body text-ink-secondary">
-            {created.submitted ? t.excavation.createdBody : t.excavation.draftedBody}
-          </p>
-
-          <div className="mt-8 w-full space-y-3">
-            <Button
-              size="lg"
-              fullWidth
-              onClick={() => navigate(ROUTES.excavationApplication(created.id), { replace: true })}
-            >
-              {t.excavation.viewApplication}
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              fullWidth
-              onClick={() => navigate(ROUTES.temporaryExcavation, { replace: true })}
-            >
-              {t.excavation.title}
-            </Button>
-          </div>
-        </div>
-      </Screen>
-    );
   }
 
   return (
@@ -172,7 +144,7 @@ export function NewApplicationScreen() {
         isLastStep ? (
           <div className="space-y-2">
             <Button size="lg" fullWidth loading={submitting} onClick={() => persist(true)}>
-              {submitting ? t.excavation.submitting : t.excavation.submitDraft}
+              {submitting ? t.excavation.submitting : t.excavation.payAndSubmit}
             </Button>
             <Button variant="ghost" fullWidth disabled={submitting} onClick={() => persist(false)}>
               {t.excavation.saveDraft}

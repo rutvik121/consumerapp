@@ -22,6 +22,7 @@ import type {
 import {
   addQuantity,
   canRecordConsumption,
+  computeApplicationFee,
   computeAvailableQuantity,
   distanceInKm,
 } from '@/rules';
@@ -44,6 +45,7 @@ import { db } from '../db';
 
 export * from './authRepository';
 export * from './receivingRepository';
+export * from './paymentRepository';
 
 export const userRepository = {
   getById: (id: ID): Promise<User | null> =>
@@ -397,8 +399,6 @@ export interface CreateApplicationInput {
   fromDate: ISODate;
   toDate: ISODate;
   documents: { fileName: string; documentType: string }[];
-  /** Submit immediately, or keep as a draft to finish later. */
-  submit: boolean;
 }
 
 export const temporaryExcavationRepository = {
@@ -416,9 +416,9 @@ export const temporaryExcavationRepository = {
 
       const application: TemporaryExcavationApplication = {
         id: `tea-${db.temporaryExcavationApplications.length + 1}-${Date.now()}`,
-        applicationNumber: input.submit
-          ? `TEA/2026/${sequence}`
-          : `TEA/2026/DRAFT-${sequence}`,
+        /* Created as a draft. Paying the application fee is what submits it,
+           and that is where the number loses its DRAFT prefix. */
+        applicationNumber: `TEA/2026/DRAFT-${sequence}`,
         organizationId: input.organizationId,
         ...(input.projectId ? { projectId: input.projectId } : {}),
         ...(input.packageId ? { packageId: input.packageId } : {}),
@@ -433,8 +433,8 @@ export const temporaryExcavationRepository = {
         depthInMetres: input.depthInMetres,
         fromDate: input.fromDate,
         toDate: input.toDate,
-        status: input.submit ? 'SUBMITTED' : 'DRAFT',
-        ...(input.submit ? { submittedAt: now } : {}),
+        applicationFee: computeApplicationFee(),
+        status: 'DRAFT',
         statusUpdatedAt: now,
         documents: input.documents.map((document, index) => ({
           id: `doc-${Date.now()}-${index}`,
@@ -448,29 +448,6 @@ export const temporaryExcavationRepository = {
       return application;
     }),
 
-  /**
-   * Submits a draft.
-   *
-   * The ONLY status transition this app performs. Review, queries, approval
-   * and rejection belong to the department and arrive here as status — putting
-   * those in the applicant's hands would be a decision that is not theirs.
-   */
-  submit: (applicationId: ID): Promise<TemporaryExcavationApplication> =>
-    request(() => {
-      const application = db.temporaryExcavationApplications.find(
-        (candidate) => candidate.id === applicationId,
-      );
-      if (!application) throw new Error('Application not found');
-      if (application.status !== 'DRAFT') throw new Error('Only a draft can be submitted');
-
-      const now = new Date().toISOString();
-      application.status = 'SUBMITTED';
-      application.submittedAt = now;
-      application.statusUpdatedAt = now;
-      application.applicationNumber = application.applicationNumber.replace('DRAFT-', '');
-
-      return application;
-    }),
 
   /**
    * ORGANIZATION-ONLY. Callers must already hold the TEMPORARY_EXCAVATION
