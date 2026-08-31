@@ -80,7 +80,9 @@ computes it against the caller's operating context.
 | All status vocabularies | Real status values not yet supplied | Increment 3 |
 | `EnquiryStatus.CONVERTED_TO_ORDER` | Is enquiry → order automatic, or quoted/confirmed first? | Increment 3 |
 | No price fields anywhere | Is pricing in scope at all? | Increment 3 |
-| `TemporaryExcavationApplication` fields | Real form field list unknown | Increment 7 |
+| `TemporaryExcavationApplication` validation formats | Field set now mirrors the web form; the ID-proof patterns, area and depth limits are still modelled rather than confirmed | Before production |
+| `APPLICATION_DOCUMENTS` required set | Which documents the department actually mandates | Before production |
+| `fixtures/locations.ts` | A four-district working subset; the real location master covers all 36 | Before production |
 | `DiscrepancyReason` | Is a reason required? Rejectable? Downstream effect? | Increment 5 |
 | `MineralUnit` includes BRASS/CUM | Maharashtra often uses brass for sand/aggregate | Increment 3 |
 | `NormalConsumerUser.deliveryAddress` | What is the real consumer destination concept? | Increment 3 |

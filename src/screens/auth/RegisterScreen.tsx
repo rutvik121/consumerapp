@@ -231,7 +231,7 @@ export function RegisterScreen() {
                 setDelivery((prev) => ({ ...prev, addressLine: event.target.value }))
               }
             />
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Input
                 label={t.auth.talukaLabel}
                 value={delivery.taluka}

@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Lock, ShieldAlert } from 'lucide-react';
-import type { Payment, PaymentPurpose } from '@/domain';
-import { formatMoney } from '@/rules';
+import type { Payment, PaymentPurpose, TemporaryExcavationApplication } from '@/domain';
+import { formatMoney, statusPresentation } from '@/rules';
 import {
   Button,
   DetailList,
   ErrorState,
   LoadingState,
   SectionHeader,
+  StatusBadge,
   Surface,
   cn,
 } from '@/design-system';
@@ -44,6 +45,9 @@ export function PaymentScreen() {
   const [stage, setStage] = useState<Stage>('SUMMARY');
   const [payment, setPayment] = useState<Payment | null>(null);
   const [failNext, setFailNext] = useState(false);
+  /* The application AFTER the payment settled — its number and status both
+     change on success, and the copy loaded before the payment is now stale. */
+  const [settled, setSettled] = useState<TemporaryExcavationApplication | null>(null);
 
   const paymentPurpose: PaymentPurpose =
     purpose === 'demand-note' ? 'DEMAND_NOTE' : 'APPLICATION_FEE';
@@ -71,6 +75,7 @@ export function PaymentScreen() {
         outcome: failNext ? 'FAILED' : 'SUCCESS',
       });
       setPayment(result.payment);
+      setSettled(result.application);
       setStage(result.payment.status === 'SUCCESS' ? 'SUCCESS' : 'FAILED');
     }, REDIRECT_MS);
 
@@ -140,6 +145,35 @@ export function PaymentScreen() {
 
           {succeeded ? (
             <>
+              {/* What was just created, so the applicant leaves with the
+                  reference number rather than having to go and find it. */}
+              <SectionHeader title={t.excavation.applicationInformation} />
+              <Surface variant="outlined" rounded className="overflow-hidden">
+                <DetailList
+                  items={[
+                    {
+                      label: t.excavation.title,
+                      value: (settled ?? application).applicationNumber,
+                      numeric: true,
+                    },
+                    ...((settled ?? application).submittedAt
+                      ? [
+                          {
+                            label: t.excavation.submittedOn,
+                            value: formatDateTime((settled ?? application).submittedAt as string),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+                <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3">
+                  <span className="text-body-sm text-ink-secondary">{t.fields.status}</span>
+                  <StatusBadge
+                    {...statusPresentation.temporaryExcavation((settled ?? application).status)}
+                  />
+                </div>
+              </Surface>
+
               <SectionHeader title={t.payment.receipt} />
               <Surface variant="outlined" rounded className="overflow-hidden">
                 <DetailList

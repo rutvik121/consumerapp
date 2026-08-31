@@ -33,6 +33,7 @@ export { Textarea, type TextareaProps } from './Textarea';
 export { DetailList, type DetailItem } from './DetailList';
 export { OtpInput, type OtpInputProps } from './OtpInput';
 export { ChoiceRow, ChoiceGroup, type ChoiceRowProps } from './ChoiceRow';
+export { Checkbox, type CheckboxProps } from './Checkbox';
 export { StepProgress, type StepProgressProps } from './StepProgress';
 export { BrandMark, type BrandMarkProps } from './BrandMark';
 export { OVERLAY_ROOT_ID, getOverlayRoot } from './overlayRoot';

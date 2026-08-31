@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import type { Address } from '@/domain';
 import { AlertTriangle, Download, FileText, IndianRupee, ScrollText } from 'lucide-react';
 import {
   awaitsApplicationFee,
@@ -220,14 +221,61 @@ export function ApplicationDetailsScreen() {
             </>
           )}
 
+          {/* Who the order is issued to. Read-only here: the application has
+              left the applicant's hands, and editing it is the department's
+              process, not a field on this screen. */}
+          <SectionHeader title={t.excavation.applicant} />
+          <Surface className="border-y border-line">
+            <DetailList
+              items={[
+                { label: t.excavation.applicantName, value: application.applicant.fullName },
+                {
+                  label: t.excavation.applicantMobile,
+                  value: application.applicant.mobileNumber,
+                  numeric: true,
+                },
+                ...(application.applicant.email
+                  ? [{ label: t.excavation.applicantEmail, value: application.applicant.email }]
+                  : []),
+                {
+                  label: t.excavation.idProofTypes[application.applicant.idProofType],
+                  value: application.applicant.idProofNumber,
+                  numeric: true,
+                },
+                {
+                  label: t.excavation.registeredAddress,
+                  value: formatAddress(application.applicant.registeredAddress),
+                },
+              ]}
+            />
+          </Surface>
+
           <SectionHeader title={t.excavation.site} />
           <Surface className="border-y border-line">
             <DetailList
               items={[
+                { label: t.excavation.village, value: application.village },
+                { label: t.excavation.taluka, value: application.siteAddress.taluka },
+                { label: t.excavation.district, value: application.siteAddress.district },
                 { label: t.excavation.surveyNumber, value: application.surveyNumber, numeric: true },
+                ...(application.subDivisionNumber
+                  ? [
+                      {
+                        label: t.excavation.subDivisionNumber,
+                        value: application.subDivisionNumber,
+                        numeric: true,
+                      },
+                    ]
+                  : []),
+                { label: t.excavation.landType, value: t.excavation.landTypes[application.landType] },
                 {
-                  label: 'Address',
-                  value: `${application.siteAddress.line1}, ${application.siteAddress.taluka}, ${application.siteAddress.district} — ${application.siteAddress.pincode}`,
+                  label: t.excavation.siteAddressLabel,
+                  value: formatAddress(application.siteAddress),
+                },
+                {
+                  label: t.excavation.coordinates,
+                  value: `${application.siteGeo.latitude.toFixed(5)}, ${application.siteGeo.longitude.toFixed(5)}`,
+                  numeric: true,
                 },
                 ...(query.data.project
                   ? [{ label: t.context.project, value: query.data.project.name }]
@@ -249,9 +297,16 @@ export function ApplicationDetailsScreen() {
                   value: formatQuantity(application.estimatedQuantity),
                   numeric: true,
                 },
+                {
+                  label: t.excavation.excavationMethod,
+                  value: t.excavation.excavationMethods[application.excavationMethod],
+                },
                 { label: t.excavation.area, value: `${application.areaInSqm} sq m`, numeric: true },
                 { label: t.excavation.depth, value: `${application.depthInMetres} m`, numeric: true },
                 { label: t.excavation.purpose, value: application.purpose },
+                ...(application.remarks
+                  ? [{ label: t.excavation.remarks, value: application.remarks }]
+                  : []),
               ]}
             />
           </Surface>
@@ -322,6 +377,10 @@ export function ApplicationDetailsScreen() {
 
     </Screen>
   );
+}
+
+function formatAddress(address: Address): string {
+  return `${address.line1}, ${address.taluka}, ${address.district} — ${address.pincode}`;
 }
 
 function formatDate(iso: string): string {

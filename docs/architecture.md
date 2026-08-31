@@ -65,6 +65,14 @@ several sources composes them in a co-located read model — see
 `screens/organization/useOrganizationOverview.ts`, which is also the
 specification for the dashboard endpoint a real backend would expose.
 
+**A multi-step form keeps its state out of the screen.** The Temporary
+Excavation application is the pattern: `screens/excavation/useApplicationForm.ts`
+owns the draft, the step sequence and what a finished draft becomes;
+`screens/excavation/steps/*` render one step each; validation stays in
+`rules/excavation.ts`. `NewApplicationScreen` composes and decides nothing.
+Five statutory steps is exactly the shape that becomes an unreadable
+thousand-line component when state and markup share a file.
+
 ## Mapping to Flutter
 
 | Prototype | Production Flutter |

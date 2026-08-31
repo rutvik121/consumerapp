@@ -61,10 +61,60 @@ export interface ExcavationOrder {
   permittedQuantity: Quantity;
 }
 
+/**
+ * WHO IS APPLYING.
+ *
+ * Captured as its own object rather than flattened onto the application,
+ * because the department treats the applicant as a party to the permit: the
+ * order is issued to this person at this registered address, and that is not
+ * necessarily the organization's own address or its primary contact.
+ *
+ * The app knows most of this already from the signed-in account, so the form
+ * PRE-FILLS it and lets the applicant correct it. Pre-filled is not the same
+ * as re-asking.
+ */
+export type IdProofType = 'AADHAAR' | 'PAN' | 'VOTER_ID' | 'DRIVING_LICENCE';
+
+export interface ApplicantDetails {
+  fullName: string;
+  mobileNumber: string;
+  email?: string;
+  idProofType: IdProofType;
+  idProofNumber: string;
+  /** Landline or second number the department can reach. */
+  alternatePhone?: string;
+  registeredAddress: Address;
+}
+
+/**
+ * Who owns the land being excavated. It changes which consents the department
+ * expects, which is why it is asked for alongside the survey number rather
+ * than buried in the documents step.
+ */
+export type LandType = 'PRIVATE' | 'GOVERNMENT' | 'GRAM_PANCHAYAT' | 'FOREST' | 'OTHER';
+
+/** How the mineral will be extracted. Drives the department's site scrutiny. */
+export type ExcavationMethod = 'MANUAL' | 'SEMI_MECHANISED' | 'MECHANISED';
+
+/**
+ * The document checklist. A stable key per row so the checklist, the upload
+ * state and the stored document all refer to the same thing — a free-text
+ * label could not be matched back to a checklist row.
+ */
+export type ApplicationDocumentKind =
+  | 'SITE_PLAN'
+  | 'LAND_RECORD'
+  | 'LAND_OWNER_CONSENT'
+  | 'IDENTITY_PROOF'
+  | 'ENVIRONMENTAL_CLEARANCE'
+  | 'OTHER';
+
 /** Supporting document attached to an application. */
 export interface ApplicationDocument {
   id: ID;
+  kind: ApplicationDocumentKind;
   fileName: string;
+  /** Human label for the kind, resolved at upload time. */
   documentType: string;
   uploadedAt: ISODateTime;
 }
@@ -79,9 +129,14 @@ export interface ApplicationDocument {
  * SCOPE RULE: Temporary Excavation is the ONLY application type in V1.
  * Do not add other Mahakhanij portal application types.
  *
- * PROVISIONAL (open question #5): the real field list for the application form
- * is not yet defined. The fields below are a reasonable excavation-permit
- * shape and must be confirmed before Increment 7.
+ * FIELD SET: mirrors the Mahakhanij web application form — applicant details,
+ * excavation details, quarry and location, documents, declaration. The mobile
+ * form asks for the same information in the same order; it does not ask for
+ * less. See @/rules/excavation for the step grouping.
+ *
+ * PROVISIONAL: validation formats (ID proof patterns, area and depth limits)
+ * are modelled on the common Maharashtra requirements and must be confirmed
+ * against the portal's own rules.
  */
 export interface TemporaryExcavationApplication {
   id: ID;
@@ -92,18 +147,41 @@ export interface TemporaryExcavationApplication {
   projectId?: ID;
   packageId?: ID;
 
+  /** Party the order is issued to. Pre-filled from the account, editable. */
+  applicant: ApplicantDetails;
+
   mineralId: ID;
   estimatedQuantity: Quantity;
+  excavationMethod: ExcavationMethod;
   purpose: string;
 
   siteAddress: Address;
+  /**
+   * Where the site actually is. Set by the map picker, not geocoded from the
+   * address — the applicant marks the pit, and the administrative fields are
+   * suggested from the pin rather than the other way round.
+   */
   siteGeo: GeoPoint;
+  /** Village within the taluka. The lowest administrative unit on a 7/12. */
+  village: string;
   surveyNumber: string;
+  /** Sub-division ("hissa") of the survey number, where one applies. */
+  subDivisionNumber?: string;
+  landType: LandType;
   areaInSqm: number;
   depthInMetres: number;
 
   fromDate: ISODate;
   toDate: ISODate;
+  /** Free-text note to the reviewing officer. */
+  remarks?: string;
+
+  /**
+   * When the applicant accepted the declaration on the review step. Absent
+   * means the declaration was never accepted, which is why an application
+   * cannot reach payment without it.
+   */
+  declarationAcceptedAt?: ISODateTime;
 
   /**
    * The fee payable before this application can be submitted.

@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       {label && (
         <label htmlFor={inputId} className="mb-1.5 block text-label text-ink-secondary">
           {label}

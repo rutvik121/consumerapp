@@ -1020,7 +1020,14 @@ check('An application under review offers no approve or reject action',
 check('A submitted application carries the project and package it was raised under',
   application.includes('Pune Metro Line 3') && application.includes('Package C'));
 
-/* --- Creating an application --- */
+/* --- Creating an application ---
+ *
+ * The mobile form carries the SAME field set as the Mahakhanij web form, in
+ * the same order: applicant, excavation, quarry and location, documents,
+ * declaration. This walk asserts all five steps, including the two things the
+ * web form does that a naive mobile port would drop — the map pin, and the
+ * declaration that gates payment.
+ * ------------------------------------------------------------------------ */
 
 // Establish a package scope FIRST, so the context rule is actually exercised:
 // the form must not ask for what the user has already chosen, and the created
@@ -1036,10 +1043,30 @@ await page.goto(BASE + '/temporary-excavation', { waitUntil: 'networkidle' });
 await page.waitForTimeout(900);
 await page.getByRole('button', { name: 'New application' }).click();
 await page.waitForTimeout(900);
-check('A new application starts by asking where the excavation is',
-  (await mainText()).includes('Where will you excavate?'));
+
+/* STEP 1 — applicant */
+
+check('A new application starts by asking who is applying',
+  (await mainText()).includes('Who is applying?'));
 check('The application form shows the package context it will attach',
   (await page.textContent('header')).includes('Package A'));
+
+// PRE-FILLED, NOT RE-ASKED: the account already answers most of step one.
+check('Applicant details open pre-filled from the signed-in account',
+  (await page.getByLabel('Full name').inputValue()) === 'Rohit Sanghavi' &&
+  (await page.getByLabel('Mobile number').inputValue()) === '9822014576');
+check('The registered address is pre-filled from the organization',
+  (await page.getByLabel('Registered address').inputValue()).includes('Sanghavi House'));
+
+// A two-column row that overflows its frame is how a form built on a desktop
+// reaches a phone. Nothing in this app may scroll sideways.
+const formOverflow = await page.evaluate(() => {
+  const main = document.querySelector('main');
+  return { scrollWidth: main.scrollWidth, clientWidth: main.clientWidth };
+});
+check('The application form never scrolls sideways',
+  formOverflow.scrollWidth <= formOverflow.clientWidth,
+  `${formOverflow.scrollWidth}px of content in a ${formOverflow.clientWidth}px frame`);
 
 // Context is attached, never asked for.
 const applicationLabels = await page.$$eval('main label', (els) =>
@@ -1048,44 +1075,118 @@ check('The application form does not ask for project or package',
   !applicationLabels.some((label) => /^project$|^package$/i.test(label)),
   applicationLabels.join(' · '));
 
-// Validation stops an incomplete step.
 await page.getByRole('button', { name: 'Continue' }).click();
 await page.waitForTimeout(400);
 check('An incomplete step cannot be advanced',
-  (await mainText()).includes('Enter the survey number'));
+  (await mainText()).includes('Select an ID proof'));
 
-await page.getByLabel(/Survey number/).fill('221/3');
-await page.getByLabel('Site address').fill('Survey No. 221/3, Vashind');
-await page.getByLabel('Taluka').fill('Shahapur');
-await page.getByLabel('District').fill('Thane');
-await page.getByLabel('PIN code').fill('421604');
+await page.getByLabel('ID proof').selectOption('PAN');
+await page.getByLabel('ID number').fill('12345');
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(400);
+check('A malformed ID number is caught on the step that asked for it',
+  (await mainText()).includes('PAN looks like'),
+  'not three days later, by the department');
+
+await page.getByLabel('ID number').fill('AFZPS1234K');
 await page.getByRole('button', { name: 'Continue' }).click();
 await page.waitForTimeout(600);
+
+/* STEP 2 — excavation */
+
 check('Step two asks what will be extracted',
   (await mainText()).includes('What will you extract?'));
 
-await page.selectOption('main select', { index: 3 });
-await page.locator('input[inputmode="decimal"]').first().fill('750');
-await page.getByLabel(/Area/).fill('2400');
+await page.getByLabel('Mineral').selectOption({ index: 3 });
+await page.locator('main input[inputmode="decimal"]').first().fill('750');
+await page.getByLabel('Excavation method').selectOption('MECHANISED');
 await page.getByLabel(/Depth/).fill('2');
-await page.getByLabel(/Purpose/).fill('Embankment filling for the widening works.');
-await page.getByRole('button', { name: 'Continue' }).click();
-await page.waitForTimeout(600);
-check('Step three asks for the period and documents',
-  (await mainText()).includes('When, and with what documents?'));
-
 await page.getByLabel('From').fill('2026-09-15');
 await page.getByLabel('To').fill('2026-09-01');
-await page.getByRole('button', { name: /Pay & submit/ }).click();
+await page.getByLabel(/Purpose/).fill('Embankment filling for the widening works.');
+await page.getByRole('button', { name: 'Continue' }).click();
 await page.waitForTimeout(500);
 check('An end date before the start date is refused',
   (await mainText()).includes('cannot be before the start date'));
 
 await page.getByLabel('To').fill('2026-11-15');
-await page.selectOption('main select', 'SITE_PLAN');
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(700);
+
+/* STEP 3 — quarry and location, including the map */
+
+check('Step three asks where the quarry is',
+  (await mainText()).includes('Where is the quarry?'));
+
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(400);
+check('An application cannot be filed without marking the site',
+  (await mainText()).includes('Mark the excavation site on the map'),
+  'a survey number alone does not tell the department which corner will be dug');
+
+// THE MAP AS AN INPUT, not decoration: dropping a pin resolves the
+// administrative cascade rather than merely recording a coordinate.
+await page.locator('[role="application"]').click({ position: { x: 120, y: 90 } });
+await page.waitForTimeout(700);
+const pinnedVillage = await page.getByLabel('Village').inputValue();
+const pinnedDistrict = await page.getByLabel('District').inputValue();
+check('Marking the site on the map fills in the district, taluka and village',
+  pinnedVillage.length > 0 && pinnedDistrict.length > 0,
+  `district ${pinnedDistrict || 'none'} · village ${pinnedVillage || 'none'}`);
+
+await page.getByLabel('Survey number').fill('221/3');
+await page.getByLabel(/Sub-division/).fill('3');
+await page.getByLabel('Land type').selectOption('PRIVATE');
+await page.getByLabel(/Area/).fill('2400');
+await page.getByLabel('PIN code').fill('421604');
+await page.getByLabel('Site address').fill('Survey No. 221/3, near the village road');
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(700);
+
+/* STEP 4 — documents */
+
+check('Step four asks for the department checklist',
+  (await mainText()).includes('What are you attaching?'));
+check('The checklist states what is expected before anything is attached',
+  (await mainText()).includes('Land record (7/12 extract)') &&
+  (await mainText()).includes('Land owner consent'),
+  'an applicant shown one "attach files" button has to already know the list');
+
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(400);
+check('Missing mandatory documents stop the application',
+  (await mainText()).includes('Attach every required document'));
+
+for (let index = 0; index < 4; index += 1) {
+  await page.getByRole('button', { name: 'Attach' }).first().click();
+  await page.waitForTimeout(200);
+}
+check('Attached documents are counted against what is required',
+  (await mainText()).includes('4 of 4 attached'));
+
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.waitForTimeout(700);
+
+/* STEP 5 — review and declaration */
+
+const review = await mainText();
+check('The review step reads back every step, not just the last one',
+  review.includes('Rohit Sanghavi') && review.includes('750 MT') &&
+  review.includes('Mechanised') && review.includes('221/3'));
+check('The review step shows the marked coordinates',
+  /\d{2}\.\d{5}, \d{2}\.\d{5}/.test(review),
+  'a schematic pin nobody can read back is not evidence');
+check('The review step states the fee before asking for it',
+  review.includes('Payment summary') && review.includes('₹1,000'));
+
+await page.getByRole('button', { name: /Pay & submit/ }).click();
+await page.waitForTimeout(500);
+check('Payment is gated on the declaration',
+  (await mainText()).includes('Accept the declaration'),
+  'paying is what submits the application, so the declaration must come first');
+
+await page.getByText('I declare that the information').click();
 await page.waitForTimeout(300);
-check('An attached document is listed before submission',
-  (await mainText()).includes('Site plan'));
 
 /* --- PAYMENT GATE 1: the application fee submits the application --- */
 
@@ -1117,8 +1218,15 @@ check('A failed payment leaves the application unsubmitted',
 await page.getByRole('button', { name: /Pay & submit/ }).click();
 await page.waitForTimeout(1200);
 await page.getByRole('button', { name: /Proceed to pay/ }).click();
-check('The gateway hand-off is shown before the result',
-  (await mainText()).includes('Redirecting to secure payment gateway'));
+// Waited for rather than sampled: initiating the payment is itself a simulated
+// network call, so a single read straight after the click races it. The
+// timeout stays well inside the 2200 ms hand-off, so this still proves the
+// screen appears BEFORE the result and not instead of it.
+const handOffShown = await page
+  .getByText('Redirecting to secure payment gateway')
+  .waitFor({ timeout: 1500 })
+  .then(() => true, () => false);
+check('The gateway hand-off is shown before the result', handOffShown);
 await page.waitForTimeout(3200);
 
 const paid = await mainText();

@@ -156,11 +156,34 @@ being typed.
 ## Temporary Excavation — organization only
 
 ```
-Applications → New application (site → excavation → period)
+Applications → New application (5 steps)
+                 1 Applicant   who is applying (pre-filled from the account)
+                 2 Excavation  mineral, quantity, method, depth, period
+                 3 Location    district → taluka → village, survey number,
+                               land type, area, and the PIN ON THE MAP
+                 4 Documents   the department's checklist
+                 5 Review      read back, accept the declaration, pay
              → Pay application fee → SUBMITTED (automatic)
              → [department review]
              → Demand note issued → Pay demand note → ORDER ISSUED
 ```
+
+**The field set matches the Mahakhanij web application form.** The mobile form
+asks the same questions in the same order; it is split into five steps because
+a phone cannot hold the whole form at once, not because it asks for less.
+
+**The map is an input, not an illustration.** Marking the site is required —
+a survey number alone does not tell the department which corner of the plot
+will be dug. The pin can be dropped by tapping the map or taken from the
+device's location, and dropping it RESOLVES the administrative cascade:
+district, taluka and village are filled in from the coordinates. When the
+applicant has already chosen those themselves, a disagreeing pin offers a
+suggestion instead of overwriting them — the lookup is a nearest-centroid
+approximation, and the applicant may well be right.
+
+**The declaration gates payment**, not the draft. Saving a draft asks for no
+declaration; declaring that the contents are true belongs with submitting
+them.
 
 **The workflow is gated by two payments**, and they are the only two points
 where the applicant advances the status:

@@ -32,7 +32,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const describedBy = error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined;
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       {label && (
         <label htmlFor={selectId} className="mb-1.5 block text-label text-ink-secondary">
           {label}

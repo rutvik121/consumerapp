@@ -1,6 +1,10 @@
 import type {
   Address,
+  ApplicantDetails,
+  ApplicationDocumentKind,
+  ExcavationMethod,
   ISODate,
+  LandType,
   Quantity,
   UserType,
   ConsumptionEntry,
@@ -46,6 +50,7 @@ import { db } from '../db';
 export * from './authRepository';
 export * from './receivingRepository';
 export * from './paymentRepository';
+export * from './locationRepository';
 
 export const userRepository = {
   getById: (id: ID): Promise<User | null> =>
@@ -389,16 +394,26 @@ export interface CreateApplicationInput {
   /** Carried from operating context when present — never asked for again. */
   projectId?: ID;
   packageId?: ID;
+  applicant: ApplicantDetails;
   mineralId: ID;
   estimatedQuantity: Quantity;
+  excavationMethod: ExcavationMethod;
   purpose: string;
+  remarks?: string;
   siteAddress: Address;
+  /** Marked on the map by the applicant, not geocoded from the address. */
+  siteGeo: GeoPoint;
+  village: string;
   surveyNumber: string;
+  subDivisionNumber?: string;
+  landType: LandType;
   areaInSqm: number;
   depthInMetres: number;
   fromDate: ISODate;
   toDate: ISODate;
-  documents: { fileName: string; documentType: string }[];
+  /** Absent when the application was saved as a draft without declaring. */
+  declarationAccepted: boolean;
+  documents: { kind: ApplicationDocumentKind; fileName: string; documentType: string }[];
 }
 
 export const temporaryExcavationRepository = {
@@ -422,22 +437,30 @@ export const temporaryExcavationRepository = {
         organizationId: input.organizationId,
         ...(input.projectId ? { projectId: input.projectId } : {}),
         ...(input.packageId ? { packageId: input.packageId } : {}),
+        applicant: input.applicant,
         mineralId: input.mineralId,
         estimatedQuantity: input.estimatedQuantity,
+        excavationMethod: input.excavationMethod,
         purpose: input.purpose,
+        ...(input.remarks ? { remarks: input.remarks } : {}),
         siteAddress: input.siteAddress,
-        /* PROVISIONAL: a real implementation geocodes the survey number. */
-        siteGeo: { latitude: 19.45, longitude: 73.33 },
+        /* Taken from the map pin the applicant placed, not geocoded here. */
+        siteGeo: input.siteGeo,
+        village: input.village,
         surveyNumber: input.surveyNumber,
+        ...(input.subDivisionNumber ? { subDivisionNumber: input.subDivisionNumber } : {}),
+        landType: input.landType,
         areaInSqm: input.areaInSqm,
         depthInMetres: input.depthInMetres,
         fromDate: input.fromDate,
         toDate: input.toDate,
+        ...(input.declarationAccepted ? { declarationAcceptedAt: now } : {}),
         applicationFee: computeApplicationFee(),
         status: 'DRAFT',
         statusUpdatedAt: now,
         documents: input.documents.map((document, index) => ({
           id: `doc-${Date.now()}-${index}`,
+          kind: document.kind,
           fileName: document.fileName,
           documentType: document.documentType,
           uploadedAt: now,
