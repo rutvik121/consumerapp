@@ -37,7 +37,7 @@ const VARIANT: Record<ButtonVariant, string> = {
 const SIZE: Record<ButtonSize, string> = {
   sm: 'h-[var(--control-h-sm)] px-3 text-label gap-1.5 rounded-sm',
   md: 'h-[var(--control-h-md)] px-4 text-body gap-2 rounded-md',
-  lg: 'h-[var(--control-h-lg)] px-5 text-body-lg gap-2 rounded-md',
+  lg: 'h-12 px-5 text-body gap-2 rounded-md',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -63,7 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'pressable inline-flex items-center justify-center font-medium select-none',
+        'pressable inline-flex items-center justify-center font-semibold select-none',
         'disabled:cursor-not-allowed disabled:active:scale-100',
         VARIANT[variant],
         SIZE[size],

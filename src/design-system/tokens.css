@@ -31,33 +31,33 @@
    * NEUTRAL — cool slate. Carries ~90% of the interface.
    * ------------------------------------------------------------------------ */
   --color-neutral-0: #ffffff;
-  --color-neutral-25: #fafbfc;
-  --color-neutral-50: #f5f7f9;
-  --color-neutral-100: #eceff3;
-  --color-neutral-200: #dde3ea;
-  --color-neutral-300: #c6cfd9;
-  --color-neutral-400: #9aa7b4;
-  --color-neutral-500: #71808f;
-  --color-neutral-600: #55636f;
-  --color-neutral-700: #3e4a55;
-  --color-neutral-800: #2a343d;
-  --color-neutral-900: #182027;
+  --color-neutral-25: #f8fafc;
+  --color-neutral-50: #f1f5f9;
+  --color-neutral-100: #eff2f7;
+  --color-neutral-200: #dde3ee;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
 
   /* ---------------------------------------------------------------------------
    * PRIMARY — deep institutional blue.
    * Chosen to read as government-connected and trustworthy rather than
    * promotional. Deliberately not a saturated consumer-app blue.
    * ------------------------------------------------------------------------ */
-  --color-primary-50: #eef4f9;
-  --color-primary-100: #d6e5f0;
-  --color-primary-200: #aecbe1;
-  --color-primary-300: #7caacd;
-  --color-primary-400: #4a87b4;
-  --color-primary-500: #2c6e9e;
-  --color-primary-600: #1f5680;
-  --color-primary-700: #184566;
-  --color-primary-800: #133750;
-  --color-primary-900: #0e2839;
+  --color-primary-50: #eef4fe;
+  --color-primary-100: #dce8fd;
+  --color-primary-200: #bfd5fb;
+  --color-primary-300: #91b9f8;
+  --color-primary-400: #5a91f0;
+  --color-primary-500: #1a5fe8;
+  --color-primary-600: #1550cc;
+  --color-primary-700: #1241a6;
+  --color-primary-800: #123788;
+  --color-primary-900: #132f6d;
 
   /* ---------------------------------------------------------------------------
    * SEMANTIC STATUS — exactly three hues. Never decorative; always meaning.
@@ -65,39 +65,39 @@
    *   warning  → attention required, awaiting action, discrepancy, under review
    *   danger   → critical, shortage, failed verification, rejected
    * ------------------------------------------------------------------------ */
-  --color-success-50: #eaf5ef;
-  --color-success-100: #cde8da;
-  --color-success-200: #a3d4ba;
-  --color-success-500: #1e7f4f;
-  --color-success-600: #17663f;
-  --color-success-700: #12512f;
+  --color-success-50: #dcfce7;
+  --color-success-100: #bbf7d0;
+  --color-success-200: #86efac;
+  --color-success-500: #16a34a;
+  --color-success-600: #15803d;
+  --color-success-700: #166534;
 
-  --color-warning-50: #fdf4e7;
-  --color-warning-100: #f9e4c0;
-  --color-warning-200: #f0cd8d;
-  --color-warning-500: #b26b00;
-  --color-warning-600: #8f5500;
-  --color-warning-700: #6f4200;
+  --color-warning-50: #fef3c7;
+  --color-warning-100: #fde68a;
+  --color-warning-200: #fcd34d;
+  --color-warning-500: #d97706;
+  --color-warning-600: #b45309;
+  --color-warning-700: #92400e;
 
-  --color-danger-50: #fceeec;
-  --color-danger-100: #f7d5d0;
-  --color-danger-200: #eeb0a8;
-  --color-danger-500: #c0392f;
-  --color-danger-600: #9c2c24;
-  --color-danger-700: #7c231c;
+  --color-danger-50: #fee2e2;
+  --color-danger-100: #fecaca;
+  --color-danger-200: #fca5a5;
+  --color-danger-500: #dc2626;
+  --color-danger-600: #b91c1c;
+  --color-danger-700: #991b1b;
 
   /* ---------------------------------------------------------------------------
    * SEMANTIC ROLES — always prefer these over raw scale values in components.
    * ------------------------------------------------------------------------ */
-  --color-canvas: #f5f7f9;          /* page background                        */
+  --color-canvas: #f8fafc;          /* page background                        */
   --color-surface: #ffffff;         /* default raised content surface         */
-  --color-surface-sunken: #eceff3;  /* inset / recessed area                  */
-  --color-line: #dde3ea;            /* hairline separator (default)           */
-  --color-line-strong: #c6cfd9;     /* emphasised separator / input border    */
+  --color-surface-sunken: #eff2f7;  /* inset / recessed area                  */
+  --color-line: #dde3ee;            /* hairline separator (default)           */
+  --color-line-strong: #cbd5e1;     /* emphasised separator / input border    */
 
-  --color-ink: #182027;             /* primary text                           */
-  --color-ink-secondary: #55636f;   /* supporting text                        */
-  --color-ink-muted: #71808f;       /* metadata, placeholders, disabled        */
+  --color-ink: #0f172a;             /* primary text                           */
+  --color-ink-secondary: #475569;   /* supporting text                        */
+  --color-ink-muted: #94a3b8;       /* metadata, placeholders, disabled        */
   --color-ink-inverse: #ffffff;     /* text on dark / primary surfaces         */
 
   /* ---------------------------------------------------------------------------
@@ -105,47 +105,48 @@
    * System stack: renders natively on device, no web-font payload, and keeps
    * the prototype feeling like a real mobile app rather than a web page.
    * ------------------------------------------------------------------------ */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Large operational numbers: quantities, metric values */
-  --text-display: 1.75rem;
-  --text-display--line-height: 2.125rem;
+  --text-display: 1.875rem;
+  --text-display--line-height: 2.375rem;
   --text-display--font-weight: 700;
   --text-display--letter-spacing: -0.02em;
 
   /* Screen titles */
-  --text-title-lg: 1.25rem;
+  --text-title-lg: 1.125rem;
   --text-title-lg--line-height: 1.625rem;
   --text-title-lg--font-weight: 600;
   --text-title-lg--letter-spacing: -0.01em;
 
   /* Section / row titles */
-  --text-title: 1.0625rem;
-  --text-title--line-height: 1.375rem;
+  --text-title: 1rem;
+  --text-title--line-height: 1.5rem;
   --text-title--font-weight: 600;
   --text-title--letter-spacing: -0.005em;
 
   --text-body-lg: 1rem;
-  --text-body-lg--line-height: 1.4375rem;
+  --text-body-lg--line-height: 1.5rem;
   --text-body-lg--font-weight: 400;
 
   /* Default body size */
-  --text-body: 0.9375rem;
+  --text-body: 0.875rem;
   --text-body--line-height: 1.3125rem;
   --text-body--font-weight: 400;
 
-  --text-body-sm: 0.8125rem;
+  --text-body-sm: 0.75rem;
   --text-body-sm--line-height: 1.125rem;
   --text-body-sm--font-weight: 400;
 
   /* Form labels, badge text */
-  --text-label: 0.8125rem;
-  --text-label--line-height: 1rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.125rem;
   --text-label--font-weight: 500;
 
-  --text-caption: 0.75rem;
-  --text-caption--line-height: 1rem;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1.03125rem;
   --text-caption--font-weight: 400;
 
   /* Section headers — uppercase, tracked */
@@ -166,9 +167,9 @@
    * RADIUS
    * ------------------------------------------------------------------------ */
   --radius-xs: 0.25rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 0.875rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.75rem;
   --radius-full: 9999px;
@@ -197,8 +198,8 @@
   /* ---------------------------------------------------------------------------
    * LAYOUT — mobile shell
    * ------------------------------------------------------------------------ */
-  --appbar-h: 52px;
-  --bottomnav-h: 60px;
+  --appbar-h: 56px;
+  --bottomnav-h: 84px;
   --device-w: 390px;
   --device-h: 844px;
 

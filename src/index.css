@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
 /* Tailwind must be imported first so @theme in tokens.css can extend it. */
 @import 'tailwindcss';
 

@@ -17,7 +17,7 @@ export function BottomNavigation({ userType }: { userType: UserType }) {
       aria-label="Main"
       className="relative z-30 shrink-0 border-t border-line bg-surface pb-[var(--safe-bottom)]"
     >
-      <ul className="flex h-[var(--bottomnav-h)] items-stretch">
+      <ul className="flex h-[var(--bottomnav-h)] items-start justify-center px-2 pt-2.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
 
@@ -27,14 +27,21 @@ export function BottomNavigation({ userType }: { userType: UserType }) {
                 to={tab.path}
                 className={({ isActive }) =>
                   cn(
-                    'flex h-full flex-col items-center justify-center gap-1 px-1 transition-colors',
+                    'flex h-[52px] flex-col items-center justify-center gap-[5px] px-1 transition-colors',
                     isActive ? 'text-primary-600' : 'text-ink-muted hover:text-ink-secondary',
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={21} strokeWidth={isActive ? 2.3 : 1.8} aria-hidden />
+                    <span
+                      className={cn(
+                        'flex h-[26px] w-11 items-center justify-center rounded-full',
+                        isActive && 'bg-primary-50',
+                      )}
+                    >
+                      <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
+                    </span>
                     <span
                       className={cn(
                         'text-caption leading-none',

@@ -22,19 +22,19 @@ export interface AppBarProps {
 export function AppBar({ title, subtitle, onBack, actions, context, className }: AppBarProps) {
   return (
     <header className={cn('sticky top-0 z-30 bg-surface', className)}>
-      <div className="flex h-[var(--appbar-h)] items-center gap-1 px-1">
+      <div className="flex h-[var(--appbar-h)] items-center gap-3 px-4">
         {onBack ? (
           <IconButton label="Back" icon={<ChevronLeft size={22} />} onClick={onBack} />
         ) : (
-          <span className="w-3" />
+          <span className="w-0" />
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-title text-ink">{title}</h1>
+          <h1 className="truncate text-title font-semibold text-ink">{title}</h1>
           {subtitle && <p className="truncate text-caption text-ink-muted">{subtitle}</p>}
         </div>
 
-        {actions && <div className="flex shrink-0 items-center gap-0.5 pr-1">{actions}</div>}
+        {actions && <div className="flex shrink-0 items-center gap-0.5">{actions}</div>}
       </div>
 
       {context}
