@@ -104,7 +104,7 @@ export const en = {
     availableInventory: 'Available inventory',
     quickActions: 'Quick actions',
     findStockPoint: 'Find stock point',
-    createEnquiry: 'Create enquiry',
+    createEnquiry: 'All enquiry',
     receiveMineral: 'Receive mineral',
     activeDeliveries: 'Active deliveries',
     noActiveDeliveries: 'No deliveries in transit',

@@ -1,16 +1,18 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
+  ChevronRight,
   ClipboardList,
   FileText,
   PackageCheck,
+  QrCode,
   Search,
   ShieldAlert,
   Shovel,
   Truck,
 } from 'lucide-react';
 import type { Delivery } from '@/domain';
-import type { AttentionItem } from '@/rules';
 import {
   canReceiveDelivery,
   formatQuantity,
@@ -22,8 +24,6 @@ import {
   Divider,
   EmptyState,
   ErrorState,
-  ListGroup,
-  ListRow,
   LoadingState,
   MetricTile,
   SectionHeader,
@@ -42,15 +42,15 @@ import { useOrganizationOverview, type OrganizationOverview } from './useOrganiz
  * preference:
  *
  *   1. Attention Required     what must I act on?
- *   2. Business Overview      how is the organization doing?
- *   3. Quick Actions          what do I do most often?
- *   4. Active Deliveries      what is moving right now?
- *   5. Inventory Snapshot     what do I have?
- *   6. Temporary Excavation   what compliance work is open?
+ *   2. Temporary Excavation   what compliance work is open?
+ *   3. Business Overview      how is the organization doing?
+ *   4. Quick Actions          what do I do most often?
+ *   5. Active Deliveries      what is moving right now?
+ *   6. Inventory Snapshot     what do I have?
  *
- * Action comes before information, and information before navigation. A user
- * opening this screen at a site gate needs the waiting vehicle first, not a
- * chart.
+ * Temporary Excavation is a checkpoint for the organization, not a hidden
+ * follow-on module. It must be visible without scrolling because it directly
+ * answers whether the business has work outstanding with the department.
  */
 export function OrganizationHomeScreen() {
   const user = useCurrentUser();
@@ -75,6 +75,7 @@ export function OrganizationHomeScreen() {
 function OverviewSections({ overview }: { overview: OrganizationOverview }) {
   const navigate = useNavigate();
   const t = useCopy();
+  const [attentionOpen, setAttentionOpen] = useState(false);
 
   return (
     <div className="pb-8">
@@ -82,7 +83,21 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
       <SectionHeader
         title={t.organizationHome.attentionRequired}
         {...(overview.attention.length > 0
-          ? { action: <StatusBadge label={String(overview.attention.length)} tone="warning" size="sm" /> }
+          ? {
+              action: (
+                <button
+                  type="button"
+                  onClick={() => setAttentionOpen((open) => !open)}
+                  className="inline-flex items-center gap-2 text-left"
+                >
+                  <StatusBadge label={String(overview.attention.length)} tone="warning" size="sm" />
+                  <ChevronRight
+                    size={14}
+                    className={['shrink-0 text-ink-muted transition-transform', attentionOpen ? 'rotate-90' : ''].join(' ')}
+                  />
+                </button>
+              ),
+            }
           : {})}
       />
 
@@ -95,45 +110,160 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
             description={t.organizationHome.attentionClearBody}
           />
         </Surface>
-      ) : (
-        <ListGroup className="border-y border-line">
-          {overview.attention.map((item) => (
-            <AttentionRow key={item.id} item={item} />
-          ))}
-        </ListGroup>
-      )}
+      ) : attentionOpen ? (
+        <Surface className="border-y border-line p-3">
+          <div className="space-y-2">
+            {overview.attention.slice(0, 3).map((item) => {
+              const itemIcon =
+                item.kind === 'QUANTITY_DISCREPANCY' ? (
+                  <ShieldAlert size={14} />
+                ) : item.kind === 'APPLICATION_QUERY_RAISED' ? (
+                  <ClipboardList size={14} />
+                ) : (
+                  <AlertTriangle size={14} />
+                );
 
-      {/* ---------- 2. BUSINESS OVERVIEW ---------- */}
-      <SectionHeader title={t.organizationHome.businessOverview} />
-      <Surface className="border-y border-line px-4 py-4">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-5">
-          <MetricTile
-            label={t.organizationHome.activeProjects}
-            value={overview.activeProjectCount}
-            onClick={() => navigate(ROUTES.projects)}
-          />
-          <MetricTile
-            label={t.organizationHome.activePackages}
-            value={overview.activePackageCount}
-          />
-          <MetricTile
-            label={t.organizationHome.activeOrders}
-            value={overview.activeOrderCount}
-            onClick={() => navigate(ROUTES.orders)}
-          />
-          <MetricTile
-            label={t.organizationHome.availableInventory}
-            value={
-              overview.availableInventory
-                ? formatQuantityValue(overview.availableInventory)
-                : '—'
-            }
-            {...(overview.availableInventory ? { unit: overview.availableInventory.unit } : {})}
-          />
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    if (item.applicationId) navigate(ROUTES.temporaryExcavation);
+                    else if (item.deliveryId) navigate(ROUTES.deliveryTracking(item.deliveryId));
+                    else navigate(ROUTES.orders);
+                  }}
+                  className="flex w-full items-start gap-3 rounded-md border border-line bg-neutral-50 px-3 py-2.5 text-left transition-colors hover:bg-neutral-100"
+                >
+                  <span
+                    className={[
+                      'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md',
+                      item.tone === 'danger' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600',
+                    ].join(' ')}
+                  >
+                    {itemIcon}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-body-sm font-medium text-ink">{item.title}</p>
+                      {item.scope && (
+                        <span className="shrink-0 text-caption text-ink-muted">{item.scope}</span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-caption leading-snug text-ink-secondary">
+                      {item.subject}
+                    </p>
+                  </div>
+
+                  <ChevronRight size={16} className="mt-1 shrink-0 text-ink-muted" />
+                </button>
+              );
+            })}
+            {overview.attention.length > 3 && (
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.orders)}
+                className="w-full pt-1 text-left text-label font-medium text-primary-700"
+              >
+                +{overview.attention.length - 3} more actions
+              </button>
+            )}
+          </div>
+        </Surface>
+      ) : null}
+
+      {/* ---------- 2. TEMPORARY EXCAVATION (organization only) ---------- */}
+      <SectionHeader title={t.organizationHome.temporaryExcavation} />
+      <Surface className="border-y border-primary-100 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-sm">
+        <div className="px-4 py-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+                <Shovel size={18} />
+              </span>
+              <div>
+                <p className="text-label font-medium text-ink">Compliance queue</p>
+                <p className="text-caption text-ink-muted">Needs action</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-primary-100 px-2.5 py-1 text-caption font-medium text-primary-700">
+              {overview.activeApplicationCount} open
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-line bg-surface/90 p-3 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
+              <MetricTile
+                className="gap-2"
+                label={t.organizationHome.activeApplications}
+                value={overview.activeApplicationCount}
+              />
+            </div>
+            <div className="rounded-xl border border-line bg-surface/90 p-3 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
+              <MetricTile
+                className="gap-2"
+                label={t.organizationHome.needingAttention}
+                value={overview.applicationsNeedingAttention}
+                tone={overview.applicationsNeedingAttention > 0 ? 'warning' : 'default'}
+              />
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            fullWidth
+            className="mt-4"
+            leftIcon={<Shovel size={15} />}
+            onClick={() => navigate(ROUTES.temporaryExcavation)}
+          >
+            {t.organizationHome.viewApplications}
+          </Button>
         </div>
       </Surface>
 
-      {/* ---------- 3. QUICK ACTIONS ---------- */}
+      {/* ---------- 3. BUSINESS OVERVIEW ---------- */}
+      <SectionHeader title={t.organizationHome.businessOverview} />
+      <Surface className="border-y border-line bg-gradient-to-br from-surface to-neutral-50 shadow-sm">
+        <div className="grid grid-cols-2 gap-3 px-4 py-4">
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.activeProjects}
+              value={overview.activeProjectCount}
+              onClick={() => navigate(ROUTES.projects)}
+            />
+          </div>
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.activePackages}
+              value={overview.activePackageCount}
+            />
+          </div>
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.activeOrders}
+              value={overview.activeOrderCount}
+              onClick={() => navigate(ROUTES.orders)}
+            />
+          </div>
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.availableInventory}
+              value={
+                overview.availableInventory
+                  ? formatQuantityValue(overview.availableInventory)
+                  : '—'
+              }
+              {...(overview.availableInventory ? { unit: overview.availableInventory.unit } : {})}
+            />
+          </div>
+        </div>
+      </Surface>
+
+      {/* ---------- 4. QUICK ACTIONS ---------- */}
       <SectionHeader title={t.organizationHome.quickActions} />
       <Surface className="border-y border-line px-4 py-4">
         <div className="grid grid-cols-3 gap-2">
@@ -148,14 +278,14 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
             onClick={() => navigate(ROUTES.enquiries)}
           />
           <QuickAction
-            icon={<PackageCheck size={18} />}
+            icon={<QrCode size={18} />}
             label={t.organizationHome.receiveMineral}
             onClick={() => navigate(ROUTES.receive)}
           />
         </div>
       </Surface>
 
-      {/* ---------- 4. ACTIVE DELIVERIES ---------- */}
+      {/* ---------- 5. ACTIVE DELIVERIES ---------- */}
       <SectionHeader
         title={t.organizationHome.activeDeliveries}
         {...(overview.activeDeliveries.length > 0
@@ -193,7 +323,7 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
         </Surface>
       )}
 
-      {/* ---------- 5. INVENTORY SNAPSHOT ---------- */}
+      {/* ---------- 6. INVENTORY SNAPSHOT ---------- */}
       {/*
         Business Overview already carries the headline total, so this section
         earns its place by breaking it down per mineral. Restating one number
@@ -236,63 +366,7 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
         )}
       </Surface>
 
-      {/* ---------- 6. TEMPORARY EXCAVATION (organization only) ---------- */}
-      <SectionHeader title={t.organizationHome.temporaryExcavation} />
-      <Surface className="border-y border-line px-4 py-4">
-        <div className="flex items-start gap-6">
-          <MetricTile
-            className="flex-1"
-            label={t.organizationHome.activeApplications}
-            value={overview.activeApplicationCount}
-          />
-          <MetricTile
-            className="flex-1"
-            label={t.organizationHome.needingAttention}
-            value={overview.applicationsNeedingAttention}
-            tone={overview.applicationsNeedingAttention > 0 ? 'warning' : 'default'}
-          />
-        </div>
-        <Button
-          variant="secondary"
-          fullWidth
-          className="mt-4"
-          leftIcon={<Shovel size={15} />}
-          onClick={() => navigate(ROUTES.temporaryExcavation)}
-        >
-          {t.organizationHome.viewApplications}
-        </Button>
-      </Surface>
     </div>
-  );
-}
-
-/** One actionable item. Tone and priority come from @/rules/attention. */
-function AttentionRow({ item }: { item: AttentionItem }) {
-  const navigate = useNavigate();
-
-  const icon =
-    item.kind === 'QUANTITY_DISCREPANCY' ? (
-      <ShieldAlert size={17} />
-    ) : item.kind === 'APPLICATION_QUERY_RAISED' ? (
-      <ClipboardList size={17} />
-    ) : (
-      <AlertTriangle size={17} />
-    );
-
-  return (
-    <ListRow
-      leading={icon}
-      leadingTone={item.tone === 'danger' ? 'danger' : 'warning'}
-      title={item.title}
-      subtitle={item.subject}
-      {...(item.scope ? { detail: item.scope } : {})}
-      onClick={() => {
-        // Land on the thing itself, not on a list the user must search.
-        if (item.applicationId) navigate(ROUTES.temporaryExcavation);
-        else if (item.deliveryId) navigate(ROUTES.deliveryTracking(item.deliveryId));
-        else navigate(ROUTES.orders);
-      }}
-    />
   );
 }
 

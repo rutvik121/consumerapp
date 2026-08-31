@@ -68,24 +68,21 @@ export function MoreScreen() {
           leading={<Warehouse size={17} />}
           title="Inventory"
           subtitle="Received, consumed and available quantity"
-          meta={<StatusBadge label="Increment 6" tone="neutral" size="sm" />}
-          disabled
+          onClick={() => navigate(ROUTES.inventory)}
           trailing={null}
         />
         <ListRow
           leading={<FileText size={17} />}
           title="Enquiries"
           subtitle="Mineral requirements you have raised"
-          meta={<StatusBadge label="Increment 3" tone="neutral" size="sm" />}
-          disabled
+          onClick={() => navigate(ROUTES.enquiries)}
           trailing={null}
         />
         <ListRow
           leading={<PackageIcon size={17} />}
           title="Receive Mineral"
           subtitle="Verify and receive an arriving vehicle"
-          meta={<StatusBadge label="Increment 5" tone="neutral" size="sm" />}
-          disabled
+          onClick={() => navigate(ROUTES.receive)}
           trailing={null}
         />
       </ListGroup>
