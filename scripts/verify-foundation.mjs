@@ -767,6 +767,127 @@ check('Consumer order still shows the full traceability chain',
   consumerOrder.includes('From enquiry') && consumerOrder.includes('MH-15-BN-4402'));
 
 /* ===========================================================================
+ * RECEIVING — verification, discrepancy, and the write to inventory
+ * ---------------------------------------------------------------------------
+ * IMPORTANT: after sign-in this block navigates ONLY through the UI. The mock
+ * database is in memory, so any page.goto() reseeds it and would silently
+ * discard the receipt these checks exist to verify.
+ * ======================================================================== */
+
+await persona('Organization');
+await page.waitForTimeout(1300);
+
+const readInventoryTotal = () => page.evaluate(() => {
+  const label = [...document.querySelectorAll('main span')]
+    .find((el) => el.textContent.trim() === 'Available inventory');
+  return label?.parentElement?.textContent?.replace('Available inventory', '').trim() ?? null;
+});
+
+const inventoryBefore = await readInventoryTotal();
+check('Inventory reads its seeded total before receiving',
+  inventoryBefore === '414MT', String(inventoryBefore));
+
+const homeBefore = await mainText();
+check('A waiting vehicle is on Home before receiving',
+  homeBefore.includes('Vehicle waiting to be received'));
+
+// Reach receiving through the UI.
+await page.getByRole('button', { name: 'Receive mineral', exact: true }).click();
+await page.waitForURL('**/receive');
+await page.waitForTimeout(900);
+const arrivals = await mainText();
+check('Receiving lists only vehicles that have actually arrived',
+  arrivals.includes('MH-12-KL-7788') && !arrivals.includes('MH-12-XY-3391'),
+  'an in-transit vehicle must not be offered for receiving');
+
+await page.getByRole('button', { name: /MH-12-KL-7788/ }).click();
+await page.waitForTimeout(900);
+check('Receiving opens on the scan step',
+  (await mainText()).includes('Scan the transport permit'));
+check('Manual e-TP entry is offered alongside the camera',
+  (await page.getByRole('button', { name: /Enter e-TP number instead/ }).count()) === 1);
+
+// A permit that does not belong to this delivery must be refused.
+await page.getByRole('button', { name: /Enter e-TP number instead/ }).click();
+await page.waitForTimeout(300);
+await page.getByLabel('e-TP number').fill('ETP/2026/MH/9999999');
+await page.getByRole('button', { name: 'Verify permit' }).click();
+await page.waitForTimeout(500);
+check('A permit that does not match the delivery is refused',
+  (await mainText()).includes('does not match this delivery'));
+
+// The real permit passes all four checks.
+await page.getByRole('button', { name: 'Scan QR code' }).click();
+await page.waitForTimeout(700);
+const validated = await mainText();
+check('A valid permit reports the transaction verified',
+  validated.includes('Transaction verified'));
+check('All four verification checks are reported separately',
+  validated.includes('Transport permit') && validated.includes('Permit validity') &&
+  validated.includes('Vehicle') && validated.includes('Destination'),
+  'an operator needs to know WHICH check failed, not just that one did');
+check('Dispatched quantity is reviewed before any quantity is entered',
+  validated.includes('Dispatched quantity') && validated.includes('40 MT'));
+
+await page.getByRole('button', { name: 'Enter received quantity' }).click();
+await page.waitForTimeout(600);
+
+// An exact match must not be reported as a discrepancy.
+await page.locator('input[inputmode="decimal"]').fill('40');
+await page.waitForTimeout(400);
+const exact = await mainText();
+check('An exact match reports no discrepancy',
+  !exact.includes('Shortage') && exact.includes('0 MT'));
+check('No reason is requested when quantities match',
+  (await page.locator('main select').count()) === 0);
+
+// A shortfall is computed and shown live, before committing.
+await page.locator('input[inputmode="decimal"]').fill('37.5');
+await page.waitForTimeout(400);
+const short = await mainText();
+check('Dispatched, received and difference are all shown together',
+  short.includes('40 MT') && short.includes('37.5 MT') && short.includes('2.5 MT'));
+check('The shortfall is identified as a shortage while typing',
+  short.includes('Shortage'), 'a discrepancy must never be a post-commit surprise');
+check('A reason is offered once a difference exists',
+  (await page.locator('main select').count()) === 1);
+
+await page.selectOption('main select', 'TRANSIT_LOSS');
+await page.getByRole('button', { name: 'Confirm receipt' }).click();
+await page.waitForSelector('[role="alertdialog"]');
+check('Confirming warns that inventory will be updated',
+  (await page.getByRole('alertdialog').textContent()).includes('updates your inventory'));
+
+await page.getByRole('alertdialog').getByRole('button', { name: 'Confirm receipt' }).click();
+await page.waitForTimeout(1700);
+const done = await mainText();
+check('The receipt is confirmed and the outcome restated',
+  done.includes('Receipt confirmed') && done.includes('40 MT') && done.includes('37.5 MT'));
+check('The receipt reports the resulting available quantity',
+  done.includes('Now available'));
+
+/* --- The write must reach inventory, the order and Home --- */
+
+await page.getByRole('button', { name: 'Back to home' }).click();
+await page.waitForTimeout(1700);
+
+const inventoryAfter = await readInventoryTotal();
+check('Inventory increases by what was RECEIVED, not what was dispatched',
+  inventoryAfter === '451.5MT',
+  `${inventoryBefore} -> ${inventoryAfter}; 414 + 37.5 = 451.5 (not +40)`);
+
+const homeAfter = await mainText();
+check('The received vehicle no longer asks to be received',
+  !homeAfter.includes('Vehicle waiting to be received'));
+check('The new shortfall now asks for attention instead',
+  homeAfter.includes('Shortage of 2.5 MT recorded'));
+
+await page.getByRole('link', { name: 'Orders' }).click();
+await page.waitForTimeout(1200);
+check('The order receiving status is recomputed from its deliveries',
+  (await mainText()).includes('Discrepancy'));
+
+/* ===========================================================================
  * ORGANIZATION TYPE IS METADATA, NOT ARCHITECTURE
  * ---------------------------------------------------------------------------
  * Government departments, builders, contractors and any other organization

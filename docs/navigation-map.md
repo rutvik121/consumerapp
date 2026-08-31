@@ -70,7 +70,8 @@ they are already inside.
 | `/stock-points/:stockPointId/enquiry` | Mineral Enquiry | session |
 | `/enquiries` | Enquiries | session |
 | `/enquiries/:enquiryId` | Enquiry Details | session |
-| `/receive` | Receive mineral | session |
+| `/receive` | Receive mineral — vehicles at your site | session |
+| `/receive/:deliveryId` | Receiving flow (scan → validate → quantity) | session |
 | `/inventory` | Inventory | session |
 
 ## Where context is set
@@ -115,13 +116,30 @@ to the enquiry that produced it; a delivery links forward to receiving. An
 attention item on Home opens the specific delivery rather than a list the user
 has to search.
 
+## Receiving
+
+```
+Vehicles at your site → Scan QR → Validate transaction
+                      → Enter received quantity → Confirm → Inventory updated
+```
+
+Three steps, because that is how many decisions the receiver makes. Verifying
+the permit, the vehicle and the destination is one moment for the user — they
+either all pass or the load does not come off the truck — so they appear as
+four checks on one screen rather than as four screens.
+
+Confirming a receipt is the app's most consequential write: it records the
+receipt, settles the delivery, closes the movement record, recomputes the
+order's receiving status from all its deliveries, and credits inventory with
+the **received** quantity. One call, because those are one operational fact.
+
 ## Reserved for later increments
 
 Defined in `routes.ts`, not yet registered:
 
 | Path | Increment |
 |---|---|
-| `/receive/:deliveryId` | 5 |
+| `/stock-points/:stockPointId` detail variants | — |
 
 ## Organization journey
 

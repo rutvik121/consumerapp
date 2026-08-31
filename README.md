@@ -95,8 +95,8 @@ Full detail in [`docs/architecture.md`](docs/architecture.md).
 | 2 | Organization structure and context | **Done** |
 | 3 | Mineral acquisition | **Done** |
 | 4 | Orders and transport | **Done** |
-| 5 | Receiving | Next |
-| 6 | Inventory and consumption | |
+| 5 | Receiving | **Done** |
+| 6 | Inventory and consumption | Next |
 | 7 | Temporary Excavation | |
 | 8 | Quality and hand-off | |
 
@@ -116,9 +116,10 @@ npm i -D playwright        # not a project dependency
 node scripts/verify-foundation.mjs
 ```
 
-122 checks, covering authentication end to end, the Organization Home, the
-project hierarchy, mineral acquisition through to a created enquiry, and
-orders through to vehicle tracking. The
+143 checks, covering authentication end to end, the Organization Home, the
+project hierarchy, mineral acquisition through to a created enquiry, orders
+through to vehicle tracking, and receiving through to the inventory it
+updates. The
 access-control and context assertions matter most, because they cover the
 rules most likely to break quietly months from now:
 
@@ -141,6 +142,10 @@ rules most likely to break quietly months from now:
 - *"Tracking is operational, not a courier ETA"* — the screen is asserted to
   answer every question the product context lists, and route progress is
   asserted to be derived from reported position rather than a timer.
+- *"Do not bury discrepancies"* — dispatched, received and difference are
+  asserted to appear together and live, before anything is committed, and
+  inventory is asserted to increase by what was **received**, never by what
+  was dispatched.
 
 These are executable checks rather than notes in a document. The second has
 been verified to fail correctly: injecting a single
@@ -164,3 +169,5 @@ question it depends on — see the table in
   *validation logic* is real.
 - **Operational data is in-memory** and resets on reload. Session and
   organization context persist, so a refresh keeps you signed in and in scope.
+  This matters when testing: a receipt or a registration survives client-side
+  navigation but not a page reload.

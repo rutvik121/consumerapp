@@ -37,6 +37,7 @@ import { db } from '../db';
  */
 
 export * from './authRepository';
+export * from './receivingRepository';
 
 export const userRepository = {
   getById: (id: ID): Promise<User | null> =>

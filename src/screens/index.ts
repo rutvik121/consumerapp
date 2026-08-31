@@ -34,7 +34,7 @@ export {
   EnquiriesScreen,
   EnquiryDetailsScreen,
 } from './enquiry';
-export { ReceiveScreen } from './ReceiveScreen';
+export { ReceiveScreen, ReceiveDeliveryScreen } from './receiving';
 export { InventoryScreen } from './InventoryScreen';
 export { MineralScreen } from './MineralScreen';
 export {

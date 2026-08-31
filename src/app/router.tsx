@@ -24,6 +24,7 @@ import {
   PackageDetailsScreen,
   ProjectDetailsScreen,
   ProjectsScreen,
+  ReceiveDeliveryScreen,
   ReceiveScreen,
   RegisterScreen,
   SplashScreen,
@@ -155,6 +156,7 @@ export function AppRouter() {
           <Route path={ROUTES.enquiries} element={<EnquiriesScreen />} />
           <Route path={ROUTES.enquiryDetails()} element={<EnquiryDetailsScreen />} />
           <Route path={ROUTES.receive} element={<ReceiveScreen />} />
+          <Route path={ROUTES.receiveDelivery()} element={<ReceiveDeliveryScreen />} />
           <Route path={ROUTES.inventory} element={<InventoryScreen />} />
 
           {/*
