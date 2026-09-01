@@ -113,7 +113,7 @@ export function useApplicationForm({ user, organization, context }: UseApplicati
     }
 
     if (!organization) return;
-    const ready = toCreateInput(draft, goToPayment);
+    const ready = toCreateInput(draft, goToPayment && draft.declarationAccepted);
     if (!ready) return;
 
     setSubmitting(true);
