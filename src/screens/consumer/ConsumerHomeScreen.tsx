@@ -147,7 +147,25 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
         </>
       )}
 
-      {/* ---------- 2. The reason they opened the app ---------- */}
+      {/* ---------- 2. Inventory is the most important operational summary ---------- */}
+      <SectionHeader title={t.consumerHome.yourInventory} />
+      <Surface className="border-y border-line px-4 py-4">
+        <MetricTile
+          size="lg"
+          label={t.consumerHome.available}
+          value={data.available ? formatQuantityValue(data.available) : '0'}
+          unit={data.available?.unit ?? 'MT'}
+          onClick={() => navigate(ROUTES.inventory)}
+        />
+        {!data.available && (
+          <p className="mt-2 flex items-center gap-2 text-caption text-ink-muted">
+            <Warehouse size={13} aria-hidden />
+            Mineral you receive will appear here.
+          </p>
+        )}
+      </Surface>
+
+      {/* ---------- 3. The reason they opened the app ---------- */}
       <Surface className="mt-5 border-y border-line px-4 py-5">
         <h2 className="text-title-lg text-ink">{t.consumerHome.needMineral}</h2>
         <p className="mt-1.5 text-body text-ink-secondary">{t.consumerHome.needMineralBody}</p>
@@ -162,7 +180,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
         </Button>
       </Surface>
 
-      {/* ---------- 3. What they have already asked for ---------- */}
+      {/* ---------- 4. What they have already asked for ---------- */}
       <SectionHeader
         title={t.consumerHome.recentActivity}
         {...(hasActivity
@@ -213,24 +231,6 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
           ))}
         </ListGroup>
       )}
-
-      {/* ---------- 4. What they are holding ---------- */}
-      <SectionHeader title={t.consumerHome.yourInventory} />
-      <Surface className="border-y border-line px-4 py-4">
-        <MetricTile
-          size="lg"
-          label={t.consumerHome.available}
-          value={data.available ? formatQuantityValue(data.available) : '0'}
-          unit={data.available?.unit ?? 'MT'}
-          onClick={() => navigate(ROUTES.inventory)}
-        />
-        {!data.available && (
-          <p className="mt-2 flex items-center gap-2 text-caption text-ink-muted">
-            <Warehouse size={13} aria-hidden />
-            Mineral you receive will appear here.
-          </p>
-        )}
-      </Surface>
     </div>
   );
 }
