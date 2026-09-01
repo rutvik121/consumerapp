@@ -66,8 +66,39 @@ export const projectRepository = {
   listByOrganization: (organizationId: ID): Promise<Project[]> =>
     request(() => db.projects.filter((project) => project.organizationId === organizationId)),
 
+  listForConsumer: (userId: ID): Promise<Project[]> =>
+    request(() => db.projects.filter((project) => project.organizationId === userId)),
+
   getById: (id: ID): Promise<Project | null> =>
     request(() => db.projects.find((project) => project.id === id) ?? null),
+
+  createForConsumer: (
+    userId: ID,
+    input: {
+      name: string;
+      code: string;
+      location: Address;
+      geo: GeoPoint;
+      status?: Project['status'];
+      startDate?: string;
+    },
+  ): Promise<Project> =>
+    request(() => {
+      const today = input.startDate ?? new Date().toISOString().slice(0, 10);
+      const project: Project = {
+        id: `proj-${db.projects.length + 1}-${Date.now()}`,
+        organizationId: userId,
+        name: input.name.trim(),
+        code: input.code.trim(),
+        location: input.location,
+        geo: input.geo,
+        status: input.status ?? 'ACTIVE',
+        startDate: today,
+      };
+
+      db.projects.unshift(project);
+      return project;
+    }),
 };
 
 export const packageRepository = {

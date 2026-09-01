@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { FileText, Package as PackageIcon, Search, Truck, Warehouse } from 'lucide-react';
-import type { Delivery, Enquiry, Mineral, Order, Quantity } from '@/domain';
+import type { Delivery, Enquiry, Mineral, Order, Project, Quantity } from '@/domain';
 import {
   canReceiveDelivery,
   formatQuantity,
@@ -28,6 +28,7 @@ import {
   inventoryRepository,
   mineralRepository,
   orderRepository,
+  projectRepository,
   useAsync,
 } from '@/data';
 import { useCurrentUser } from '@/state';
@@ -39,6 +40,7 @@ interface ConsumerHomeData {
   orders: Order[];
   available: Quantity | null;
   minerals: Mineral[];
+  projects: Project[];
 }
 
 /**
@@ -64,12 +66,13 @@ export function ConsumerHomeScreen() {
   const query = useAsync(async () => {
     if (!user) throw new Error('A session is required');
 
-    const [deliveries, enquiries, orders, balances, minerals] = await Promise.all([
+    const [deliveries, enquiries, orders, balances, minerals, projects] = await Promise.all([
       deliveryRepository.listForUser(user.id),
       enquiryRepository.list({ raisedByUserId: user.id }),
       orderRepository.list({ placedByUserId: user.id }),
       inventoryRepository.list({ userId: user.id }),
       mineralRepository.listAll(),
+      projectRepository.listForConsumer(user.id),
     ]);
 
     return {
@@ -78,6 +81,7 @@ export function ConsumerHomeScreen() {
       orders,
       available: primaryAvailable(balances),
       minerals,
+      projects,
     } satisfies ConsumerHomeData;
   }, [user?.id]);
 
@@ -147,7 +151,48 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
         </>
       )}
 
-      {/* ---------- 2. Inventory is the most important operational summary ---------- */}
+      {/* ---------- 2. A project gives the home page a real operational context ---------- */}
+      <SectionHeader title="Your project" />
+      {data.projects.length === 0 ? (
+        <Surface className="border-y border-line px-4 py-5">
+          <p className="text-body text-ink-secondary">
+            Register a project to personalize your sourcing and keep the home screen grounded in a real site.
+          </p>
+          <Button
+            size="lg"
+            fullWidth
+            className="mt-4"
+            onClick={() => navigate(ROUTES.consumerProjectRegistration)}
+          >
+            Register project
+          </Button>
+        </Surface>
+      ) : (
+        <Surface className="border-y border-line px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-overline uppercase text-ink-muted">Active project</p>
+              <h3 className="mt-1 text-title text-ink">{data.projects[0].name}</h3>
+            </div>
+            <span className="rounded-full bg-success-50 px-2 py-1 text-caption font-medium text-success-700">
+              {data.projects[0].status}
+            </span>
+          </div>
+          <p className="mt-2 text-body-sm text-ink-secondary">
+            {data.projects[0].location.line1}, {data.projects[0].location.taluka}, {data.projects[0].location.district}
+          </p>
+          <Button
+            variant="secondary"
+            fullWidth
+            className="mt-3"
+            onClick={() => navigate(ROUTES.consumerProjectRegistration)}
+          >
+            Update project
+          </Button>
+        </Surface>
+      )}
+
+      {/* ---------- 3. Inventory is the most important operational summary ---------- */}
       <SectionHeader title={t.consumerHome.yourInventory} />
       <Surface className="border-y border-line px-4 py-4">
         <MetricTile
@@ -165,7 +210,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
         )}
       </Surface>
 
-      {/* ---------- 3. The reason they opened the app ---------- */}
+      {/* ---------- 4. The reason they opened the app ---------- */}
       <Surface className="mt-5 border-y border-line px-4 py-5">
         <h2 className="text-title-lg text-ink">{t.consumerHome.needMineral}</h2>
         <p className="mt-1.5 text-body text-ink-secondary">{t.consumerHome.needMineralBody}</p>

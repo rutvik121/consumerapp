@@ -29,6 +29,7 @@ export const ROUTES = {
 
   /** Normal Consumer's mineral tab (Increment 3). */
   mineral: '/mineral',
+  consumerProjectRegistration: '/consumer/projects/new',
 
   /* --- Shared operational flows --- */
   stockPoints: '/stock-points',

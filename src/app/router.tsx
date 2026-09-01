@@ -17,6 +17,7 @@ import {
   InventoryScreen,
   LoginScreen,
   MineralScreen,
+  ConsumerProjectRegistrationScreen,
   MoreScreen,
   NotFoundScreen,
   OrderDetailsScreen,
@@ -137,6 +138,14 @@ export function AppRouter() {
             element={
               <RoleGuard capability="VIEW_MINERAL_TAB">
                 <MineralScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.consumerProjectRegistration}
+            element={
+              <RoleGuard capability="VIEW_MINERAL_TAB">
+                <ConsumerProjectRegistrationScreen />
               </RoleGuard>
             }
           />
