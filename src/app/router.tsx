@@ -10,6 +10,7 @@ import {
 import {
   CreateEnquiryScreen,
   DeliveryTrackingScreen,
+  LiveVehicleTrackingScreen,
   EnquiriesScreen,
   EnquiryDetailsScreen,
   HomeScreen,
@@ -34,6 +35,7 @@ import {
   RegisterScreen,
   SplashScreen,
   StockPointDetailsScreen,
+  StockPointMapScreen,
   StockPointsScreen,
   ApplicationDetailsScreen,
   NewApplicationScreen,
@@ -184,6 +186,7 @@ export function AppRouter() {
           <Route path={ROUTES.orders} element={<OrdersScreen />} />
           <Route path={ROUTES.orderDetails()} element={<OrderDetailsScreen />} />
           <Route path={ROUTES.deliveryTracking()} element={<DeliveryTrackingScreen />} />
+          <Route path={ROUTES.liveVehicleTracking()} element={<LiveVehicleTrackingScreen />} />
           {/*
             Mineral acquisition, in the order the product context fixes:
             Find Stock Point → Stock Point Details → Mineral Enquiry.
@@ -191,6 +194,7 @@ export function AppRouter() {
             why its path is nested under one.
           */}
           <Route path={ROUTES.stockPoints} element={<StockPointsScreen />} />
+          <Route path={ROUTES.stockPointsMap} element={<StockPointMapScreen />} />
           <Route path={ROUTES.stockPointDetails()} element={<StockPointDetailsScreen />} />
           <Route path={ROUTES.createEnquiry()} element={<CreateEnquiryScreen />} />
           <Route path={ROUTES.enquiries} element={<EnquiriesScreen />} />

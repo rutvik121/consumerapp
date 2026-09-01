@@ -22,6 +22,7 @@ import { OrganizationContextBar, ROUTES, Screen } from '@/navigation';
 import { mineralRepository, packageRepository, projectRepository, stockPointRepository, useAsync } from '@/data';
 import { useCurrentOrganization, useOperatingContext, useOrganizationContextStore } from '@/state';
 import { useCopy } from '@/content';
+import { StockPointMap } from './StockPointMap';
 
 const DISTANCE_OPTIONS = [
   { value: '', label: 'Any distance' },
@@ -30,22 +31,7 @@ const DISTANCE_OPTIONS = [
   { value: '100', label: 'Within 100 km' },
 ];
 
-/**
- * FIND STOCK POINT — the start of every acquisition.
- *
- *     Find Stock Point → Stock Point Details → Mineral Enquiry
- *
- * Built ONCE for both roles. What differs is only where distance is measured
- * from: an Organization's active package site, or a Normal Consumer's
- * registered delivery address. Both arrive as `context.destination`, so
- * nothing here branches on user type.
- *
- * An Organization that has not yet chosen a package has no destination to
- * measure from. Rather than silently ranking against nothing, the screen says
- * so and offers the way forward — which is also the one place it is legitimate
- * to ask for context, because there genuinely is none yet.
- */
-export function StockPointsScreen() {
+export function StockPointMapScreen() {
   const context = useOperatingContext();
   const navigate = useNavigate();
   const t = useCopy();
@@ -60,6 +46,8 @@ export function StockPointsScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<ID | null>(null);
+  const [selectedOnMap, setSelectedOnMap] = useState<ID | null>(null);
+
   const destination = context?.destination ?? null;
 
   const minerals = useAsync(() => mineralRepository.listAll(), []);
@@ -97,7 +85,6 @@ export function StockPointsScreen() {
   const mineralName = (id: ID) =>
     minerals.data?.find((mineral) => mineral.id === id)?.name ?? 'Mineral';
 
-  /* Organization without a package: no destination, so no meaningful ranking. */
   if (context && !destination) {
     return (
       <Screen title={t.discovery.title} onBack>
@@ -189,11 +176,7 @@ export function StockPointsScreen() {
       className="flex flex-col"
     >
       <Surface className="sticky top-0 z-20 border-b border-line px-4 py-3">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder={t.discovery.searchPlaceholder}
-        />
+        <SearchInput value={search} onChange={setSearch} placeholder={t.discovery.searchPlaceholder} />
 
         <div className="mt-3 flex items-center gap-2">
           <Button
@@ -205,22 +188,16 @@ export function StockPointsScreen() {
             {activeFilters > 0 ? `${t.discovery.filters} · ${activeFilters}` : t.discovery.filters}
           </Button>
 
-          <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.stockPointsMap)}>
-            Map view
+          <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.stockPoints)}>
+            List view
           </Button>
         </div>
 
         {activeFilters > 0 && (
           <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
-            {mineralId && (
-              <Chip active label={mineralName(mineralId)} onRemove={() => setMineralId('')} />
-            )}
+            {mineralId && <Chip active label={mineralName(mineralId)} onRemove={() => setMineralId('')} />}
             {maxDistance && (
-              <Chip
-                active
-                label={`Within ${maxDistance} km`}
-                onRemove={() => setMaxDistance('')}
-              />
+              <Chip active label={`Within ${maxDistance} km`} onRemove={() => setMaxDistance('')} />
             )}
             {inStockOnly && (
               <Chip active label={t.discovery.inStockOnly} onRemove={() => setInStockOnly(false)} />
@@ -253,27 +230,41 @@ export function StockPointsScreen() {
         />
       )}
 
-      {results.data && results.data.length > 0 && (
-        <>
-          <p className="px-4 pt-4 pb-2 text-overline text-ink-muted uppercase">
-            {t.discovery.resultCount(results.data.length)}
-          </p>
+      {results.data && results.data.length > 0 && destination && (
+        <div className="relative flex-1 min-h-[360px] w-full overflow-hidden bg-neutral-100">
+          <StockPointMap
+            origin={destination.geo}
+            originLabel={destination.label}
+            results={results.data}
+            selectedId={selectedOnMap}
+            onSelect={setSelectedOnMap}
+          />
+        </div>
+      )}
 
-          <ListGroup className="border-y border-line">
+      {results.data && results.data.length > 0 && (
+        <BottomSheet
+          open
+          onClose={() => undefined}
+          title={t.discovery.title}
+          description={t.discovery.resultCount(results.data.length)}
+          className="max-h-[52%]"
+        >
+          <ListGroup className="px-2 pb-1">
             {results.data.map((result, index) => (
               <StockPointRow
                 key={result.stockPoint.id}
                 result={result}
                 index={index + 1}
-                showIndex={false}
+                showIndex
                 hasDestination={Boolean(destination)}
                 mineralName={mineralName}
-                highlighted={false}
+                highlighted={result.stockPoint.id === selectedOnMap}
                 onOpen={() => navigate(ROUTES.stockPointDetails(result.stockPoint.id))}
               />
             ))}
           </ListGroup>
-        </>
+        </BottomSheet>
       )}
 
       <BottomSheet
@@ -336,10 +327,6 @@ export function StockPointsScreen() {
   );
 }
 
-/**
- * Prioritised exactly as the product context asks: name, location, distance,
- * available mineral, available quantity, operational status.
- */
 function StockPointRow({
   result,
   index,
@@ -367,7 +354,6 @@ function StockPointRow({
   return (
     <ListRow
       className={highlighted ? 'bg-primary-50/50' : undefined}
-      /* In map view the number ties this row to its point on the map. */
       leading={showIndex ? <span className="text-label font-semibold">{index}</span> : <Warehouse size={17} />}
       leadingTone={stockPoint.status === 'OPERATIONAL' ? 'primary' : 'neutral'}
       title={stockPoint.name}

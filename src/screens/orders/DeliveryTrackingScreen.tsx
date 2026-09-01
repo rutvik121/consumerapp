@@ -16,7 +16,6 @@ import {
 import { ROUTES, Screen } from '@/navigation';
 import { deliveryRepository, mineralRepository, useAsync } from '@/data';
 import { useCopy } from '@/content';
-import { DeliveryRouteStrip } from './DeliveryRouteStrip';
 
 /**
  * VEHICLE TRACKING — an operational workflow, not a courier ETA screen.
@@ -111,16 +110,7 @@ export function DeliveryTrackingScreen() {
             )}
           </Surface>
 
-          {/* ---------- 2. Where it is going ---------- */}
-          <SectionHeader title={t.tracking.route} />
-          <Surface className="border-y border-line p-3">
-            <DeliveryLiveMap delivery={delivery} />
-          </Surface>
-          <Surface className="border-y border-line">
-            <DeliveryRouteStrip delivery={delivery} />
-          </Surface>
-
-          {/* ---------- 3. The transport transaction behind it ---------- */}
+          {/* ---------- 2. The transport transaction behind it ---------- */}
           <SectionHeader title={t.tracking.transportPermit} />
           <Surface className="border-y border-line">
             <DetailList
@@ -147,7 +137,7 @@ export function DeliveryTrackingScreen() {
                 { label: t.tracking.driver, value: delivery.vehicle.driverName },
               ]}
             />
-            <div className="px-4 py-3">
+            <div className="space-y-3 px-4 py-3">
               <Button
                 variant="secondary"
                 fullWidth
@@ -157,6 +147,14 @@ export function DeliveryTrackingScreen() {
                 }}
               >
                 {t.tracking.callDriver} · {delivery.vehicle.driverMobileNumber}
+              </Button>
+              <Button
+                variant="secondary"
+                fullWidth
+                leftIcon={<MapPinned size={15} />}
+                onClick={() => navigate(ROUTES.liveVehicleTracking(delivery.id))}
+              >
+                Track Live Vehicle
               </Button>
             </div>
           </Surface>
@@ -212,7 +210,104 @@ export function DeliveryTrackingScreen() {
   );
 }
 
-function DeliveryLiveMap({ delivery }: { delivery: Delivery }) {
+export function LiveVehicleTrackingScreen() {
+  const { deliveryId } = useParams<{ deliveryId: string }>();
+  const t = useCopy();
+
+  const query = useAsync(async () => {
+    if (!deliveryId) throw new Error('A delivery is required');
+
+    const delivery = await deliveryRepository.getById(deliveryId);
+    if (!delivery) throw new Error('Delivery not found');
+
+    const minerals = await mineralRepository.listAll();
+    return { delivery, minerals };
+  }, [deliveryId]);
+
+  const delivery = query.data?.delivery;
+  const mineral = query.data?.minerals.find(
+    (candidate) => candidate.id === delivery?.permit.mineralId,
+  );
+
+  return (
+    <Screen
+      title="Live vehicle tracking"
+      {...(delivery ? { subtitle: delivery.deliveryNumber } : {})}
+      onBack
+      className="relative bg-neutral-100"
+    >
+      {query.loading && <LoadingState variant="list" rows={5} />}
+      {query.error && <ErrorState onRetry={query.reload} />}
+
+      {query.data && delivery && (
+        <div className="relative h-[calc(100vh-64px)] overflow-hidden bg-neutral-100">
+          <div className="absolute inset-0 z-0">
+            <DeliveryLiveMap delivery={delivery} showLabels={false} />
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 z-10 max-h-[58vh] rounded-t-[28px] border-t border-x border-line bg-surface shadow-e3">
+            <div className="flex justify-center pt-2.5 pb-1">
+              <span className="h-1.5 w-12 rounded-full bg-neutral-300" aria-hidden />
+            </div>
+
+            <div className="no-scrollbar overflow-y-auto px-4 pb-5 pt-2">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-title-sm text-ink">{delivery.vehicle.registrationNumber}</p>
+                  <p className="text-body-sm text-ink-secondary">
+                    {mineral?.name} · <span className="tabular">{formatQuantity(delivery.dispatchedQuantity)}</span>
+                  </p>
+                </div>
+                <StatusBadge {...statusPresentation.delivery(delivery.status)} />
+              </div>
+
+              <DetailList
+                items={[
+                  { label: 'From', value: delivery.permit.sourceQuarryName },
+                  { label: 'To', value: delivery.permit.destinationLabel },
+                  { label: 'Driver', value: delivery.vehicle.driverName },
+                  { label: 'Mobile', value: delivery.vehicle.driverMobileNumber },
+                  { label: 'Permit no.', value: delivery.permit.etpNumber, numeric: true },
+                  {
+                    label: 'Last update',
+                    value: formatDateTime(
+                      delivery.tracking.at(-1)?.at ??
+                        delivery.arrivedAt ??
+                        delivery.expectedArrivalAt ??
+                        delivery.dispatchedAt ??
+                        new Date().toISOString(),
+                    ),
+                  },
+                ]}
+              />
+
+              <div className="mt-4 flex gap-2">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  leftIcon={<Phone size={15} />}
+                  onClick={() => {
+                    window.location.href = `tel:${delivery.vehicle.driverMobileNumber}`;
+                  }}
+                >
+                  {t.tracking.callDriver}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Screen>
+  );
+}
+
+function DeliveryLiveMap({
+  delivery,
+  showLabels = true,
+}: {
+  delivery: Delivery;
+  showLabels?: boolean;
+}) {
   const sourceUpdate = delivery.tracking.find((update) => update.geo);
   const latestUpdate = [...delivery.tracking].reverse().find((update) => update.geo);
   const sourceGeo = sourceUpdate?.geo ?? delivery.destination.geo;
@@ -231,13 +326,13 @@ function DeliveryLiveMap({ delivery }: { delivery: Delivery }) {
   ];
 
   return (
-    <div className="space-y-3">
-      <div className="h-64 overflow-hidden rounded-xl border border-line bg-neutral-100">
+    <div className={showLabels ? 'space-y-3' : 'h-full'}>
+      <div className={showLabels ? 'h-64 overflow-hidden rounded-xl border border-line bg-neutral-100' : 'h-full overflow-hidden bg-neutral-100'}>
         <MapContainer
           center={center}
           zoom={10}
-          scrollWheelZoom={false}
-          zoomControl={false}
+          scrollWheelZoom={true}
+          zoomControl={showLabels ? false : true}
           style={{ height: '100%', width: '100%' }}
           className="h-full w-full"
         >
@@ -267,20 +362,22 @@ function DeliveryLiveMap({ delivery }: { delivery: Delivery }) {
         </MapContainer>
       </div>
 
-      <div className="flex flex-wrap gap-2 px-1 pb-1">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-caption font-medium text-emerald-700">
-          <span className="size-2 rounded-full bg-emerald-500" />
-          {sourceUpdate?.locationLabel ?? delivery.permit.sourceQuarryName}
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-caption font-medium text-sky-700">
-          <MapPinned size={12} />
-          {latestUpdate?.locationLabel ?? 'Current location'}
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-caption font-medium text-violet-700">
-          <span className="size-2 rounded-full bg-violet-500" />
-          {delivery.permit.destinationLabel}
-        </span>
-      </div>
+      {showLabels && (
+        <div className="flex flex-wrap gap-2 px-1 pb-1">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-caption font-medium text-emerald-700">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            {sourceUpdate?.locationLabel ?? delivery.permit.sourceQuarryName}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-caption font-medium text-sky-700">
+            <MapPinned size={12} />
+            {latestUpdate?.locationLabel ?? 'Current location'}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-caption font-medium text-violet-700">
+            <span className="size-2 rounded-full bg-violet-500" />
+            {delivery.permit.destinationLabel}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
