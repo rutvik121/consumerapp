@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
+  Bell,
   ChevronRight,
   ClipboardList,
   FileText,
@@ -20,6 +21,7 @@ import {
   statusPresentation,
 } from '@/rules';
 import {
+  BottomSheet,
   Button,
   Divider,
   EmptyState,
@@ -42,78 +44,92 @@ import { useOrganizationOverview, type OrganizationOverview } from './useOrganiz
  * preference:
  *
  *   1. Attention Required     what must I act on?
- *   2. Temporary Excavation   what compliance work is open?
- *   3. Business Overview      how is the organization doing?
+ *   2. Business Overview      how is the organization doing?
+ *   3. Temporary Excavation   what compliance work is open?
  *   4. Quick Actions          what do I do most often?
  *   5. Active Deliveries      what is moving right now?
  *   6. Inventory Snapshot     what do I have?
  *
- * Temporary Excavation is a checkpoint for the organization, not a hidden
- * follow-on module. It must be visible without scrolling because it directly
- * answers whether the business has work outstanding with the department.
+ * Temporary Excavation remains a checkpoint for the organization, but it sits
+ * below the broader business snapshot so the home screen opens with the
+ * operating performance context first and the compliance queue next.
  */
 export function OrganizationHomeScreen() {
   const user = useCurrentUser();
   const organization = useCurrentOrganization();
   const overview = useOrganizationOverview(organization?.id);
   const t = useCopy();
+  const [alertsOpen, setAlertsOpen] = useState(false);
+
+  const alertCount = overview.data?.attention.length ?? 0;
 
   return (
     <Screen
       title={organization?.name ?? t.app.name}
       {...(user ? { subtitle: user.fullName } : {})}
+      actions={
+        overview.data ? (
+          <button
+            type="button"
+            onClick={() => setAlertsOpen((open) => !open)}
+            className="relative flex items-center justify-center rounded-full p-1.5 text-ink-muted transition-colors hover:bg-neutral-100"
+            aria-label="Alerts"
+          >
+            <Bell size={18} />
+            {alertCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-[9px] font-semibold text-white">
+                {alertCount}
+              </span>
+            )}
+          </button>
+        ) : undefined
+      }
     >
       {overview.loading && <LoadingState variant="list" rows={5} />}
 
       {overview.error && <ErrorState onRetry={overview.reload} />}
 
-      {overview.data && <OverviewSections overview={overview.data} />}
+      {overview.data && <OverviewSections overview={overview.data} alertsOpen={alertsOpen} setAlertsOpen={setAlertsOpen} />}
     </Screen>
   );
 }
 
-function OverviewSections({ overview }: { overview: OrganizationOverview }) {
+function OverviewSections({
+  overview,
+  alertsOpen,
+  setAlertsOpen,
+}: {
+  overview: OrganizationOverview;
+  alertsOpen: boolean;
+  setAlertsOpen: (open: boolean) => void;
+}) {
   const navigate = useNavigate();
   const t = useCopy();
-  const [attentionOpen, setAttentionOpen] = useState(false);
 
   return (
     <div className="pb-8">
-      {/* ---------- 1. ATTENTION REQUIRED ---------- */}
-      <SectionHeader
-        title={t.organizationHome.attentionRequired}
-        {...(overview.attention.length > 0
-          ? {
-              action: (
-                <button
-                  type="button"
-                  onClick={() => setAttentionOpen((open) => !open)}
-                  className="inline-flex items-center gap-2 text-left"
-                >
-                  <StatusBadge label={String(overview.attention.length)} tone="warning" size="sm" />
-                  <ChevronRight
-                    size={14}
-                    className={['shrink-0 text-ink-muted transition-transform', attentionOpen ? 'rotate-90' : ''].join(' ')}
-                  />
-                </button>
-              ),
-            }
-          : {})}
-      />
-
-      {overview.attention.length === 0 ? (
-        <Surface className="border-y border-line">
-          <EmptyState
-            className="py-8"
-            icon={<PackageCheck size={22} />}
-            title={t.organizationHome.attentionClear}
-            description={t.organizationHome.attentionClearBody}
-          />
-        </Surface>
-      ) : attentionOpen ? (
-        <Surface className="border-y border-warning-200 bg-gradient-to-br from-warning-50 via-surface to-surface p-3 shadow-sm">
-          <div className="space-y-2">
-            {overview.attention.slice(0, 3).map((item) => {
+      <BottomSheet
+        open={alertsOpen}
+        onClose={() => setAlertsOpen(false)}
+        title="Alerts"
+        description={
+          overview.attention.length > 0
+            ? `${overview.attention.length} pending` 
+            : 'No alerts'
+        }
+      >
+        {overview.attention.length === 0 ? (
+          <div className="px-4 pb-4 pt-1">
+            <EmptyState
+              className="py-8"
+              icon={<PackageCheck size={22} />}
+              title={t.organizationHome.attentionClear}
+              description={t.organizationHome.attentionClearBody}
+            />
+          </div>
+        ) : (
+          <div className="space-y-2 px-4 pb-4 pt-1">
+            {overview.attention.map((item) => {
               const itemIcon =
                 item.kind === 'QUANTITY_DISCREPANCY' ? (
                   <ShieldAlert size={14} />
@@ -128,6 +144,7 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
                   key={item.id}
                   type="button"
                   onClick={() => {
+                    setAlertsOpen(false);
                     if (item.applicationId) navigate(ROUTES.temporaryExcavation);
                     else if (item.deliveryId) navigate(ROUTES.deliveryTracking(item.deliveryId));
                     else navigate(ROUTES.orders);
@@ -159,20 +176,53 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
                 </button>
               );
             })}
-            {overview.attention.length > 3 && (
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.orders)}
-                className="w-full pt-1 text-left text-label font-medium text-primary-700"
-              >
-                +{overview.attention.length - 3} more actions
-              </button>
-            )}
           </div>
-        </Surface>
-      ) : null}
+        )}
+      </BottomSheet>
 
-      {/* ---------- 2. TEMPORARY EXCAVATION (organization only) ---------- */}
+      {/* ---------- 2. BUSINESS OVERVIEW ---------- */}
+      <SectionHeader title={t.organizationHome.businessOverview} />
+      <Surface className="border-y border-line bg-gradient-to-br from-surface to-neutral-50 shadow-sm">
+        <div className="grid grid-cols-2 gap-3 px-4 py-4">
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.activeProjects}
+              value={overview.activeProjectCount}
+              onClick={() => navigate(ROUTES.projects)}
+            />
+          </div>
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.activePackages}
+              value={overview.activePackageCount}
+            />
+          </div>
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.activeOrders}
+              value={overview.activeOrderCount}
+              onClick={() => navigate(ROUTES.orders)}
+            />
+          </div>
+          <div className="rounded-xl border border-line bg-surface px-3 py-3">
+            <MetricTile
+              className="gap-2"
+              label={t.organizationHome.availableInventory}
+              value={
+                overview.availableInventory
+                  ? formatQuantityValue(overview.availableInventory)
+                  : '—'
+              }
+              {...(overview.availableInventory ? { unit: overview.availableInventory.unit } : {})}
+            />
+          </div>
+        </div>
+      </Surface>
+
+      {/* ---------- 3. TEMPORARY EXCAVATION (organization only) ---------- */}
       <SectionHeader title={t.organizationHome.temporaryExcavation} />
       <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-md ring-1 ring-primary-100">
         <div className="px-4 py-4">
@@ -223,48 +273,6 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
           >
             {t.organizationHome.viewApplications}
           </Button>
-        </div>
-      </Surface>
-
-      {/* ---------- 3. BUSINESS OVERVIEW ---------- */}
-      <SectionHeader title={t.organizationHome.businessOverview} />
-      <Surface className="border-y border-line bg-gradient-to-br from-surface to-neutral-50 shadow-sm">
-        <div className="grid grid-cols-2 gap-3 px-4 py-4">
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.activeProjects}
-              value={overview.activeProjectCount}
-              onClick={() => navigate(ROUTES.projects)}
-            />
-          </div>
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.activePackages}
-              value={overview.activePackageCount}
-            />
-          </div>
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.activeOrders}
-              value={overview.activeOrderCount}
-              onClick={() => navigate(ROUTES.orders)}
-            />
-          </div>
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.availableInventory}
-              value={
-                overview.availableInventory
-                  ? formatQuantityValue(overview.availableInventory)
-                  : '—'
-              }
-              {...(overview.availableInventory ? { unit: overview.availableInventory.unit } : {})}
-            />
-          </div>
         </div>
       </Surface>
 
