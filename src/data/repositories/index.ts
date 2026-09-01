@@ -72,6 +72,36 @@ export const projectRepository = {
   getById: (id: ID): Promise<Project | null> =>
     request(() => db.projects.find((project) => project.id === id) ?? null),
 
+  createForOrganization: (
+    organizationId: ID,
+    input: {
+      name: string;
+      code: string;
+      location: Address;
+      geo: GeoPoint;
+      materialIds?: ID[];
+      status?: Project['status'];
+      startDate?: string;
+    },
+  ): Promise<Project> =>
+    request(() => {
+      const today = input.startDate ?? new Date().toISOString().slice(0, 10);
+      const project: Project = {
+        id: `proj-${db.projects.length + 1}-${Date.now()}`,
+        organizationId,
+        name: input.name.trim(),
+        code: input.code.trim(),
+        location: input.location,
+        geo: input.geo,
+        ...(input.materialIds ? { materialIds: input.materialIds } : {}),
+        status: input.status ?? 'ACTIVE',
+        startDate: today,
+      };
+
+      db.projects.unshift(project);
+      return project;
+    }),
+
   createForConsumer: (
     userId: ID,
     input: {
@@ -79,6 +109,7 @@ export const projectRepository = {
       code: string;
       location: Address;
       geo: GeoPoint;
+      materialIds?: ID[];
       status?: Project['status'];
       startDate?: string;
     },
@@ -92,6 +123,7 @@ export const projectRepository = {
         code: input.code.trim(),
         location: input.location,
         geo: input.geo,
+        ...(input.materialIds ? { materialIds: input.materialIds } : {}),
         status: input.status ?? 'ACTIVE',
         startDate: today,
       };
@@ -110,6 +142,38 @@ export const packageRepository = {
 
   getById: (id: ID): Promise<Package | null> =>
     request(() => db.packages.find((pkg) => pkg.id === id) ?? null),
+
+  create: (
+    projectId: ID,
+    organizationId: ID,
+    input: {
+      name: string;
+      code: string;
+      siteAddress: Address;
+      siteGeo: GeoPoint;
+      status?: Package['status'];
+      startDate?: string;
+      expectedEndDate?: string;
+    },
+  ): Promise<Package> =>
+    request(() => {
+      const today = input.startDate ?? new Date().toISOString().slice(0, 10);
+      const pkg: Package = {
+        id: `pkg-${db.packages.length + 1}-${Date.now()}`,
+        projectId,
+        organizationId,
+        name: input.name.trim(),
+        code: input.code.trim(),
+        siteAddress: input.siteAddress,
+        siteGeo: input.siteGeo,
+        status: input.status ?? 'ACTIVE',
+        startDate: today,
+        ...(input.expectedEndDate ? { expectedEndDate: input.expectedEndDate } : {}),
+      };
+
+      db.packages.unshift(pkg);
+      return pkg;
+    }),
 };
 
 export const mineralRepository = {

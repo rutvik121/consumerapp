@@ -24,6 +24,7 @@ export const en = {
     home: 'Home',
     projects: 'Projects',
     mineral: 'Mineral',
+    inventory: 'Inventory',
     orders: 'Orders',
     more: 'More',
   },

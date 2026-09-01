@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Boxes } from 'lucide-react';
+import { Boxes, Plus } from 'lucide-react';
 import { formatQuantityValue, primaryAvailable, statusPresentation } from '@/rules';
 import {
+  Button,
   EmptyState,
   ErrorState,
   ListGroup,
@@ -70,6 +71,18 @@ export function ProjectDetailsScreen() {
       title={project?.name ?? t.projects.projectDetails}
       {...(project ? { subtitle: project.code } : {})}
       onBack
+      actions={
+        project ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            leftIcon={<Plus size={14} />}
+            onClick={() => navigate(ROUTES.createPackage(project.id))}
+          >
+            New package
+          </Button>
+        ) : undefined
+      }
     >
       {query.loading && <LoadingState variant="list" rows={4} />}
       {query.error && <ErrorState onRetry={query.reload} />}

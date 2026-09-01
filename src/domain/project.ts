@@ -22,6 +22,9 @@ export interface Project {
   code: string;
   location: Address;
   geo: GeoPoint;
+  /** Materials commonly required at this project so downstream enquiries can be
+   * scoped to the exact construction or excavation use-case. */
+  materialIds?: ID[];
   status: ProjectStatus;
   startDate: ISODate;
   expectedEndDate?: ISODate;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Info } from 'lucide-react';
 import type { ID } from '@/domain';
@@ -15,7 +15,14 @@ import {
   Textarea,
 } from '@/design-system';
 import { OrganizationContextBar, ROUTES, Screen } from '@/navigation';
-import { enquiryRepository, mineralRepository, stockPointRepository, useAsync } from '@/data';
+import {
+  enquiryRepository,
+  mineralRepository,
+  packageRepository,
+  projectRepository,
+  stockPointRepository,
+  useAsync,
+} from '@/data';
 import { useOperatingContext } from '@/state';
 import { useCopy } from '@/content';
 
@@ -42,6 +49,9 @@ export function CreateEnquiryScreen() {
   const t = useCopy();
 
   const [mineralId, setMineralId] = useState<ID | ''>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<ID | ''>(context?.projectId ?? '');
+  const [selectedMaterialId, setSelectedMaterialId] = useState<ID | ''>('');
+  const [selectedPackageId, setSelectedPackageId] = useState<ID | ''>(context?.packageId ?? '');
   const [quantity, setQuantity] = useState<number | null>(null);
   const [requiredByDate, setRequiredByDate] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -58,11 +68,86 @@ export function CreateEnquiryScreen() {
     ]);
     if (!stockPoint) throw new Error('Stock point not found');
 
-    return { stockPoint, minerals };
-  }, [stockPointId]);
+    let projects: { id: ID; name: string; materialIds?: ID[] }[] = [];
+    let packages: { id: ID; name: string; projectId: ID }[] = [];
+
+    if (context?.userType === 'ORGANIZATION' && context.organizationId) {
+      const [orgProjects, orgPackages] = await Promise.all([
+        projectRepository.listByOrganization(context.organizationId),
+        packageRepository.listByOrganization(context.organizationId),
+      ]);
+      projects = orgProjects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        materialIds: project.materialIds,
+      }));
+      packages = orgPackages.map((pkg) => ({ id: pkg.id, name: pkg.name, projectId: pkg.projectId }));
+    }
+
+    if (context?.userType === 'NORMAL_CONSUMER') {
+      const consumerProjects = await projectRepository.listForConsumer(context.userId);
+      projects = consumerProjects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        materialIds: project.materialIds,
+      }));
+    }
+
+    return { stockPoint, minerals, projects, packages };
+  }, [stockPointId, context?.organizationId, context?.projectId, context?.packageId, context?.userId, context?.userType]);
 
   const stockPoint = query.data?.stockPoint;
   const minerals = query.data?.minerals ?? [];
+  const projects = query.data?.projects ?? [];
+  const packages = query.data?.packages ?? [];
+
+  useEffect(() => {
+    if (context?.projectId && !selectedProjectId) setSelectedProjectId(context.projectId);
+    if (context?.packageId && !selectedPackageId) setSelectedPackageId(context.packageId);
+  }, [context?.projectId, context?.packageId, selectedProjectId, selectedPackageId]);
+
+  useEffect(() => {
+    if (selectedProjectId && selectedPackageId) {
+      const packageIsValid = packages.some(
+        (pkg) => pkg.id === selectedPackageId && pkg.projectId === selectedProjectId,
+      );
+      if (!packageIsValid) setSelectedPackageId('');
+    }
+  }, [packages, selectedPackageId, selectedProjectId]);
+
+  useEffect(() => {
+    const project = projects.find((item) => item.id === selectedProjectId);
+    if (!project?.materialIds || project.materialIds.length === 0) {
+      setSelectedMaterialId('');
+      return;
+    }
+
+    if (!selectedMaterialId && project.materialIds[0]) {
+      setSelectedMaterialId(project.materialIds[0]);
+      setMineralId(project.materialIds[0]);
+    }
+
+    if (selectedMaterialId && !project.materialIds.includes(selectedMaterialId)) {
+      const fallback = project.materialIds[0] ?? '';
+      setSelectedMaterialId(fallback);
+      if (fallback) setMineralId(fallback);
+    }
+  }, [projects, selectedMaterialId, selectedProjectId]);
+
+  const projectOptions = projects.map((project) => ({ value: project.id, label: project.name }));
+  const packageOptions = (selectedProjectId
+    ? packages.filter((pkg) => pkg.projectId === selectedProjectId)
+    : packages
+  ).map((pkg) => ({ value: pkg.id, label: pkg.name }));
+  const materialOptions = (selectedProjectId
+    ? projects.find((project) => project.id === selectedProjectId)?.materialIds ?? []
+    : []
+  )
+    .map((materialId) => ({
+      value: materialId,
+      label: minerals.find((mineral) => mineral.id === materialId)?.name ?? 'Mineral',
+    }))
+    .filter((option) => option.label !== 'Mineral');
 
   /* Only minerals this stock point actually holds can be enquired for. */
   const options = (stockPoint?.minerals ?? []).map((holding) => ({
@@ -89,11 +174,18 @@ export function CreateEnquiryScreen() {
 
     setSubmitting(true);
     try {
+      const scope = enquiryScopeFor({
+        userType: context.userType,
+        organizationId: context.organizationId,
+        projectId: selectedProjectId || context.projectId,
+        packageId: selectedPackageId || context.packageId,
+      });
+
       const enquiry = await enquiryRepository.create({
         raisedByUserId: context.userId,
         raisedByUserType: context.userType,
         // The single point where operating context becomes enquiry data.
-        ...enquiryScopeFor(context),
+        ...scope,
         stockPointId: stockPoint.id,
         mineralId,
         requiredQuantity: { value: quantity, unit },
@@ -160,6 +252,54 @@ export function CreateEnquiryScreen() {
 
           <Surface className="border-y border-line px-4 py-4">
             <div className="space-y-4">
+              {projectOptions.length > 0 && (
+                <Select
+                  label={context?.userType === 'ORGANIZATION' ? 'Project' : 'Project for this enquiry'}
+                  placeholder="Select a project"
+                  value={selectedProjectId}
+                  options={projectOptions}
+                  onChange={(event) => {
+                    const nextProjectId = event.target.value;
+                    setSelectedProjectId(nextProjectId);
+                    setSelectedPackageId('');
+                  }}
+                />
+              )}
+
+              {context?.userType === 'ORGANIZATION' && packageOptions.length > 0 && (
+                <Select
+                  label="Package"
+                  placeholder="Select a package"
+                  value={selectedPackageId}
+                  options={packageOptions}
+                  onChange={(event) => setSelectedPackageId(event.target.value)}
+                />
+              )}
+
+              {context?.userType === 'NORMAL_CONSUMER' && projectOptions.length === 0 && (
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => navigate(ROUTES.consumerProjectRegistration)}
+                >
+                  Register a project first
+                </Button>
+              )}
+
+              {materialOptions.length > 0 && (
+                <Select
+                  label="Project material"
+                  placeholder="Select the project material"
+                  value={selectedMaterialId}
+                  options={materialOptions}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setSelectedMaterialId(nextValue);
+                    if (nextValue) setMineralId(nextValue);
+                  }}
+                />
+              )}
+
               <Select
                 label={t.enquiry.selectMineral}
                 required
@@ -169,6 +309,7 @@ export function CreateEnquiryScreen() {
                 {...(errors.mineralId ? { error: errors.mineralId } : {})}
                 onChange={(event) => {
                   setMineralId(event.target.value);
+                  setSelectedMaterialId(event.target.value);
                   setErrors((prev) => ({ ...prev, mineralId: undefined }));
                 }}
               />

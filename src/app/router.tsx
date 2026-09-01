@@ -18,6 +18,9 @@ import {
   LoginScreen,
   MineralScreen,
   ConsumerProjectRegistrationScreen,
+  ConsumerProjectsScreen,
+  CreatePackageScreen,
+  CreateProjectScreen,
   MoreScreen,
   NotFoundScreen,
   OrderDetailsScreen,
@@ -116,10 +119,26 @@ export function AppRouter() {
             }
           />
           <Route
+            path={ROUTES.createProject}
+            element={
+              <RoleGuard capability="VIEW_PROJECTS">
+                <CreateProjectScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
             path={ROUTES.projectDetails()}
             element={
               <RoleGuard capability="VIEW_PROJECTS">
                 <ProjectDetailsScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.createPackage()}
+            element={
+              <RoleGuard capability="VIEW_PACKAGES">
+                <CreatePackageScreen />
               </RoleGuard>
             }
           />
@@ -138,6 +157,14 @@ export function AppRouter() {
             element={
               <RoleGuard capability="VIEW_MINERAL_TAB">
                 <MineralScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.consumerProjects}
+            element={
+              <RoleGuard capability="VIEW_MINERAL_TAB">
+                <ConsumerProjectsScreen />
               </RoleGuard>
             }
           />

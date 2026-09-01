@@ -23,12 +23,15 @@ export const ROUTES = {
 
   /* --- Organization hierarchy (Increment 2) --- */
   projects: '/projects',
+  createProject: '/projects/new',
   projectDetails: (projectId: ID = ':projectId') => `/projects/${projectId}`,
+  createPackage: (projectId: ID = ':projectId') => `/projects/${projectId}/packages/new`,
   packageDetails: (projectId: ID = ':projectId', packageId: ID = ':packageId') =>
     `/projects/${projectId}/packages/${packageId}`,
 
   /** Normal Consumer's mineral tab (Increment 3). */
   mineral: '/mineral',
+  consumerProjects: '/consumer/projects',
   consumerProjectRegistration: '/consumer/projects/new',
 
   /* --- Shared operational flows --- */

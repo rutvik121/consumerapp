@@ -85,7 +85,31 @@ export function MoreScreen() {
           onClick={() => navigate(ROUTES.receive)}
           trailing={null}
         />
+        {user.userType === 'NORMAL_CONSUMER' && (
+          <ListRow
+            leading={<Building2 size={17} />}
+            title="Minerals"
+            subtitle="Explore mineral availability and nearby stock points"
+            onClick={() => navigate(ROUTES.mineral)}
+            trailing={null}
+          />
+        )}
       </ListGroup>
+
+      {user.userType === 'NORMAL_CONSUMER' && (
+        <>
+          <SectionHeader title="More options" />
+          <ListGroup className="border-y border-line">
+            <ListRow
+              leading={<Building2 size={17} />}
+              title="Projects"
+              subtitle="Create and manage your registered sites"
+              onClick={() => navigate(ROUTES.consumerProjects)}
+              trailing={null}
+            />
+          </ListGroup>
+        </>
+      )}
 
       {/* ORGANIZATION ONLY — absent, not disabled, for Normal Consumers. */}
       {(canSeeExcavation || canSeeOrganization) && (

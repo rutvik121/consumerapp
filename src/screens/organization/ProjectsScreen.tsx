@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Layers, MapPin } from 'lucide-react';
+import { Layers, MapPin, Plus } from 'lucide-react';
 import type { Package, Project } from '@/domain';
 import { statusPresentation } from '@/rules';
 import {
+  Button,
   EmptyState,
   ErrorState,
   ListGroup,
@@ -24,6 +25,7 @@ import { useCopy } from '@/content';
  */
 export function ProjectsScreen() {
   const organization = useCurrentOrganization();
+  const navigate = useNavigate();
   const t = useCopy();
 
   const query = useAsync(async () => {
@@ -36,7 +38,14 @@ export function ProjectsScreen() {
   }, [organization?.id]);
 
   return (
-    <Screen title={t.projects.title}>
+    <Screen
+      title={t.projects.title}
+      actions={
+        <Button size="sm" variant="secondary" leftIcon={<Plus size={14} />} onClick={() => navigate(ROUTES.createProject)}>
+          New project
+        </Button>
+      }
+    >
       {query.loading && <LoadingState variant="list" rows={4} />}
       {query.error && <ErrorState onRetry={query.reload} />}
 

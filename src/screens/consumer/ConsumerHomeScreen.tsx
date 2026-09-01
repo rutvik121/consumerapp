@@ -110,7 +110,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
       {data.activeDeliveries.length > 0 && (
         <>
           <SectionHeader title={t.consumerHome.onTheWay} />
-          <Surface className="border-y border-line">
+          <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-sm">
             {data.activeDeliveries.map((delivery) => (
               <div key={delivery.id} className="px-4 py-3">
                 <div className="flex items-start gap-3">
@@ -151,56 +151,16 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
         </>
       )}
 
-      {/* ---------- 2. A project gives the home page a real operational context ---------- */}
-      <SectionHeader title="Your project" />
-      {data.projects.length === 0 ? (
-        <Surface className="border-y border-line px-4 py-5">
-          <p className="text-body text-ink-secondary">
-            Register a project to personalize your sourcing and keep the home screen grounded in a real site.
-          </p>
-          <Button
-            size="lg"
-            fullWidth
-            className="mt-4"
-            onClick={() => navigate(ROUTES.consumerProjectRegistration)}
-          >
-            Register project
-          </Button>
-        </Surface>
-      ) : (
-        <Surface className="border-y border-line px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-overline uppercase text-ink-muted">Active project</p>
-              <h3 className="mt-1 text-title text-ink">{data.projects[0].name}</h3>
-            </div>
-            <span className="rounded-full bg-success-50 px-2 py-1 text-caption font-medium text-success-700">
-              {data.projects[0].status}
-            </span>
-          </div>
-          <p className="mt-2 text-body-sm text-ink-secondary">
-            {data.projects[0].location.line1}, {data.projects[0].location.taluka}, {data.projects[0].location.district}
-          </p>
-          <Button
-            variant="secondary"
-            fullWidth
-            className="mt-3"
-            onClick={() => navigate(ROUTES.consumerProjectRegistration)}
-          >
-            Update project
-          </Button>
-        </Surface>
-      )}
-
-      {/* ---------- 3. Inventory is the most important operational summary ---------- */}
+      {/* ---------- 2. Inventory is the most important operational summary ---------- */}
       <SectionHeader title={t.consumerHome.yourInventory} />
-      <Surface className="border-y border-line px-4 py-4">
+      <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface px-4 py-4 shadow-sm">
         <MetricTile
           size="lg"
           label={t.consumerHome.available}
           value={data.available ? formatQuantityValue(data.available) : '0'}
           unit={data.available?.unit ?? 'MT'}
           onClick={() => navigate(ROUTES.inventory)}
+          className="rounded-md p-2"
         />
         {!data.available && (
           <p className="mt-2 flex items-center gap-2 text-caption text-ink-muted">
@@ -211,8 +171,13 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
       </Surface>
 
       {/* ---------- 4. The reason they opened the app ---------- */}
-      <Surface className="mt-5 border-y border-line px-4 py-5">
-        <h2 className="text-title-lg text-ink">{t.consumerHome.needMineral}</h2>
+      <Surface className="mt-5 border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface px-4 py-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-title-lg text-ink">{t.consumerHome.needMineral}</h2>
+          <span className="rounded-full bg-primary-100 px-2 py-1 text-caption font-medium text-primary-700">
+            Priority
+          </span>
+        </div>
         <p className="mt-1.5 text-body text-ink-secondary">{t.consumerHome.needMineralBody}</p>
         <Button
           size="lg"
