@@ -199,11 +199,17 @@ export const en = {
     onTheWay: 'On the way',
     needMineral: 'Need mineral?',
     needMineralBody: 'Find a stock point near you and send an enquiry.',
+    mineralAvailability: 'Mineral availability',
+    nearestSource: 'Nearest source',
+    notAvailable: 'Not available',
+    viewStockPoints: 'View stock points',
+    sourceCount: (count: number) => `${count} source${count === 1 ? '' : 's'}`,
     recentActivity: 'Recent activity',
     noActivity: 'Nothing yet',
     noActivityBody: 'Your enquiries and orders will appear here.',
     yourInventory: 'Your inventory',
     available: 'Available',
+    unit: 'Unit',
   },
 
   /** Orders and transport. Tracking is operational, never a courier ETA. */
