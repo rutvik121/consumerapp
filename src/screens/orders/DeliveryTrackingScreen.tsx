@@ -1,5 +1,8 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Circle, Phone, Truck } from 'lucide-react';
+import { Circle, CheckCircle2, MapPinned, Phone, Truck } from 'lucide-react';
+import { CircleMarker, MapContainer, Polyline, TileLayer } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import type { Delivery } from '@/domain';
 import { formatQuantity, relativeTime, statusPresentation } from '@/rules';
 import {
   Button,
@@ -110,6 +113,9 @@ export function DeliveryTrackingScreen() {
 
           {/* ---------- 2. Where it is going ---------- */}
           <SectionHeader title={t.tracking.route} />
+          <Surface className="border-y border-line p-3">
+            <DeliveryLiveMap delivery={delivery} />
+          </Surface>
           <Surface className="border-y border-line">
             <DeliveryRouteStrip delivery={delivery} />
           </Surface>
@@ -203,6 +209,79 @@ export function DeliveryTrackingScreen() {
         </div>
       )}
     </Screen>
+  );
+}
+
+function DeliveryLiveMap({ delivery }: { delivery: Delivery }) {
+  const sourceUpdate = delivery.tracking.find((update) => update.geo);
+  const latestUpdate = [...delivery.tracking].reverse().find((update) => update.geo);
+  const sourceGeo = sourceUpdate?.geo ?? delivery.destination.geo;
+  const latestGeo = latestUpdate?.geo ?? delivery.permit.destinationGeo;
+  const routePoints: [number, number][] = [
+    [sourceGeo.latitude, sourceGeo.longitude],
+    ...delivery.tracking
+      .filter((update) => update.geo)
+      .map((update) => [update.geo!.latitude, update.geo!.longitude] as [number, number]),
+    [delivery.permit.destinationGeo.latitude, delivery.permit.destinationGeo.longitude],
+  ];
+
+  const center: [number, number] = [
+    (sourceGeo.latitude + delivery.permit.destinationGeo.latitude) / 2,
+    (sourceGeo.longitude + delivery.permit.destinationGeo.longitude) / 2,
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="h-64 overflow-hidden rounded-xl border border-line bg-neutral-100">
+        <MapContainer
+          center={center}
+          zoom={10}
+          scrollWheelZoom={false}
+          zoomControl={false}
+          style={{ height: '100%', width: '100%' }}
+          className="h-full w-full"
+        >
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Polyline
+            positions={routePoints}
+            pathOptions={{ color: '#2563eb', weight: 5, opacity: 0.8 }}
+          />
+          <CircleMarker
+            center={[sourceGeo.latitude, sourceGeo.longitude]}
+            radius={8}
+            pathOptions={{ color: '#0f766e', fillColor: '#14b8a6', fillOpacity: 0.9 }}
+          />
+          <CircleMarker
+            center={[latestGeo.latitude, latestGeo.longitude]}
+            radius={9}
+            pathOptions={{ color: '#1d4ed8', fillColor: '#60a5fa', fillOpacity: 0.95 }}
+          />
+          <CircleMarker
+            center={[delivery.permit.destinationGeo.latitude, delivery.permit.destinationGeo.longitude]}
+            radius={8}
+            pathOptions={{ color: '#7c3aed', fillColor: '#a78bfa', fillOpacity: 0.9 }}
+          />
+        </MapContainer>
+      </div>
+
+      <div className="flex flex-wrap gap-2 px-1 pb-1">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-caption font-medium text-emerald-700">
+          <span className="size-2 rounded-full bg-emerald-500" />
+          {sourceUpdate?.locationLabel ?? delivery.permit.sourceQuarryName}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-caption font-medium text-sky-700">
+          <MapPinned size={12} />
+          {latestUpdate?.locationLabel ?? 'Current location'}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-caption font-medium text-violet-700">
+          <span className="size-2 rounded-full bg-violet-500" />
+          {delivery.permit.destinationLabel}
+        </span>
+      </div>
+    </div>
   );
 }
 
