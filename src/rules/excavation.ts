@@ -230,20 +230,12 @@ export function validateApplicationStep(
   }
 
   if (step === 'EXCAVATION') {
-    if (!draft.mineralId) errors.mineralId = 'Select a mineral.';
-    if (draft.estimatedQuantity === null || draft.estimatedQuantity <= 0) {
-      errors.estimatedQuantity = 'Enter an estimated quantity.';
-    }
-    if (!draft.excavationMethod) errors.excavationMethod = 'Select an excavation method.';
-    if (draft.depthInMetres === null || draft.depthInMetres <= 0) {
-      errors.depthInMetres = 'Enter the depth.';
-    }
-    if (!draft.fromDate) errors.fromDate = 'Select a start date.';
-    if (!draft.toDate) errors.toDate = 'Select an end date.';
-    if (draft.fromDate && draft.toDate && draft.toDate < draft.fromDate) {
-      errors.toDate = 'The end date cannot be before the start date.';
-    }
-    if (!draft.purpose.trim()) errors.purpose = 'Describe the purpose.';
+   if (!draft.mineralId) errors.mineralId = 'Select a mineral.';
+   if (draft.estimatedQuantity === null || draft.estimatedQuantity <= 0) {
+     errors.estimatedQuantity = 'Enter an estimated quantity.';
+   }
+   if (!draft.excavationMethod) errors.excavationMethod = 'Select an excavation method.';
+   if (!draft.purpose.trim()) errors.purpose = 'Describe the purpose.';
   }
 
   if (step === 'LOCATION') {

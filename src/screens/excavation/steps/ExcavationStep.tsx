@@ -1,5 +1,5 @@
 import type { Mineral } from '@/domain';
-import { Input, QuantityInput, Select, Textarea } from '@/design-system';
+import { QuantityInput, Select, Textarea } from '@/design-system';
 import { EXCAVATION_METHODS, type ApplicationDraft } from '@/rules';
 import { useCopy } from '@/content';
 import type { StepProps } from './ApplicantStep';
@@ -56,36 +56,6 @@ export function ExcavationStep({ draft, errors, update, minerals }: ExcavationSt
           update('excavationMethod', event.target.value as ApplicationDraft['excavationMethod'])
         }
       />
-
-      <Input
-        label={`${t.excavation.depth} (m)`}
-        required
-        inputMode="decimal"
-        value={draft.depthInMetres ?? ''}
-        {...(errors.depthInMetres ? { error: errors.depthInMetres } : {})}
-        onChange={(event) =>
-          update('depthInMetres', event.target.value ? Number(event.target.value) : null)
-        }
-      />
-
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          label={t.excavation.from}
-          required
-          type="date"
-          value={draft.fromDate}
-          {...(errors.fromDate ? { error: errors.fromDate } : {})}
-          onChange={(event) => update('fromDate', event.target.value)}
-        />
-        <Input
-          label={t.excavation.to}
-          required
-          type="date"
-          value={draft.toDate}
-          {...(errors.toDate ? { error: errors.toDate } : {})}
-          onChange={(event) => update('toDate', event.target.value)}
-        />
-      </div>
 
       <Textarea
         label={t.excavation.purpose}

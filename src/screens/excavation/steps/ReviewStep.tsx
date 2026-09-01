@@ -76,9 +76,6 @@ export function ReviewStep({
           },
         ]
       : []),
-    { label: t.excavation.depth, value: `${draft.depthInMetres ?? '—'} m`, numeric: true },
-    { label: t.excavation.from, value: formatDate(draft.fromDate) },
-    { label: t.excavation.to, value: formatDate(draft.toDate) },
     { label: t.excavation.purpose, value: draft.purpose },
     ...(draft.remarks ? [{ label: t.excavation.remarks, value: draft.remarks }] : []),
   ];
@@ -190,11 +187,3 @@ function ReviewSection({
   );
 }
 
-function formatDate(iso: string): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
