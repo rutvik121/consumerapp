@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import type { GeoPoint, StockPointSearchResult } from '@/domain';
-import { cn } from '@/design-system';
 
 export interface StockPointMapProps {
   origin: GeoPoint;
@@ -9,28 +12,88 @@ export interface StockPointMapProps {
   onSelect: (stockPointId: string) => void;
 }
 
-/**
- * A SCHEMATIC map, not a geographic one.
- *
- * The question this view answers is "which sources are near my site, and in
- * which direction?" — not "what does the road network look like". So it plots
- * true relative bearing and distance around the destination, with distance
- * rings for scale, and skips the basemap entirely.
- *
- * This is a deliberate prototype decision rather than a limitation: real map
- * tiles need a network provider and an API key, and a half-loaded tile layer
- * would communicate less than this does. PRODUCTION replaces this component
- * with a real map; everything around it — the result list, the filters, the
- * selection behaviour — stays as it is.
- *
- * SCALE: radius is proportional to the SQUARE ROOT of distance, not to
- * distance. Mineral results are heavily clustered near the site with the
- * occasional distant outlier, and a linear scale collapses every useful result
- * into an unreadable blob at the centre while one 600 km result owns the
- * frame. The square root spreads the near results — the ones the user is
- * actually choosing between — while still showing the far one inside the view.
- * Rings are labelled with real distances so the compression is never hidden.
- */
+function makePointIcon(color: string, index: number, selected: boolean) {
+  return L.divIcon({
+    className: 'stock-point-map-pin',
+    html: `
+      <div style="
+        width: 22px;
+        height: 22px;
+        border-radius: 9999px;
+        background: ${color};
+        border: 2px solid #ffffff;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+        color: white;
+        transform: ${selected ? 'scale(1.15)' : 'scale(1)'};
+      ">${index}</div>
+    `,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -12],
+  });
+}
+
+function makeOriginIcon() {
+  return L.divIcon({
+    className: 'stock-point-origin-pin',
+    html: `
+      <div style="
+        width: 18px;
+        height: 18px;
+        border-radius: 9999px;
+        background: #16a34a;
+        border: 3px solid rgba(22,163,74,0.18);
+        box-shadow: 0 0 0 5px rgba(34,197,94,0.12);
+      "></div>
+    `,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
+function FitMapBounds({
+  origin,
+  results,
+  selectedId,
+}: {
+  origin: GeoPoint;
+  results: StockPointSearchResult[];
+  selectedId?: string | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const points = results.map((result) => [result.stockPoint.geo.latitude, result.stockPoint.geo.longitude] as [number, number]);
+    if (points.length === 0) {
+      map.setView([origin.latitude, origin.longitude], 11);
+      return;
+    }
+
+    const selected = selectedId
+      ? results.find((result) => result.stockPoint.id === selectedId)
+      : null;
+
+    if (selected) {
+      map.flyTo([selected.stockPoint.geo.latitude, selected.stockPoint.geo.longitude], 12, {
+        animate: true,
+        duration: 0.8,
+      });
+      return;
+    }
+
+    const bounds = L.latLngBounds(points);
+    bounds.extend([origin.latitude, origin.longitude]);
+    map.fitBounds(bounds.pad(0.3), { animate: true, maxZoom: 12 });
+  }, [map, origin, results, selectedId]);
+
+  return null;
+}
+
 export function StockPointMap({
   origin,
   originLabel,
@@ -38,148 +101,56 @@ export function StockPointMap({
   selectedId,
   onSelect,
 }: StockPointMapProps) {
-  const SIZE = 260;
-  const CENTRE = SIZE / 2;
-  const PADDING = 26;
-  const maxRadius = CENTRE - PADDING;
-
-  const furthest = Math.max(...results.map((result) => result.distanceKm), 1);
-
-  /** Square-root scale — see the note above. */
-  const radiusFor = (distanceKm: number) =>
-    Math.sqrt(Math.min(distanceKm, furthest) / furthest) * maxRadius;
-
-  /* Rings at round, human distances rather than arbitrary fractions. */
-  const LADDER = [5, 10, 25, 50, 100, 250, 500, 1000, 2000];
-  const rings = LADDER.filter((step) => step <= furthest).slice(-3);
-  if (rings.length === 0) rings.push(Math.round(furthest));
-
-  const points = results.map((result, index) => {
-    const { stockPoint, distanceKm } = result;
-
-    // Equirectangular offset around the origin — accurate enough at this scale.
-    const dx = (stockPoint.geo.longitude - origin.longitude) *
-      Math.cos((origin.latitude * Math.PI) / 180);
-    const dy = stockPoint.geo.latitude - origin.latitude;
-
-    const magnitude = Math.hypot(dx, dy) || 1;
-    const scaled = radiusFor(distanceKm);
-
-    return {
-      id: stockPoint.id,
-      name: stockPoint.name,
-      distanceKm,
-      /** Matches the position in the result list, so map and list correlate. */
-      index: index + 1,
-      x: CENTRE + (dx / magnitude) * scaled,
-      // SVG y grows downward; latitude grows north.
-      y: CENTRE - (dy / magnitude) * scaled,
-    };
-  });
+  const center: [number, number] = [origin.latitude, origin.longitude];
 
   return (
-    <div className="bg-surface px-4 py-4">
-      <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="mx-auto block w-full max-w-[300px]"
-        role="img"
-        aria-label={`Stock points around ${originLabel}`}
+    <div className="h-full w-full">
+      <MapContainer
+        center={center}
+        zoom={11}
+        scrollWheelZoom
+        className="h-full w-full"
+        style={{ height: '100%', width: '100%' }}
       >
-        {rings.map((step) => (
-          <circle
-            key={step}
-            cx={CENTRE}
-            cy={CENTRE}
-            r={radiusFor(step)}
-            fill="none"
-            stroke="var(--color-line)"
-            strokeDasharray="3 4"
-          />
-        ))}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-        {/* A map without a scale is decoration. */}
-        {rings.map((step) => (
-          <text
-            key={`label-${step}`}
-            x={CENTRE + 3}
-            y={CENTRE - radiusFor(step) - 3}
-            fontSize="8"
-            fill="var(--color-ink-muted)"
-          >
-            {step} km
-          </text>
-        ))}
+        <Marker position={center} icon={makeOriginIcon()}>
+          <Popup>{originLabel}</Popup>
+        </Marker>
 
-        {points.map((point) => {
-          const selected = point.id === selectedId;
+        {results.map((result, index) => {
+          const stockPoint = result.stockPoint;
+          const selected = stockPoint.id === selectedId;
+          const position: [number, number] = [stockPoint.geo.latitude, stockPoint.geo.longitude];
+
           return (
-            <g
-              key={point.id}
-              onClick={() => onSelect(point.id)}
-              className="cursor-pointer"
-              role="button"
-              aria-label={`${point.name}, ${point.distanceKm} kilometres`}
+            <Marker
+              key={stockPoint.id}
+              position={position}
+              icon={makePointIcon(selected ? '#0f766e' : '#2563eb', index + 1, selected)}
+              eventHandlers={{
+                click: () => onSelect(stockPoint.id),
+              }}
             >
-              <line
-                x1={CENTRE}
-                y1={CENTRE}
-                x2={point.x}
-                y2={point.y}
-                stroke={selected ? 'var(--color-primary-400)' : 'var(--color-line)'}
-                strokeWidth={selected ? 1.5 : 1}
-              />
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={selected ? 9 : 8}
-                fill={selected ? 'var(--color-primary-600)' : 'var(--color-primary-500)'}
-                stroke="var(--color-surface)"
-                strokeWidth="2"
-              />
-              {/* The number ties this point to its row in the list below. */}
-              <text
-                x={point.x}
-                y={point.y + 3}
-                fontSize="9"
-                fontWeight="600"
-                textAnchor="middle"
-                fill="#ffffff"
-                pointerEvents="none"
-              >
-                {point.index}
-              </text>
-            </g>
+              <Popup>
+                <div className="min-w-[160px] text-left">
+                  <p className="text-body-sm font-semibold text-ink">{stockPoint.name}</p>
+                  <p className="mt-1 text-body-sm text-ink-secondary">
+                    {stockPoint.address.taluka}, {stockPoint.address.district}
+                  </p>
+                  <p className="mt-2 text-caption text-ink-muted">{result.distanceKm.toFixed(1)} km away</p>
+                </div>
+              </Popup>
+            </Marker>
           );
         })}
 
-        {/* The destination sits at the centre — everything is relative to it. */}
-        <circle cx={CENTRE} cy={CENTRE} r="5" fill="var(--color-success-500)" />
-        <circle
-          cx={CENTRE}
-          cy={CENTRE}
-          r="10"
-          fill="none"
-          stroke="var(--color-success-500)"
-          strokeOpacity="0.35"
-        />
-      </svg>
-
-      <p className="mt-3 text-center text-caption text-ink-muted">
-        Distance and direction from{' '}
-        <span className="font-medium text-ink-secondary">{originLabel}</span>
-      </p>
-
-      {selectedId && (
-        <div className="mt-3 border-t border-line pt-3">
-          {points
-            .filter((point) => point.id === selectedId)
-            .map((point) => (
-              <p key={point.id} className={cn('text-center text-body-sm text-ink')}>
-                {point.name} · <span className="tabular">{point.distanceKm} km</span>
-              </p>
-            ))}
-        </div>
-      )}
+        <Circle center={center} radius={3000} pathOptions={{ color: '#22c55e', fillOpacity: 0.08, weight: 1 }} />
+        <FitMapBounds origin={origin} results={results} selectedId={selectedId} />
+      </MapContainer>
     </div>
   );
 }

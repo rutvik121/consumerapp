@@ -30,7 +30,7 @@ export {
   PackageDetailsScreen,
 } from './organization';
 
-export { StockPointsScreen, StockPointDetailsScreen } from './discovery';
+export { StockPointsScreen, StockPointMapScreen, StockPointDetailsScreen } from './discovery';
 export {
   CreateEnquiryScreen,
   EnquiriesScreen,
@@ -45,6 +45,7 @@ export {
   OrdersScreen,
   OrderDetailsScreen,
   DeliveryTrackingScreen,
+  LiveVehicleTrackingScreen,
 } from './orders';
 export { MoreScreen } from './MoreScreen';
 export {
