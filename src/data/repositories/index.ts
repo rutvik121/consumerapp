@@ -408,9 +408,9 @@ export interface CreateApplicationInput {
   subDivisionNumber?: string;
   landType: LandType;
   areaInSqm: number;
-  depthInMetres: number;
-  fromDate: ISODate;
-  toDate: ISODate;
+  depthInMetres?: number;
+  fromDate?: ISODate;
+  toDate?: ISODate;
   /** Absent when the application was saved as a draft without declaring. */
   declarationAccepted: boolean;
   documents: { kind: ApplicationDocumentKind; fileName: string; documentType: string }[];
@@ -451,9 +451,9 @@ export const temporaryExcavationRepository = {
         ...(input.subDivisionNumber ? { subDivisionNumber: input.subDivisionNumber } : {}),
         landType: input.landType,
         areaInSqm: input.areaInSqm,
-        depthInMetres: input.depthInMetres,
-        fromDate: input.fromDate,
-        toDate: input.toDate,
+        depthInMetres: input.depthInMetres ?? 0,
+        fromDate: input.fromDate ?? '',
+        toDate: input.toDate ?? '',
         ...(input.declarationAccepted ? { declarationAcceptedAt: now } : {}),
         applicationFee: computeApplicationFee(),
         status: 'DRAFT',

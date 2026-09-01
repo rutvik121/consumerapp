@@ -219,7 +219,6 @@ function toCreateInput(draft: ApplicationDraft, declarationAccepted: boolean) {
     !draft.excavationMethod ||
     !draft.landType ||
     draft.estimatedQuantity === null ||
-    draft.depthInMetres === null ||
     draft.areaInSqm === null ||
     !draft.siteGeo
   ) {
@@ -264,9 +263,6 @@ function toCreateInput(draft: ApplicationDraft, declarationAccepted: boolean) {
       : {}),
     landType: draft.landType,
     areaInSqm: draft.areaInSqm,
-    depthInMetres: draft.depthInMetres,
-    fromDate: draft.fromDate,
-    toDate: draft.toDate,
     declarationAccepted,
   };
 }
