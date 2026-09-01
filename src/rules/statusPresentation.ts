@@ -42,6 +42,7 @@ const DISPATCH: Record<DispatchStatus, StatusPresentation> = {
   PENDING_DISPATCH: { label: 'Pending dispatch', tone: 'neutral' },
   PARTIALLY_DISPATCHED: { label: 'Partly dispatched', tone: 'info' },
   DISPATCHED: { label: 'Dispatched', tone: 'info' },
+  DIGITP_CREATED: { label: 'DigiTP created', tone: 'success' },
   COMPLETED: { label: 'Completed', tone: 'success' },
 };
 

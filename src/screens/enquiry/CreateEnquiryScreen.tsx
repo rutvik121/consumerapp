@@ -23,7 +23,7 @@ import {
   stockPointRepository,
   useAsync,
 } from '@/data';
-import { useOperatingContext } from '@/state';
+import { useCurrentUser, useOperatingContext } from '@/state';
 import { useCopy } from '@/content';
 
 /**
@@ -45,10 +45,13 @@ import { useCopy } from '@/content';
 export function CreateEnquiryScreen() {
   const { stockPointId } = useParams<{ stockPointId: string }>();
   const context = useOperatingContext();
+  const currentUser = useCurrentUser();
   const navigate = useNavigate();
   const t = useCopy();
 
   const [mineralId, setMineralId] = useState<ID | ''>('');
+  const [contactName, setContactName] = useState(currentUser?.fullName ?? '');
+  const [contactMobileNumber, setContactMobileNumber] = useState(currentUser?.mobileNumber ?? '');
   const [selectedProjectId, setSelectedProjectId] = useState<ID | ''>(context?.projectId ?? '');
   const [selectedMaterialId, setSelectedMaterialId] = useState<ID | ''>('');
   const [selectedPackageId, setSelectedPackageId] = useState<ID | ''>(context?.packageId ?? '');
@@ -100,6 +103,11 @@ export function CreateEnquiryScreen() {
   const minerals = query.data?.minerals ?? [];
   const projects = query.data?.projects ?? [];
   const packages = query.data?.packages ?? [];
+
+  useEffect(() => {
+    if (!contactName && currentUser?.fullName) setContactName(currentUser.fullName);
+    if (!contactMobileNumber && currentUser?.mobileNumber) setContactMobileNumber(currentUser.mobileNumber);
+  }, [contactName, contactMobileNumber, currentUser?.fullName, currentUser?.mobileNumber]);
 
   useEffect(() => {
     if (context?.projectId && !selectedProjectId) setSelectedProjectId(context.projectId);
@@ -190,6 +198,8 @@ export function CreateEnquiryScreen() {
         mineralId,
         requiredQuantity: { value: quantity, unit },
         ...(requiredByDate ? { requiredByDate } : {}),
+        ...(contactName.trim() ? { contactName: contactName.trim() } : {}),
+        ...(contactMobileNumber.trim() ? { contactMobileNumber: contactMobileNumber.trim() } : {}),
         ...(remarks.trim() ? { remarks: remarks.trim() } : {}),
       });
 
@@ -345,6 +355,21 @@ export function CreateEnquiryScreen() {
                 value={requiredByDate}
                 onChange={(event) => setRequiredByDate(event.target.value)}
               />
+
+              <div className="space-y-4 rounded-lg border border-line bg-surface-subtle p-3">
+                <Input
+                  label="Contact name"
+                  placeholder="Enter your name"
+                  value={contactName}
+                  onChange={(event) => setContactName(event.target.value)}
+                />
+                <Input
+                  label="Contact mobile"
+                  placeholder="Enter your mobile number"
+                  value={contactMobileNumber}
+                  onChange={(event) => setContactMobileNumber(event.target.value)}
+                />
+              </div>
 
               <Textarea
                 label={t.enquiry.remarks}

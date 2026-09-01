@@ -41,6 +41,8 @@ export interface Enquiry {
   mineralId: ID;
   requiredQuantity: Quantity;
   requiredByDate?: ISODate;
+  contactName?: string;
+  contactMobileNumber?: string;
   remarks?: string;
 
   status: EnquiryStatus;

@@ -80,6 +80,10 @@ export function EnquiryDetailsScreen() {
             <DetailList
               items={[
                 { label: t.enquiry.enquiryNumber, value: enquiry.enquiryNumber, numeric: true },
+                ...(enquiry.contactName ? [{ label: 'Contact name', value: enquiry.contactName }] : []),
+                ...(enquiry.contactMobileNumber
+                  ? [{ label: 'Contact mobile', value: enquiry.contactMobileNumber }]
+                  : []),
                 {
                   label: t.fields.stockPoint,
                   value: query.data.stockPoint?.name ?? '—',

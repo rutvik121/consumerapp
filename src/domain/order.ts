@@ -6,6 +6,7 @@ export type DispatchStatus =
   | 'PENDING_DISPATCH'
   | 'PARTIALLY_DISPATCHED'
   | 'DISPATCHED'
+  | 'DIGITP_CREATED'
   | 'COMPLETED';
 
 /** PROVISIONAL (open question #2). Tracks the DESTINATION side. */
@@ -27,6 +28,7 @@ export type ReceivingStatus =
 export interface Order {
   id: ID;
   orderNumber: string;
+  digiTpNumber?: string;
   /** Every order traces back to the enquiry that produced it. */
   enquiryId: ID;
   placedByUserId: ID;

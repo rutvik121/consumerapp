@@ -267,6 +267,8 @@ export interface CreateEnquiryInput {
   mineralId: ID;
   requiredQuantity: Quantity;
   requiredByDate?: ISODate;
+  contactName?: string;
+  contactMobileNumber?: string;
   remarks?: string;
 }
 
@@ -295,6 +297,8 @@ export const enquiryRepository = {
         mineralId: input.mineralId,
         requiredQuantity: input.requiredQuantity,
         ...(input.requiredByDate ? { requiredByDate: input.requiredByDate } : {}),
+        ...(input.contactName ? { contactName: input.contactName } : {}),
+        ...(input.contactMobileNumber ? { contactMobileNumber: input.contactMobileNumber } : {}),
         ...(input.remarks ? { remarks: input.remarks } : {}),
         /* PROVISIONAL (open question #2): SUBMITTED is the only status a newly
            raised enquiry can truthfully have until the real vocabulary and the

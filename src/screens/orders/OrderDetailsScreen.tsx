@@ -138,6 +138,9 @@ export function OrderDetailsScreen() {
             <DetailList
               items={[
                 { label: t.orders.orderNumber, value: order.orderNumber, numeric: true },
+                ...(order.digiTpNumber
+                  ? [{ label: 'DigiTP number', value: order.digiTpNumber, numeric: true }]
+                  : []),
                 { label: t.fields.stockPoint, value: query.data.stockPoint?.name ?? '—' },
                 ...(showScope && query.data.project
                   ? [{ label: t.context.project, value: query.data.project.name }]
