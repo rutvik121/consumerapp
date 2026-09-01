@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { List, Map as MapIcon, SlidersHorizontal, Warehouse } from 'lucide-react';
 import type { ID, StockPointSearchResult } from '@/domain';
@@ -57,7 +58,7 @@ export function StockPointsScreen() {
   const [mineralId, setMineralId] = useState<ID | ''>('');
   const [maxDistance, setMaxDistance] = useState('');
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [view, setView] = useState<ViewMode>('list');
+  const [view, setView] = useState<ViewMode>('map');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedOnMap, setSelectedOnMap] = useState<ID | null>(null);
 
@@ -79,6 +80,12 @@ export function StockPointsScreen() {
 
   const activeFilters =
     (mineralId ? 1 : 0) + (maxDistance ? 1 : 0) + (inStockOnly ? 1 : 0);
+
+  useEffect(() => {
+    if (view === 'map' && results.data && results.data.length > 0 && !selectedOnMap) {
+      setSelectedOnMap(results.data[0].stockPoint.id);
+    }
+  }, [results.data, selectedOnMap, view]);
 
   const mineralName = (id: ID) =>
     minerals.data?.find((mineral) => mineral.id === id)?.name ?? 'Mineral';

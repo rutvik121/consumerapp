@@ -111,7 +111,7 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
           />
         </Surface>
       ) : attentionOpen ? (
-        <Surface className="border-y border-line p-3">
+        <Surface className="border-y border-warning-200 bg-gradient-to-br from-warning-50 via-surface to-surface p-3 shadow-sm">
           <div className="space-y-2">
             {overview.attention.slice(0, 3).map((item) => {
               const itemIcon =
@@ -174,7 +174,7 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
 
       {/* ---------- 2. TEMPORARY EXCAVATION (organization only) ---------- */}
       <SectionHeader title={t.organizationHome.temporaryExcavation} />
-      <Surface className="border-y border-primary-100 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-sm">
+      <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-md ring-1 ring-primary-100">
         <div className="px-4 py-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -186,9 +186,14 @@ function OverviewSections({ overview }: { overview: OrganizationOverview }) {
                 <p className="text-caption text-ink-muted">Needs action</p>
               </div>
             </div>
-            <span className="rounded-full bg-primary-100 px-2.5 py-1 text-caption font-medium text-primary-700">
-              {overview.activeApplicationCount} open
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-primary-100 px-2.5 py-1 text-caption font-medium text-primary-700">
+                Priority
+              </span>
+              <span className="rounded-full bg-primary-100 px-2.5 py-1 text-caption font-medium text-primary-700">
+                {overview.activeApplicationCount} open
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

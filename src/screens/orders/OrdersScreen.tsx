@@ -109,7 +109,9 @@ function OrderRow({
       leadingTone={order.receivingStatus === 'RECEIVED_WITH_DISCREPANCY' ? 'danger' : 'primary'}
       title={`${mineralName} · ${formatQuantity(order.orderedQuantity)}`}
       subtitle={stockPointName}
-      detail={order.orderNumber}
+      detail={
+        order.digiTpNumber ? `${order.orderNumber} · DigiTP ${order.digiTpNumber}` : order.orderNumber
+      }
       meta={
         <>
           <StatusBadge label={receiving.label} tone={receiving.tone} size="sm" />

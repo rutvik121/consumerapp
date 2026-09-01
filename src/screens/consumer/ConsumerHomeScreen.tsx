@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { FileText, Package as PackageIcon, Search, Truck, Warehouse } from 'lucide-react';
-import type { Delivery, Enquiry, Mineral, Order, Quantity } from '@/domain';
+import type { Delivery, Enquiry, Mineral, Order, Project, Quantity } from '@/domain';
 import {
   canReceiveDelivery,
   formatQuantity,
@@ -28,6 +28,7 @@ import {
   inventoryRepository,
   mineralRepository,
   orderRepository,
+  projectRepository,
   useAsync,
 } from '@/data';
 import { useCurrentUser } from '@/state';
@@ -39,6 +40,7 @@ interface ConsumerHomeData {
   orders: Order[];
   available: Quantity | null;
   minerals: Mineral[];
+  projects: Project[];
 }
 
 /**
@@ -64,12 +66,13 @@ export function ConsumerHomeScreen() {
   const query = useAsync(async () => {
     if (!user) throw new Error('A session is required');
 
-    const [deliveries, enquiries, orders, balances, minerals] = await Promise.all([
+    const [deliveries, enquiries, orders, balances, minerals, projects] = await Promise.all([
       deliveryRepository.listForUser(user.id),
       enquiryRepository.list({ raisedByUserId: user.id }),
       orderRepository.list({ placedByUserId: user.id }),
       inventoryRepository.list({ userId: user.id }),
       mineralRepository.listAll(),
+      projectRepository.listForConsumer(user.id),
     ]);
 
     return {
@@ -78,6 +81,7 @@ export function ConsumerHomeScreen() {
       orders,
       available: primaryAvailable(balances),
       minerals,
+      projects,
     } satisfies ConsumerHomeData;
   }, [user?.id]);
 
@@ -106,7 +110,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
       {data.activeDeliveries.length > 0 && (
         <>
           <SectionHeader title={t.consumerHome.onTheWay} />
-          <Surface className="border-y border-line">
+          <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-sm">
             {data.activeDeliveries.map((delivery) => (
               <div key={delivery.id} className="px-4 py-3">
                 <div className="flex items-start gap-3">
@@ -149,13 +153,14 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
 
       {/* ---------- 2. Inventory is the most important operational summary ---------- */}
       <SectionHeader title={t.consumerHome.yourInventory} />
-      <Surface className="border-y border-line px-4 py-4">
+      <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface px-4 py-4 shadow-sm">
         <MetricTile
           size="lg"
           label={t.consumerHome.available}
           value={data.available ? formatQuantityValue(data.available) : '0'}
           unit={data.available?.unit ?? 'MT'}
           onClick={() => navigate(ROUTES.inventory)}
+          className="rounded-md p-2"
         />
         {!data.available && (
           <p className="mt-2 flex items-center gap-2 text-caption text-ink-muted">
@@ -165,9 +170,14 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
         )}
       </Surface>
 
-      {/* ---------- 3. The reason they opened the app ---------- */}
-      <Surface className="mt-5 border-y border-line px-4 py-5">
-        <h2 className="text-title-lg text-ink">{t.consumerHome.needMineral}</h2>
+      {/* ---------- 4. The reason they opened the app ---------- */}
+      <Surface className="mt-5 border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface px-4 py-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-title-lg text-ink">{t.consumerHome.needMineral}</h2>
+          <span className="rounded-full bg-primary-100 px-2 py-1 text-caption font-medium text-primary-700">
+            Priority
+          </span>
+        </div>
         <p className="mt-1.5 text-body text-ink-secondary">{t.consumerHome.needMineralBody}</p>
         <Button
           size="lg"

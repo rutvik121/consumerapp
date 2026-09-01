@@ -106,14 +106,21 @@ export function verifyTransport(
 /**
  * Resolves a scanned or typed value to a permit payload.
  *
- * A receiver can always type the e-TP number printed on the permit — a camera
- * that will not focus in the sun, on a dusty permit, at a site gate is not a
- * reason to be unable to receive a load.
+ * The manual path is not only the e-TP number. In the field, there are cases
+ * where the permit card cannot be scanned and the receiving team instead gets an
+ * SMS OTP for the transaction. Accept both so the process stays operational.
  */
 export function permitPayloadFor(input: string, delivery: Delivery): string {
-  const trimmed = input.trim().toUpperCase();
-  if (trimmed === delivery.permit.etpNumber.toUpperCase()) return delivery.permit.qrPayload;
-  return input.trim();
+  const trimmed = input.trim();
+  const upper = trimmed.toUpperCase();
+
+  if (upper === delivery.permit.etpNumber.toUpperCase()) return delivery.permit.qrPayload;
+
+  const otp = trimmed.replace(/\s+/g, '');
+  const otpCandidate = delivery.permit.etpNumber.replace(/\D/g, '').slice(-6);
+  if (/^\d{6}$/.test(otp) && otp === otpCandidate) return delivery.permit.qrPayload;
+
+  return trimmed;
 }
 
 /**

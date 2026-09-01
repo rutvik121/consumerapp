@@ -28,10 +28,10 @@ export function enquiryScopeFor(context: {
   projectId?: ID;
   packageId?: ID;
 }): EnquiryScopeFields {
-  if (context.userType !== 'ORGANIZATION') return {};
-
   return {
-    ...(context.organizationId ? { organizationId: context.organizationId } : {}),
+    ...(context.userType === 'ORGANIZATION' && context.organizationId
+      ? { organizationId: context.organizationId }
+      : {}),
     ...(context.projectId ? { projectId: context.projectId } : {}),
     ...(context.packageId ? { packageId: context.packageId } : {}),
   };

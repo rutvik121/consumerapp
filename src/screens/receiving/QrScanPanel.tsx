@@ -63,15 +63,15 @@ export function QrScanPanel({ onSubmit, simulatedPayload, error }: QrScanPanelPr
             <Input
               label={t.receiving.etpLabel}
               hint={t.receiving.etpHint}
-              placeholder="ETP/2026/MH/0000000"
+              placeholder="123456"
               autoFocus
               value={value}
-              onChange={(event) => setValue(event.target.value)}
+              onChange={(event) => setValue(event.target.value.replace(/\D/g, '').slice(0, 6))}
             />
             <Button
               variant="secondary"
               fullWidth
-              disabled={value.trim().length === 0}
+              disabled={value.trim().length !== 6}
               onClick={() => onSubmit(value)}
             >
               {t.receiving.verifyAction}

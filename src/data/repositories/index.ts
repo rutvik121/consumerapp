@@ -66,8 +66,71 @@ export const projectRepository = {
   listByOrganization: (organizationId: ID): Promise<Project[]> =>
     request(() => db.projects.filter((project) => project.organizationId === organizationId)),
 
+  listForConsumer: (userId: ID): Promise<Project[]> =>
+    request(() => db.projects.filter((project) => project.organizationId === userId)),
+
   getById: (id: ID): Promise<Project | null> =>
     request(() => db.projects.find((project) => project.id === id) ?? null),
+
+  createForOrganization: (
+    organizationId: ID,
+    input: {
+      name: string;
+      code: string;
+      location: Address;
+      geo: GeoPoint;
+      materialIds?: ID[];
+      status?: Project['status'];
+      startDate?: string;
+    },
+  ): Promise<Project> =>
+    request(() => {
+      const today = input.startDate ?? new Date().toISOString().slice(0, 10);
+      const project: Project = {
+        id: `proj-${db.projects.length + 1}-${Date.now()}`,
+        organizationId,
+        name: input.name.trim(),
+        code: input.code.trim(),
+        location: input.location,
+        geo: input.geo,
+        ...(input.materialIds ? { materialIds: input.materialIds } : {}),
+        status: input.status ?? 'ACTIVE',
+        startDate: today,
+      };
+
+      db.projects.unshift(project);
+      return project;
+    }),
+
+  createForConsumer: (
+    userId: ID,
+    input: {
+      name: string;
+      code: string;
+      location: Address;
+      geo: GeoPoint;
+      materialIds?: ID[];
+      status?: Project['status'];
+      startDate?: string;
+    },
+  ): Promise<Project> =>
+    request(() => {
+      const today = input.startDate ?? new Date().toISOString().slice(0, 10);
+      const project: Project = {
+        id: `proj-${db.projects.length + 1}-${Date.now()}`,
+        organizationId: userId,
+        name: input.name.trim(),
+        code: input.code.trim(),
+        location: input.location,
+        geo: input.geo,
+        ...(input.materialIds ? { materialIds: input.materialIds } : {}),
+        status: input.status ?? 'ACTIVE',
+        startDate: today,
+      };
+
+      db.projects.unshift(project);
+      return project;
+    }),
 };
 
 export const packageRepository = {
@@ -79,6 +142,38 @@ export const packageRepository = {
 
   getById: (id: ID): Promise<Package | null> =>
     request(() => db.packages.find((pkg) => pkg.id === id) ?? null),
+
+  create: (
+    projectId: ID,
+    organizationId: ID,
+    input: {
+      name: string;
+      code: string;
+      siteAddress: Address;
+      siteGeo: GeoPoint;
+      status?: Package['status'];
+      startDate?: string;
+      expectedEndDate?: string;
+    },
+  ): Promise<Package> =>
+    request(() => {
+      const today = input.startDate ?? new Date().toISOString().slice(0, 10);
+      const pkg: Package = {
+        id: `pkg-${db.packages.length + 1}-${Date.now()}`,
+        projectId,
+        organizationId,
+        name: input.name.trim(),
+        code: input.code.trim(),
+        siteAddress: input.siteAddress,
+        siteGeo: input.siteGeo,
+        status: input.status ?? 'ACTIVE',
+        startDate: today,
+        ...(input.expectedEndDate ? { expectedEndDate: input.expectedEndDate } : {}),
+      };
+
+      db.packages.unshift(pkg);
+      return pkg;
+    }),
 };
 
 export const mineralRepository = {
@@ -172,6 +267,8 @@ export interface CreateEnquiryInput {
   mineralId: ID;
   requiredQuantity: Quantity;
   requiredByDate?: ISODate;
+  contactName?: string;
+  contactMobileNumber?: string;
   remarks?: string;
 }
 
@@ -200,6 +297,8 @@ export const enquiryRepository = {
         mineralId: input.mineralId,
         requiredQuantity: input.requiredQuantity,
         ...(input.requiredByDate ? { requiredByDate: input.requiredByDate } : {}),
+        ...(input.contactName ? { contactName: input.contactName } : {}),
+        ...(input.contactMobileNumber ? { contactMobileNumber: input.contactMobileNumber } : {}),
         ...(input.remarks ? { remarks: input.remarks } : {}),
         /* PROVISIONAL (open question #2): SUBMITTED is the only status a newly
            raised enquiry can truthfully have until the real vocabulary and the
