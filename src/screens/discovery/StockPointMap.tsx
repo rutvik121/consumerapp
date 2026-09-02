@@ -10,6 +10,7 @@ export interface StockPointMapProps {
   results: StockPointSearchResult[];
   selectedId?: string | null;
   onSelect: (stockPointId: string) => void;
+  mineralName: (mineralId: string) => string;
 }
 
 function makePointIcon(color: string, index: number, selected: boolean) {
@@ -100,15 +101,17 @@ export function StockPointMap({
   results,
   selectedId,
   onSelect,
+  mineralName,
 }: StockPointMapProps) {
   const center: [number, number] = [origin.latitude, origin.longitude];
 
   return (
-    <div className="h-full w-full">
+    <div className="stock-point-map h-full w-full">
       <MapContainer
         center={center}
         zoom={11}
         scrollWheelZoom
+        zoomControl={false}
         className="h-full w-full"
         style={{ height: '100%', width: '100%' }}
       >
@@ -141,6 +144,17 @@ export function StockPointMap({
                   <p className="mt-1 text-body-sm text-ink-secondary">
                     {stockPoint.address.taluka}, {stockPoint.address.district}
                   </p>
+                  <div className="mt-2 border-t border-line pt-2">
+                    <p className="text-caption font-medium text-ink">Available minerals</p>
+                    <div className="mt-1 space-y-0.5">
+                      {stockPoint.minerals.map((mineral) => (
+                        <p key={mineral.mineralId} className="text-caption text-ink-secondary">
+                          {mineralName(mineral.mineralId)}: {mineral.availableQuantity.value}{' '}
+                          {mineral.availableQuantity.unit}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
                   <p className="mt-2 text-caption text-ink-muted">{result.distanceKm.toFixed(1)} km away</p>
                 </div>
               </Popup>

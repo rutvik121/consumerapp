@@ -5,3 +5,7 @@
 
 @import './design-system/tokens.css';
 @import './design-system/base.css';
+
+.stock-point-map .leaflet-control-zoom {
+  display: none !important;
+}

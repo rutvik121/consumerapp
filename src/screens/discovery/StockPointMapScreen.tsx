@@ -1,26 +1,24 @@
 import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
-import { SlidersHorizontal, Warehouse } from 'lucide-react';
+import { ChevronUp, SlidersHorizontal, Warehouse, X } from 'lucide-react';
 import type { ID, StockPointSearchResult } from '@/domain';
 import { formatQuantity, statusPresentation } from '@/rules';
 import {
   BottomSheet,
   Button,
-  Chip,
   EmptyState,
   ErrorState,
   ListGroup,
   ListRow,
-  LoadingState,
   SearchInput,
   Select,
   StatusBadge,
   Surface,
 } from '@/design-system';
-import { OrganizationContextBar, ROUTES, Screen } from '@/navigation';
-import { mineralRepository, packageRepository, projectRepository, stockPointRepository, useAsync } from '@/data';
-import { useCurrentOrganization, useOperatingContext, useOrganizationContextStore } from '@/state';
+import { ROUTES, Screen } from '@/navigation';
+import { mineralRepository, stockPointRepository, useAsync } from '@/data';
+import { useOperatingContext } from '@/state';
 import { useCopy } from '@/content';
 import { StockPointMap } from './StockPointMap';
 
@@ -31,240 +29,224 @@ const DISTANCE_OPTIONS = [
   { value: '100', label: 'Within 100 km' },
 ];
 
+const SEARCH_LOCATIONS = [
+  { name: 'mumbai', latitude: 19.076, longitude: 72.8777 },
+  { name: 'nagpur', latitude: 21.1458, longitude: 79.0882 },
+  { name: 'delhi', latitude: 28.6139, longitude: 77.209 },
+];
+
+function locationFromSearch(value: string) {
+  const normalized = value.trim().toLowerCase();
+  const nearMatch = normalized.match(/\bnear\s+([a-z]+(?:\s+[a-z]+)*)/);
+  if (!nearMatch) return null;
+
+  const locationName = nearMatch[1].trim();
+  return SEARCH_LOCATIONS.find(
+    (location) =>
+      locationName === location.name || locationName.startsWith(`${location.name} `),
+  ) ?? null;
+}
+
 export function StockPointMapScreen() {
   const context = useOperatingContext();
   const navigate = useNavigate();
   const t = useCopy();
-  const organization = useCurrentOrganization();
-  const setProject = useOrganizationContextStore((state) => state.setProject);
-  const setPackage = useOrganizationContextStore((state) => state.setPackage);
 
   const [search, setSearch] = useState('');
+  const [submittedSearch, setSubmittedSearch] = useState('');
   const [mineralId, setMineralId] = useState<ID | ''>('');
   const [maxDistance, setMaxDistance] = useState('');
   const [inStockOnly, setInStockOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<ID | null>(null);
   const [selectedOnMap, setSelectedOnMap] = useState<ID | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [noResultsDismissed, setNoResultsDismissed] = useState(false);
 
   const destination = context?.destination ?? null;
+  const searchedLocation = locationFromSearch(submittedSearch);
+  const searchTerm = searchedLocation
+    ? submittedSearch
+        .replace(/\bnear\s+[a-z]+(?:\s+[a-z]+)*/i, '')
+        .replace(/\bstock\s*points?\b/i, '')
+        .trim()
+    : submittedSearch;
+  const defaultOrigin = destination?.geo ?? { latitude: 19.076, longitude: 72.877 };
+  const searchRadiusKm = maxDistance
+    ? Number(maxDistance)
+    : searchedLocation
+      ? 100
+      : 100;
 
   const minerals = useAsync(() => mineralRepository.listAll(), []);
-  const projectScope = useAsync(async () => {
-    if (!organization) return { projects: [], packages: [] };
-
-    const [projects, packages] = await Promise.all([
-      projectRepository.listByOrganization(organization.id),
-      packageRepository.listByOrganization(organization.id),
-    ]);
-
-    return { projects, packages };
-  }, [organization?.id]);
 
   const results = useAsync(
     () =>
       stockPointRepository.search({
-        ...(search.trim() ? { search: search.trim() } : {}),
+        ...(searchTerm ? { search: searchTerm } : {}),
         ...(mineralId ? { mineralId } : {}),
-        ...(destination ? { near: destination.geo } : {}),
-        ...(maxDistance ? { maxDistanceKm: Number(maxDistance) } : {}),
+        near: searchedLocation
+          ? { latitude: searchedLocation.latitude, longitude: searchedLocation.longitude }
+          : defaultOrigin,
+        maxDistanceKm: searchRadiusKm,
         ...(inStockOnly ? { availableOnly: true } : {}),
       }),
-    [search, mineralId, maxDistance, inStockOnly, destination?.geo.latitude],
+    [
+      searchTerm,
+      mineralId,
+      maxDistance,
+      inStockOnly,
+      defaultOrigin.latitude,
+      defaultOrigin.longitude,
+      searchedLocation?.latitude,
+      searchedLocation?.longitude,
+    ],
   );
 
   const activeFilters =
     (mineralId ? 1 : 0) + (maxDistance ? 1 : 0) + (inStockOnly ? 1 : 0);
-  const projectOptions = projectScope.data?.projects ?? [];
-  const packageOptions =
-    selectedProjectId && projectScope.data
-      ? projectScope.data.packages.filter((pkg) => pkg.projectId === selectedProjectId)
-      : [];
-
   const mineralName = (id: ID) =>
     minerals.data?.find((mineral) => mineral.id === id)?.name ?? 'Mineral';
-
-  if (context && !destination) {
-    return (
-      <Screen title={t.discovery.title} onBack>
-        <EmptyState
-          icon={<Warehouse size={22} />}
-          title={t.discovery.noDestination}
-          description={t.discovery.noDestinationBody}
-          action={
-            <Button onClick={() => setProjectPickerOpen(true)}>{t.discovery.chooseProject}</Button>
-          }
-        />
-
-        <BottomSheet
-          open={projectPickerOpen}
-          onClose={() => {
-            setProjectPickerOpen(false);
-            setSelectedProjectId(null);
-          }}
-          title={selectedProjectId ? 'Choose a package' : 'Choose a project'}
-        >
-          <div className="space-y-2 px-4 pb-4">
-            {selectedProjectId ? (
-              packageOptions.length > 0 ? (
-                packageOptions.map((pkg) => (
-                  <button
-                    key={pkg.id}
-                    type="button"
-                    className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-3 py-3 text-left transition-colors hover:bg-primary-50"
-                    onClick={() => {
-                      setPackage(pkg);
-                      setProjectPickerOpen(false);
-                      setSelectedProjectId(null);
-                    }}
-                  >
-                    <div>
-                      <div className="text-body font-medium text-ink">{pkg.name}</div>
-                      <div className="text-body-sm text-ink-secondary">
-                        {pkg.siteAddress.taluka}, {pkg.siteAddress.district}
-                      </div>
-                    </div>
-                    <span className="text-caption text-ink-muted">{pkg.code}</span>
-                  </button>
-                ))
-              ) : (
-                <EmptyState
-                  icon={<Warehouse size={22} />}
-                  title="No packages in this project"
-                  description="Create a package first so this project can be used for stock-point discovery."
-                />
-              )
-            ) : projectScope.loading ? (
-              <LoadingState variant="list" rows={3} />
-            ) : projectOptions.length > 0 ? (
-              projectOptions.map((project) => (
-                <button
-                  key={project.id}
-                  type="button"
-                  className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-3 py-3 text-left transition-colors hover:bg-primary-50"
-                  onClick={() => {
-                    setProject(project);
-                    setSelectedProjectId(project.id);
-                  }}
-                >
-                  <div>
-                    <div className="text-body font-medium text-ink">{project.name}</div>
-                    <div className="text-body-sm text-ink-secondary">{project.location.district}</div>
-                  </div>
-                  <span className="text-caption text-ink-muted">{project.code}</span>
-                </button>
-              ))
-            ) : (
-              <EmptyState
-                icon={<Warehouse size={22} />}
-                title="No projects yet"
-                description="Create a project before starting a stock-point enquiry."
-              />
-            )}
-          </div>
-        </BottomSheet>
-      </Screen>
-    );
-  }
+  const mapOrigin = searchedLocation
+    ? { latitude: searchedLocation.latitude, longitude: searchedLocation.longitude }
+    : defaultOrigin;
+  const mapOriginLabel = searchedLocation?.name
+    ? `${searchedLocation.name[0].toUpperCase()}${searchedLocation.name.slice(1)}`
+    : destination?.label ?? 'Current location';
 
   return (
     <Screen
       title={t.discovery.title}
       onBack
-      context={<OrganizationContextBar showChange={false} />}
-      className="flex flex-col"
+      className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      <Surface className="sticky top-0 z-20 border-b border-line px-4 py-3">
-        <SearchInput value={search} onChange={setSearch} placeholder={t.discovery.searchPlaceholder} />
-
-        <div className="mt-3 flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={activeFilters > 0 ? 'subtle' : 'secondary'}
-            leftIcon={<SlidersHorizontal size={14} />}
-            onClick={() => setFiltersOpen(true)}
-          >
-            {activeFilters > 0 ? `${t.discovery.filters} · ${activeFilters}` : t.discovery.filters}
-          </Button>
-
-          <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.stockPoints)}>
-            List view
-          </Button>
-        </div>
-
-        {activeFilters > 0 && (
-          <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
-            {mineralId && <Chip active label={mineralName(mineralId)} onRemove={() => setMineralId('')} />}
-            {maxDistance && (
-              <Chip active label={`Within ${maxDistance} km`} onRemove={() => setMaxDistance('')} />
-            )}
-            {inStockOnly && (
-              <Chip active label={t.discovery.inStockOnly} onRemove={() => setInStockOnly(false)} />
-            )}
-          </div>
-        )}
-      </Surface>
-
-      {results.loading && <LoadingState variant="list" rows={4} />}
-      {results.error && <ErrorState onRetry={results.reload} />}
-
-      {results.data && results.data.length === 0 && (
-        <EmptyState
-          icon={<Warehouse size={22} />}
-          title={t.discovery.noResults}
-          description={t.discovery.noResultsBody}
-          action={
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setMineralId('');
-                setMaxDistance('');
-                setInStockOnly(false);
-                setSearch('');
-              }}
-            >
-              {t.discovery.clearAll}
-            </Button>
-          }
-        />
-      )}
-
-      {results.data && results.data.length > 0 && destination && (
-        <div className="relative flex-1 min-h-[360px] w-full overflow-hidden bg-neutral-100">
+      <div className="absolute inset-0 z-0 overflow-hidden bg-neutral-100">
           <StockPointMap
-            origin={destination.geo}
-            originLabel={destination.label}
-            results={results.data}
+            origin={mapOrigin}
+            originLabel={mapOriginLabel}
+            results={results.data ?? []}
             selectedId={selectedOnMap}
             onSelect={setSelectedOnMap}
+            mineralName={mineralName}
           />
+      </div>
+
+      <div className="absolute inset-x-3 top-3 z-10">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            setNoResultsDismissed(false);
+            setSubmittedSearch(search.trim());
+          }}
+        >
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            onClear={() => setSubmittedSearch('')}
+            placeholder={t.discovery.searchPlaceholder}
+            className="rounded-2xl border border-line/80 shadow-e3"
+            endAdornment={
+              <button
+                type="button"
+                aria-label={t.discovery.filters}
+                onClick={() => setFiltersOpen(true)}
+                className={[
+                  'relative flex size-8 shrink-0 items-center justify-center rounded-full',
+                  'text-ink-muted transition-colors hover:bg-neutral-200',
+                  activeFilters > 0 ? 'text-primary-700' : '',
+                ].join(' ')}
+              >
+                <SlidersHorizontal size={16} aria-hidden />
+                {activeFilters > 0 && (
+                  <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-primary-600" />
+                )}
+              </button>
+            }
+          />
+        </form>
+      </div>
+
+      {results.loading && (
+        <div className="absolute left-1/2 top-36 z-10 -translate-x-1/2 rounded-full bg-surface px-3 py-1.5 text-caption text-ink-secondary shadow-e2">
+          Loading nearby stock points…
+        </div>
+      )}
+
+      {results.error && (
+        <div className="absolute inset-x-4 top-36 z-10">
+          <ErrorState onRetry={results.reload} />
+        </div>
+      )}
+
+      {results.data && results.data.length === 0 && !noResultsDismissed && (
+        <div className="absolute inset-x-4 top-40 z-10">
+          <Surface className="relative p-4 shadow-e2">
+            <button
+              type="button"
+              aria-label="Close no results message"
+              onClick={() => setNoResultsDismissed(true)}
+              className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-neutral-100"
+            >
+              <X size={17} aria-hidden />
+            </button>
+            <EmptyState
+              icon={<Warehouse size={22} />}
+              title={t.discovery.noResults}
+              description={t.discovery.noResultsBody}
+              action={
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setMineralId('');
+                    setMaxDistance('');
+                    setInStockOnly(false);
+                    setSearch('');
+                    setSubmittedSearch('');
+                    setNoResultsDismissed(false);
+                  }}
+                >
+                  {t.discovery.clearAll}
+                </Button>
+              }
+            />
+          </Surface>
         </div>
       )}
 
       {results.data && results.data.length > 0 && (
-        <BottomSheet
-          open
-          onClose={() => undefined}
-          title={t.discovery.title}
-          description={t.discovery.resultCount(results.data.length)}
-          className="max-h-[52%]"
+        <div
+          className={[
+            'absolute inset-x-0 bottom-0 z-10 overflow-hidden rounded-t-2xl border-t border-line bg-surface/95 shadow-e3 backdrop-blur transition-[max-height]',
+            drawerOpen ? 'max-h-[50%]' : 'max-h-16',
+          ].join(' ')}
         >
-          <ListGroup className="px-2 pb-1">
-            {results.data.map((result, index) => (
-              <StockPointRow
-                key={result.stockPoint.id}
-                result={result}
-                index={index + 1}
-                showIndex
-                hasDestination={Boolean(destination)}
-                mineralName={mineralName}
-                highlighted={result.stockPoint.id === selectedOnMap}
-                onOpen={() => navigate(ROUTES.stockPointDetails(result.stockPoint.id))}
-              />
-            ))}
-          </ListGroup>
-        </BottomSheet>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            aria-expanded={drawerOpen}
+          >
+            <span>
+              <span className="block text-label font-medium text-ink">Nearby stock points</span>
+            </span>
+            <ChevronUp size={18} className={drawerOpen ? 'rotate-180 text-ink-muted' : 'text-ink-muted'} />
+          </button>
+          {drawerOpen && (
+            <ListGroup className="max-h-[calc(50vh-64px)] overflow-y-auto px-2 pb-1">
+              {results.data.map((result, index) => (
+                <StockPointRow
+                  key={result.stockPoint.id}
+                  result={result}
+                  index={index + 1}
+                  showIndex
+                  hasDestination={Boolean(destination)}
+                  mineralName={mineralName}
+                  highlighted={result.stockPoint.id === selectedOnMap}
+                  onOpen={() => navigate(ROUTES.stockPointDetails(result.stockPoint.id))}
+                />
+              ))}
+            </ListGroup>
+          )}
+        </div>
       )}
 
       <BottomSheet

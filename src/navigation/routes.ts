@@ -35,8 +35,8 @@ export const ROUTES = {
   consumerProjectRegistration: '/consumer/projects/new',
 
   /* --- Shared operational flows --- */
+  /** Map-first stock-point discovery; the list is available from its drawer. */
   stockPoints: '/stock-points',
-  stockPointsMap: '/stock-points/map',
   stockPointDetails: (stockPointId: ID = ':stockPointId') => `/stock-points/${stockPointId}`,
   /** Raising an enquiry always starts from a chosen stock point. */
   createEnquiry: (stockPointId: ID = ':stockPointId') =>
