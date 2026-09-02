@@ -5,7 +5,8 @@ import { Button, Input, Select } from '@/design-system';
 import { LAND_TYPES, type ApplicationDraft } from '@/rules';
 import { locationRepository, useAsync, type ResolvedLocation } from '@/data';
 import { useCopy } from '@/content';
-import { LocationPicker, type LocationLandmark } from '../LocationPicker';
+import type { LocationLandmark } from '../LocationPicker';
+import { LocationMapOverlay } from '../LocationMapOverlay';
 import type { StepProps } from './ApplicantStep';
 
 export interface LocationStepProps extends StepProps {
@@ -36,6 +37,8 @@ const STATE_CENTRE: GeoPoint = { latitude: 19.7515, longitude: 75.7139 };
 export function LocationStep({ draft, errors, update, patch }: LocationStepProps) {
   const t = useCopy();
   const [suggestion, setSuggestion] = useState<ResolvedLocation | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapPoint, setMapPoint] = useState<GeoPoint | null>(draft.siteGeo);
 
   const districts = useAsync(() => locationRepository.listDistricts(), []);
   const talukas = useAsync(
@@ -209,15 +212,37 @@ export function LocationStep({ draft, errors, update, patch }: LocationStepProps
         value={draft.addressLine}
         {...(errors.addressLine ? { error: errors.addressLine } : {})}
         onChange={(event) => update('addressLine', event.target.value)}
+        rightSlot={
+          <button
+            type="button"
+            aria-label="Choose site address on map"
+            onClick={() => {
+              setMapPoint(draft.siteGeo ?? centre);
+              setMapOpen(true);
+            }}
+            className="flex size-8 items-center justify-center rounded-full text-primary-700 hover:bg-primary-50"
+          >
+            <MapPin size={18} aria-hidden />
+          </button>
+        }
       />
 
-      <LocationPicker
-        centre={centre}
-        value={draft.siteGeo}
-        landmarks={landmarks}
-        onChange={(point) => update('siteGeo', point)}
-        {...(errors.siteGeo ? { error: errors.siteGeo } : {})}
-      />
+      {mapOpen && (
+        <LocationMapOverlay
+          centre={centre}
+          value={mapPoint}
+          onChange={setMapPoint}
+          onClose={() => setMapOpen(false)}
+          onSave={(point) => {
+            update('siteGeo', point);
+            update(
+              'addressLine',
+              `Pinned site location (${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)})`,
+            );
+            setMapOpen(false);
+          }}
+        />
+      )}
 
       {/* The pin disagrees with the chosen units — say so, do not overrule. */}
       {suggestion?.village && suggestion.taluka && suggestion.district && (
