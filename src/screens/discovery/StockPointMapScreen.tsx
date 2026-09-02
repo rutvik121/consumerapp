@@ -127,6 +127,7 @@ export function StockPointMapScreen() {
             selectedId={selectedOnMap}
             onSelect={setSelectedOnMap}
             mineralName={mineralName}
+            onViewDetails={(stockPointId) => navigate(ROUTES.stockPointDetails(stockPointId))}
           />
       </div>
 

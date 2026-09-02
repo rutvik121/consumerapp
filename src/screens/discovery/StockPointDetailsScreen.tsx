@@ -59,14 +59,25 @@ export function StockPointDetailsScreen() {
       onBack
       context={<OrganizationContextBar showChange={false} />}
       footer={
-        stockPoint && stockPoint.status !== 'CLOSED' ? (
-          <Button
-            size="lg"
-            fullWidth
-            onClick={() => navigate(ROUTES.createEnquiry(stockPoint.id))}
-          >
-            {t.discovery.sendEnquiry}
-          </Button>
+        stockPoint ? (
+          <div className="flex gap-2">
+            {stockPoint.status !== 'CLOSED' && (
+              <Button
+                size="lg"
+                fullWidth
+                onClick={() => navigate(ROUTES.createEnquiry(stockPoint.id))}
+              >
+                {t.discovery.sendEnquiry}
+              </Button>
+            )}
+            <a
+              href={`tel:${stockPoint.contact.mobileNumber}`}
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-md border border-line-strong bg-surface px-4 text-body font-semibold text-primary-700 hover:bg-primary-50"
+            >
+              <Phone size={17} aria-hidden />
+              Call
+            </a>
+          </div>
         ) : undefined
       }
     >

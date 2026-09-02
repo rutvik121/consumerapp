@@ -11,6 +11,7 @@ export interface StockPointMapProps {
   selectedId?: string | null;
   onSelect: (stockPointId: string) => void;
   mineralName: (mineralId: string) => string;
+  onViewDetails: (stockPointId: string) => void;
 }
 
 function makePointIcon(color: string, index: number, selected: boolean) {
@@ -102,6 +103,7 @@ export function StockPointMap({
   selectedId,
   onSelect,
   mineralName,
+  onViewDetails,
 }: StockPointMapProps) {
   const center: [number, number] = [origin.latitude, origin.longitude];
 
@@ -156,6 +158,21 @@ export function StockPointMap({
                     </div>
                   </div>
                   <p className="mt-2 text-caption text-ink-muted">{result.distanceKm.toFixed(1)} km away</p>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onViewDetails(stockPoint.id)}
+                      className="flex-1 rounded-md bg-primary-600 px-2 py-1.5 text-caption font-medium text-white hover:bg-primary-700"
+                    >
+                      See details
+                    </button>
+                    <a
+                      href={`tel:${stockPoint.contact.mobileNumber}`}
+                      className="flex-1 rounded-md border border-line px-2 py-1.5 text-center text-caption font-medium text-primary-700 hover:bg-primary-50"
+                    >
+                      Call
+                    </a>
+                  </div>
                 </div>
               </Popup>
             </Marker>
