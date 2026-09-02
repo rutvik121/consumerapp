@@ -5,7 +5,6 @@ import { Button, Input, Select } from '@/design-system';
 import { LAND_TYPES, type ApplicationDraft } from '@/rules';
 import { locationRepository, useAsync, type ResolvedLocation } from '@/data';
 import { useCopy } from '@/content';
-import type { LocationLandmark } from '../LocationPicker';
 import { LocationMapOverlay } from '../LocationMapOverlay';
 import type { StepProps } from './ApplicantStep';
 
@@ -81,11 +80,6 @@ export function LocationStep({ draft, errors, update, patch }: LocationStepProps
   const selectedDistrict = districts.data?.find((district) => district.code === draft.districtCode);
   const centre = selectedTaluka?.geo ?? selectedDistrict?.geo ?? STATE_CENTRE;
 
-  const landmarks: LocationLandmark[] = selectedTaluka
-    ? (villages.data ?? [])
-    : selectedDistrict
-      ? (talukas.data ?? [])
-      : (districts.data ?? []);
 
   return (
     <div className="space-y-4">
