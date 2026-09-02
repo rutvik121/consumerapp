@@ -30,7 +30,7 @@ export {
   PackageDetailsScreen,
 } from './organization';
 
-export { StockPointsScreen, StockPointMapScreen, StockPointDetailsScreen } from './discovery';
+export { StockPointMapScreen, StockPointDetailsScreen } from './discovery';
 export {
   CreateEnquiryScreen,
   EnquiriesScreen,

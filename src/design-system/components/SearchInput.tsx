@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -7,10 +7,11 @@ export interface SearchInputProps
   value: string;
   onChange: (value: string) => void;
   onClear?: () => void;
+  endAdornment?: ReactNode;
 }
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
-  { value, onChange, onClear, placeholder = 'Search', className, ...rest },
+  { value, onChange, onClear, endAdornment, placeholder = 'Search', className, ...rest },
   ref,
 ) {
   return (
@@ -50,6 +51,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
           <X size={15} aria-hidden />
         </button>
       )}
+      {endAdornment}
     </div>
   );
 });

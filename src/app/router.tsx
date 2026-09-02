@@ -36,7 +36,6 @@ import {
   SplashScreen,
   StockPointDetailsScreen,
   StockPointMapScreen,
-  StockPointsScreen,
   ApplicationDetailsScreen,
   NewApplicationScreen,
   PaymentScreen,
@@ -193,8 +192,7 @@ export function AppRouter() {
             Raising an enquiry is only reachable FROM a stock point, which is
             why its path is nested under one.
           */}
-          <Route path={ROUTES.stockPoints} element={<StockPointsScreen />} />
-          <Route path={ROUTES.stockPointsMap} element={<StockPointMapScreen />} />
+          <Route path={ROUTES.stockPoints} element={<StockPointMapScreen />} />
           <Route path={ROUTES.stockPointDetails()} element={<StockPointDetailsScreen />} />
           <Route path={ROUTES.createEnquiry()} element={<CreateEnquiryScreen />} />
           <Route path={ROUTES.enquiries} element={<EnquiriesScreen />} />
