@@ -3,13 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Check,
   CheckCircle2,
-  ChevronRight,
   Download,
   FileCheck,
   Lock,
   Receipt,
   ShieldAlert,
-  Sparkles,
 } from 'lucide-react';
 import type { Money, Payment, PaymentPurpose, TemporaryExcavationApplication } from '@/domain';
 import {
@@ -57,29 +55,27 @@ export function PaymentScreen() {
   const application = query.data?.application;
   const quantityValue = application?.estimatedQuantity?.value || 10;
 
-  // Breakdown for Demand Note vs Application Submission Fee
+  // 1. Application Fee Breakdown (Stage 1 Submission - GRAS Only)
+  const appFeeBreakdown = calculateApplicationFeeBreakdown(quantityValue);
+
+  // 2. Demand Note Breakdown (Stage 2 Assessment - GRAS Royalty + MahaKhanij DMF)
   const demandNoteSplit = application
     ? computeDetailedDemandNoteBreakdown(application.estimatedQuantity)
     : null;
 
-  const appFeeBreakdown = calculateApplicationFeeBreakdown(quantityValue);
-
-  const grasAmount: Money =
-    paymentPurpose === 'APPLICATION_FEE'
-      ? appFeeBreakdown.totalFee
-      : demandNoteSplit?.gras.total || { amount: 2200, currency: 'INR' };
-
-  const mahakhanijAmount: Money =
-    paymentPurpose === 'APPLICATION_FEE'
-      ? { amount: 118, currency: 'INR' } // MahaKhanij Portal & SI Charges
-      : demandNoteSplit?.mahakhanij.total || { amount: 559, currency: 'INR' };
-
-  const totalPayable: Money = {
-    amount: grasAmount.amount + mahakhanijAmount.amount,
+  const grasDemandAmount: Money = demandNoteSplit?.gras.total || { amount: 2200, currency: 'INR' };
+  const mahakhanijDemandAmount: Money = demandNoteSplit?.mahakhanij.total || { amount: 559, currency: 'INR' };
+  const demandGrandTotal: Money = {
+    amount: grasDemandAmount.amount + mahakhanijDemandAmount.amount,
     currency: 'INR',
   };
 
-  const amount: Money = currentChannel === 'GRAS' ? grasAmount : mahakhanijAmount;
+  const amount: Money =
+    paymentPurpose === 'APPLICATION_FEE'
+      ? appFeeBreakdown.totalFee
+      : currentChannel === 'GRAS'
+      ? grasDemandAmount
+      : mahakhanijDemandAmount;
 
   /* The hand-off simulation */
   useEffect(() => {
@@ -88,17 +84,28 @@ export function PaymentScreen() {
     const timer = setTimeout(async () => {
       const isSuccess = !failNext;
       if (isSuccess) {
-        if (currentChannel === 'GRAS') {
-          setGrasPaid(true);
-          setStage('SUMMARY');
-        } else {
-          setMahakhanijPaid(true);
+        if (paymentPurpose === 'APPLICATION_FEE') {
+          // Application fee goes to GRAS and automatically submits the proposal
           const result = await paymentRepository.complete({
             paymentId: payment.id,
             outcome: 'SUCCESS',
           });
           setSettled(result.application);
           setStage('SUCCESS');
+        } else {
+          // Demand note requires both GRAS and MahaKhanij
+          if (currentChannel === 'GRAS') {
+            setGrasPaid(true);
+            setStage('SUMMARY');
+          } else {
+            setMahakhanijPaid(true);
+            const result = await paymentRepository.complete({
+              paymentId: payment.id,
+              outcome: 'SUCCESS',
+            });
+            setSettled(result.application);
+            setStage('SUCCESS');
+          }
         }
       } else {
         setStage('FAILED');
@@ -106,7 +113,7 @@ export function PaymentScreen() {
     }, REDIRECT_MS);
 
     return () => clearTimeout(timer);
-  }, [stage, payment, failNext, currentChannel]);
+  }, [stage, payment, failNext, currentChannel, paymentPurpose]);
 
   async function startPayment(channel: 'GRAS' | 'MAHAKHANIJ', shouldFail: boolean) {
     if (!applicationId) return;
@@ -121,11 +128,11 @@ export function PaymentScreen() {
   }
 
   const purposeLabel =
-    currentChannel === 'GRAS'
-      ? paymentPurpose === 'APPLICATION_FEE'
-        ? 'GRAS Cyber Treasury (Statutory Application Fee & Stamp Duty)'
-        : 'GRAS Cyber Treasury (State Royalty Head)'
-      : 'MahaKhanij Payment Gateway (DMF & SI Portal Infrastructure)';
+    paymentPurpose === 'APPLICATION_FEE'
+      ? 'GRAS Cyber Treasury (Statutory Application Fee & Stamp Duty)'
+      : currentChannel === 'GRAS'
+      ? 'GRAS Cyber Treasury (Mineral Extraction Royalty Head)'
+      : 'MahaKhanij Gateway (DMF & SI Infrastructure)';
 
   /* ---------- Handing off to the gateway ---------- */
   if (stage === 'REDIRECTING' && amount) {
@@ -143,7 +150,7 @@ export function PaymentScreen() {
           <p className="mt-2 max-w-[34ch] text-body text-ink-secondary">
             {currentChannel === 'GRAS'
               ? 'Redirecting to Government Receipt Accounting System (gras.mahakosh.gov.in) for secure treasury settlement.'
-              : 'Processing District Mineral Foundation (DMF) and Supervision Inspection charges.'}
+              : 'Processing District Mineral Foundation (DMF) and Supervision charges.'}
           </p>
 
           <p className="tabular mt-6 text-display text-primary-700 font-bold">
@@ -159,7 +166,7 @@ export function PaymentScreen() {
     );
   }
 
-  /* ---------- Result (Both GRAS and MahaKhanij Settled) ---------- */
+  /* ---------- Result (Application Fee or Demand Note Settled) ---------- */
   if ((stage === 'SUCCESS' || stage === 'FAILED') && application) {
     const succeeded = stage === 'SUCCESS';
 
@@ -179,14 +186,18 @@ export function PaymentScreen() {
               {succeeded
                 ? paymentPurpose === 'DEMAND_NOTE'
                   ? 'All Payments Verified · Permit Granted!'
-                  : 'Application & Charges Verified · Submitted!'
+                  : 'Application Fee Verified & Submitted!'
                 : 'Payment Transaction Failed'}
             </h2>
             <p className="tabular mt-2 text-2xl font-bold text-primary-700">
-              {formatMoney(totalPayable)}
+              {formatMoney(
+                paymentPurpose === 'APPLICATION_FEE' ? appFeeBreakdown.totalFee : demandGrandTotal
+              )}
             </p>
             <p className="mt-0.5 text-caption text-neutral-500">
-              GRAS Treasury & MahaKhanij Portal Fully Reconciled
+              {paymentPurpose === 'APPLICATION_FEE'
+                ? 'Statutory Application Fee Settled via GRAS Cyber Treasury'
+                : 'GRAS Royalty & MahaKhanij DMF Fully Reconciled'}
             </p>
           </div>
 
@@ -236,7 +247,8 @@ Application Ref No     : ${(settled ?? application).applicationNumber}
 Plot / Survey Location : Gat No-${(settled ?? application).surveyNumber}, ${(settled ?? application).village}
 Mineral Type & Volume  : Stone / Excavation (${formatQuantity((settled ?? application).estimatedQuantity)})
 --------------------------------------------------------------------------------
-GRAS Amount Paid       : ${formatMoney(grasAmount)}
+Payment Head           : ${paymentPurpose === 'APPLICATION_FEE' ? 'Application Fee & Stamp Duty' : 'Mineral Extraction Royalty'}
+Challan Amount Paid    : ${formatMoney(paymentPurpose === 'APPLICATION_FEE' ? appFeeBreakdown.totalFee : grasDemandAmount)}
 Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
 ================================================================================`;
                       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -258,12 +270,13 @@ Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
                     <Download size={15} />
                   </button>
 
-                  {/* MahaKhanij DMF & SI Receipt */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const content = `================================================================================
-MAHAKHANIJ PORTAL — TAX INVOICE & CHARGES RECEIPT
+                  {/* MahaKhanij DMF & SI Receipt (Only for Demand Note) */}
+                  {paymentPurpose === 'DEMAND_NOTE' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const content = `================================================================================
+MAHAKHANIJ PORTAL — TAX INVOICE & DMF TRUST RECEIPT
 GOVERNMENT OF MAHARASHTRA / DISTRICT COLLECTORATE
 ================================================================================
 Transaction Number     : BB5167841AE0492457C9BF1F
@@ -271,27 +284,34 @@ Transaction Date       : ${new Date().toLocaleString('en-IN')}
 Lessee / Payer Entity  : ${(settled ?? application).applicant.fullName}
 Application Ref No     : ${(settled ?? application).applicationNumber}
 --------------------------------------------------------------------------------
-Total Portal Amount    : ${formatMoney(mahakhanijAmount)}
+FEE HEADS BREAKDOWN:
+1. District DMF (10%)  : ${formatMoney(demandNoteSplit?.mahakhanij.dmf || { amount: 220, currency: 'INR' })}
+2. SI Charges          : ${formatMoney(demandNoteSplit?.mahakhanij.siCharges || { amount: 250, currency: 'INR' })}
+3. SI Tax (18% GST)    : ${formatMoney(demandNoteSplit?.mahakhanij.siTax || { amount: 45, currency: 'INR' })}
+4. District TCS (2%)   : ${formatMoney(demandNoteSplit?.mahakhanij.tcs || { amount: 44, currency: 'INR' })}
+--------------------------------------------------------------------------------
+Total Portal Amount    : ${formatMoney(mahakhanijDemandAmount)}
 Payment Status         : VERIFIED & SETTLED
 ================================================================================`;
-                      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                      const url = URL.createObjectURL(blob);
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = `MahaKhanij_Charges_Receipt_${(settled ?? application).applicationNumber}.txt`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-white p-3 text-body-sm font-semibold text-[#15803d] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] transition-all cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <FileCheck size={16} className="text-[#15803d]" />
-                      <span>Download MahaKhanij Portal & Tax Invoice</span>
-                    </span>
-                    <Download size={15} />
-                  </button>
+                        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `MahaKhanij_DMF_Receipt_${(settled ?? application).applicationNumber}.txt`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-white p-3 text-body-sm font-semibold text-[#15803d] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] transition-all cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileCheck size={16} className="text-[#15803d]" />
+                        <span>Download MahaKhanij DMF & Tax Invoice</span>
+                      </span>
+                      <Download size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -326,46 +346,133 @@ Payment Status         : VERIFIED & SETTLED
     );
   }
 
-  /* ---------- GUIDED 2-STEP SEQUENTIAL WIZARD (FOR ALL PAYMENTS) ---------- */
-  if (application) {
+  /* ============================================================================
+   * 1. STAGE 1: FIRST TIME APPLICATION SUBMISSION (GRAS PAYMENT ONLY)
+   * ============================================================================ */
+  if (paymentPurpose === 'APPLICATION_FEE' && application) {
+    return (
+      <Screen
+        title="Application Fee Payment"
+        subtitle={application.applicationNumber || 'Statutory Assessment'}
+        onBack
+        footer={
+          <button
+            type="button"
+            onClick={() => startPayment('GRAS', false)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#15803d] py-3.5 px-4 text-body font-bold text-white shadow-md hover:bg-[#166534] active:scale-[0.99] transition-all cursor-pointer"
+          >
+            <span>₹</span>
+            <span>Pay application fee · {formatMoney(appFeeBreakdown.totalFee)}</span>
+          </button>
+        }
+      >
+        {query.loading && <LoadingState variant="list" rows={3} />}
+        {query.error && <ErrorState onRetry={query.reload} />}
+
+        <div className="px-4 py-5 pb-8 space-y-4 bg-white">
+          {/* Main Assessment Card Matching Reference 2 */}
+          <div className="rounded-3xl border border-emerald-300 bg-[#f0fdf4] p-4.5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-caption font-bold uppercase tracking-wider text-emerald-900">
+                APPLICATION FEE & STATUTORY ASSESSMENT
+              </h3>
+              <span className="flex size-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-body-sm font-bold">
+                ₹
+              </span>
+            </div>
+
+            <p className="mt-1.5 text-caption text-emerald-800/90 leading-relaxed">
+              Pay the statutory application fee to submit your excavation proposal. The proposal is forwarded to the mining officer as soon as payment succeeds.
+            </p>
+
+            {/* Inner White Breakdown Card */}
+            <div className="mt-3.5 rounded-2xl bg-white p-4 shadow-2xs border border-emerald-100 space-y-2.5 text-caption">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Application No:</span>
+                <span className="font-mono font-bold text-ink">{application.applicationNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Applicant / Lessee:</span>
+                <span className="font-medium text-ink">{application.applicant.fullName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Proposed Quantity:</span>
+                <span className="font-medium text-ink tabular">{quantityValue} Brass</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Statutory Fee:</span>
+                <span className="font-medium text-ink tabular">{formatMoney(appFeeBreakdown.baseFee)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Stamp Duty:</span>
+                <span className="font-medium text-ink tabular">{formatMoney(appFeeBreakdown.stampDuty)}</span>
+              </div>
+
+              <div className="border-t border-neutral-100 pt-2.5 flex justify-between items-baseline font-bold text-ink">
+                <span>Total Payable:</span>
+                <span className="text-title font-bold text-emerald-700 tabular">
+                  {formatMoney(appFeeBreakdown.totalFee)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  /* ============================================================================
+   * 2. STAGE 2: DEMAND NOTE PAYMENT (STRATEGIC 2-PAYMENT ARCHITECTURE)
+   * ============================================================================ */
+  if (paymentPurpose === 'DEMAND_NOTE' && application && demandNoteSplit) {
     const isStep1Done = grasPaid;
     const isStep2Done = mahakhanijPaid;
 
     return (
       <Screen
-        title="Payment & Settlement Hub"
-        subtitle={application.applicationNumber || 'Application Settlement'}
+        title="Demand Note Settlement"
+        subtitle={`DM Note: ${application.demandNote?.demandNoteNumber || 'DN/2026/004518'}`}
         onBack
         footer={
           !isStep1Done ? (
-            <Button
-              size="lg"
-              fullWidth
-              leftIcon={<Lock size={15} />}
-              onClick={() => startPayment('GRAS', false)}
-            >
-              Step 1: Pay {formatMoney(grasAmount)} via GRAS
-            </Button>
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => startPayment('GRAS', false)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#15803d] py-3.5 px-4 text-body font-bold text-white shadow-md hover:bg-[#166534] active:scale-[0.99] transition-all cursor-pointer"
+              >
+                <span>🏛️</span>
+                <span>Step 1 of 2: Pay GRAS Royalty · {formatMoney(grasDemandAmount)}</span>
+              </button>
+              <p className="text-center text-[11px] text-neutral-500">
+                Step 1 of 2 · Next: MahaKhanij DMF ({formatMoney(mahakhanijDemandAmount)})
+              </p>
+            </div>
           ) : !isStep2Done ? (
-            <Button
-              size="lg"
-              fullWidth
-              leftIcon={<Sparkles size={15} />}
-              onClick={() => startPayment('MAHAKHANIJ', false)}
-            >
-              Step 2: Pay {formatMoney(mahakhanijAmount)} via MahaKhanij →
-            </Button>
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => startPayment('MAHAKHANIJ', false)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#15803d] py-3.5 px-4 text-body font-bold text-white shadow-md hover:bg-[#166534] active:scale-[0.99] transition-all cursor-pointer"
+              >
+                <span>⛏️</span>
+                <span>Step 2 of 2: Pay MahaKhanij DMF · {formatMoney(mahakhanijDemandAmount)}</span>
+              </button>
+              <p className="text-center text-[11px] text-emerald-700 font-medium">
+                Step 2 of 2 · Final step to release excavation order & DigiTP
+              </p>
+            </div>
           ) : (
-            <Button
-              size="lg"
-              variant="primary"
-              fullWidth
+            <button
+              type="button"
               onClick={() =>
                 navigate(ROUTES.excavationApplication(application.id), { replace: true })
               }
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#15803d] py-3.5 px-4 text-body font-bold text-white shadow-md hover:bg-[#166534] active:scale-[0.99] transition-all cursor-pointer"
             >
-              Payments Settled · View Application →
-            </Button>
+              <Check size={18} strokeWidth={3} />
+              <span>All Paid · View Permit & Generate Passes →</span>
+            </button>
           )
         }
       >
@@ -373,311 +480,321 @@ Payment Status         : VERIFIED & SETTLED
         {query.error && <ErrorState onRetry={query.reload} />}
 
         <div className="px-4 py-4 pb-12 space-y-4 bg-[#f8fafc]">
-          {/* Step 1 Completion Success Banner */}
-          {isStep1Done && !isStep2Done && (
-            <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-3.5 flex items-center justify-between animate-fadeIn shadow-xs">
-              <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white shrink-0">
-                  <Check size={14} strokeWidth={3} />
-                </span>
-                <div>
-                  <p className="text-body-sm font-bold text-emerald-950">Step 1 (GRAS Payment) Verified!</p>
-                  <p className="text-[11px] text-emerald-800">Challan GRN: MH000242672202627E. Now complete Step 2 below.</p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => startPayment('MAHAKHANIJ', false)}
-              >
-                Pay Step 2 →
-              </Button>
-            </div>
-          )}
-
-          {/* Top Plot & Sanction Banner */}
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-caption font-bold text-[#1241a6]">
-                {paymentPurpose === 'DEMAND_NOTE'
-                  ? `DM Note: ${application.demandNote?.demandNoteNumber || '936'}`
-                  : `Proposal: ${application.applicationNumber}`}
-              </span>
-              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#1241a6] border border-blue-200">
-                2-Step Settlement
-              </span>
-            </div>
-            <h2 className="mt-1.5 text-body font-bold text-ink">
-              {application.applicant.fullName}, Gat No-{application.surveyNumber}, {application.village}
-            </h2>
-            <div className="mt-2 flex items-center gap-4 text-caption text-neutral-500">
-              <div>
-                <span>Quantity: </span>
-                <strong className="text-ink">{formatQuantity(application.estimatedQuantity)}</strong>
-              </div>
-              <div>
-                <span>Total Amount: </span>
-                <strong className="text-primary-700">{formatMoney(totalPayable)}</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Stepper Progress Bar */}
-          <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-neutral-200 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'flex size-6 items-center justify-center rounded-full text-caption font-bold transition-all',
-                  isStep1Done ? 'bg-emerald-600 text-white' : 'bg-[#1241a6] text-white ring-2 ring-blue-100'
-                )}
-              >
-                {isStep1Done ? <Check size={13} strokeWidth={3} /> : '1'}
-              </span>
-              <span className={cn('text-caption font-semibold', isStep1Done ? 'text-emerald-700' : 'text-ink')}>
-                1. GRAS Payment
-              </span>
-            </div>
-
-            <ChevronRight size={16} className="text-neutral-300" />
-
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'flex size-6 items-center justify-center rounded-full text-caption font-bold transition-all',
-                  isStep2Done
-                    ? 'bg-emerald-600 text-white'
-                    : isStep1Done
-                    ? 'bg-[#1241a6] text-white ring-2 ring-blue-100'
-                    : 'bg-neutral-100 text-neutral-400'
-                )}
-              >
-                {isStep2Done ? <Check size={13} strokeWidth={3} /> : '2'}
-              </span>
-              <span
-                className={cn(
-                  'text-caption font-semibold',
-                  isStep2Done ? 'text-emerald-700' : isStep1Done ? 'text-ink' : 'text-neutral-400'
-                )}
-              >
-                2. MahaKhanij Payment
-              </span>
-            </div>
-          </div>
-
           {/* ========================================================
-              STEP 1 CARD: GRAS CYBER TREASURY PAYMENT
+              STRATEGIC UPFRONT NOTICE: 2 PAYMENTS EXPLAINED
              ======================================================== */}
-          <div
-            className={cn(
-              'rounded-2xl border p-4 shadow-xs transition-all',
-              isStep1Done ? 'border-emerald-200 bg-emerald-50/40' : 'border-[#bfd5fb] bg-white ring-2 ring-[#eef4fe]'
-            )}
-          >
+          <div className="rounded-3xl border border-blue-200 bg-[#f0f7ff] p-4.5 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    'flex size-7 items-center justify-center rounded-lg text-body-sm font-bold',
-                    isStep1Done ? 'bg-emerald-100 text-emerald-800' : 'bg-[#eef4fe] text-[#1241a6]'
-                  )}
-                >
-                  🏛️
-                </span>
-                <div>
-                  <h3 className="text-body-sm font-bold text-ink">Step 1: GRAS Payment (Government Treasury)</h3>
-                  <p className="text-[11px] text-neutral-500">Government Receipt Accounting System</p>
-                </div>
-              </div>
-              <span
-                className={cn(
-                  'rounded-full px-2.5 py-0.5 text-[11px] font-bold border',
-                  isStep1Done
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                    : 'bg-blue-50 text-[#1241a6] border-blue-200'
-                )}
-              >
-                {isStep1Done ? 'Settled' : 'Payment Due'}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#1241a6] bg-blue-100 px-2 py-0.5 rounded-full">
+                Statutory Mining Rule
+              </span>
+              <span className="text-caption font-bold text-ink">
+                2 Separate Payments Required
               </span>
             </div>
 
-            {/* GRAS Table Breakdown */}
-            <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 space-y-2 text-caption">
-              {paymentPurpose === 'APPLICATION_FEE' ? (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 font-medium">Application Fee:</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(appFeeBreakdown.baseFee)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 font-medium">Stamp Duty:</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(appFeeBreakdown.stampDuty)}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 font-medium">Head:</span>
-                    <span className="font-semibold text-ink">{demandNoteSplit?.gras.head}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 font-medium">Assessed Royalty:</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.gras.amount || { amount: 2200, currency: 'INR' })}</span>
-                  </div>
-                </>
-              )}
-              <div className="flex justify-between items-center border-t border-dashed border-neutral-200 pt-2 font-bold text-ink">
-                <span>Net Payable (GRAS Part A):</span>
-                <span className="tabular text-primary-700 font-bold">{formatMoney(grasAmount)}</span>
-              </div>
+            <div>
+              <h2 className="text-body font-bold text-ink">
+                Demand Note Settlement Roadmap
+              </h2>
+              <p className="mt-1 text-caption text-neutral-600 leading-relaxed">
+                As per Maharashtra Minor Mineral Concession Rules, this demand note requires two separate legal settlements before your excavation order can be issued:
+              </p>
             </div>
 
-            {/* If Paid: Show GRAS Audit History */}
-            {isStep1Done ? (
-              <div className="mt-3 rounded-xl bg-emerald-100/60 p-2.5 text-[11px] text-emerald-900 space-y-1">
-                <div className="flex justify-between">
-                  <span>Challan GRN:</span>
-                  <strong className="font-mono">MH000242672202627E</strong>
+            {/* Visual Roadmap Pill Box */}
+            <div className="grid grid-cols-2 gap-2 pt-1 text-caption">
+              <div
+                className={cn(
+                  'rounded-2xl p-3 border space-y-1 transition-all',
+                  isStep1Done
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                    : 'bg-white border-blue-200 text-ink shadow-2xs'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-neutral-500">Payment 1</span>
+                  {isStep1Done && <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">Done ✓</span>}
                 </div>
-                <div className="flex justify-between">
-                  <span>CIN Ref:</span>
-                  <strong className="font-mono">02003942026090389173</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>Status:</span>
-                  <span className="font-bold text-emerald-700">Challan Generated & Verified</span>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <Button
-                  size="md"
-                  fullWidth
-                  leftIcon={<Lock size={14} />}
-                  onClick={() => startPayment('GRAS', false)}
-                >
-                  Pay {formatMoney(grasAmount)} via GRAS →
-                </Button>
-                <p className="mt-1.5 text-center text-[10px] text-neutral-400">
-                  Disclaimer: GRAS Payment Amount Non-Refundable (Direct Treasury Credit).
+                <p className="text-caption font-bold">🏛️ GRAS Treasury</p>
+                <p className="text-[11px] text-neutral-500">Mineral Royalty Head</p>
+                <p className="text-body-sm font-bold text-[#1241a6] tabular pt-0.5">
+                  {formatMoney(grasDemandAmount)}
                 </p>
               </div>
+
+              <div
+                className={cn(
+                  'rounded-2xl p-3 border space-y-1 transition-all',
+                  isStep2Done
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                    : isStep1Done
+                    ? 'bg-white border-teal-300 text-ink shadow-2xs'
+                    : 'bg-neutral-50 border-neutral-200 text-neutral-400 opacity-80'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-neutral-400">Payment 2</span>
+                  {isStep2Done ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">Done ✓</span>
+                  ) : !isStep1Done ? (
+                    <span className="text-[10px] text-neutral-400">Locked</span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-teal-800 bg-teal-100 px-1.5 py-0.2 rounded">Ready</span>
+                  )}
+                </div>
+                <p className="text-caption font-bold">⛏️ MahaKhanij Portal</p>
+                <p className="text-[11px] text-neutral-500">DMF (10%) & Charges</p>
+                <p className="text-body-sm font-bold text-teal-800 tabular pt-0.5">
+                  {formatMoney(mahakhanijDemandAmount)}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-blue-200/60 pt-2 flex items-center justify-between text-caption font-bold text-ink">
+              <span>Combined Total:</span>
+              <span className="text-title-sm text-primary-700 tabular font-bold">
+                {formatMoney(demandGrandTotal)}
+              </span>
+            </div>
+          </div>
+
+          {/* ========================================================
+              CARD 1 OF 2: GRAS CYBER TREASURY (ROYALTY)
+             ======================================================== */}
+          <div
+            className={cn(
+              'rounded-3xl border p-4.5 shadow-xs transition-all',
+              isStep1Done
+                ? 'border-emerald-300 bg-[#f0fdf4]'
+                : 'border-emerald-300 bg-[#f0fdf4]'
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-caption font-bold uppercase tracking-wider text-emerald-900">
+                PAYMENT 1 OF 2 · GRAS CYBER TREASURY
+              </h3>
+              <span
+                className={cn(
+                  'flex size-7 items-center justify-center rounded-full text-body-sm font-bold',
+                  isStep1Done ? 'bg-emerald-200 text-emerald-900' : 'bg-emerald-100 text-emerald-800'
+                )}
+              >
+                🏛️
+              </span>
+            </div>
+
+            <p className="mt-1.5 text-caption text-emerald-800/90 leading-relaxed">
+              Direct treasury remittance to the Consolidated Fund of Maharashtra (Head 0853) for state mineral extraction rights.
+            </p>
+
+            {/* Inner White Breakdown Card */}
+            <div className="mt-3.5 rounded-2xl bg-white p-4 shadow-2xs border border-emerald-100 space-y-2.5 text-caption">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Government Portal:</span>
+                <span className="font-semibold text-ink">gras.mahakosh.gov.in</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Major Accounting Head:</span>
+                <span className="font-semibold text-ink">{demandNoteSplit.gras.head}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Sanctioned Volume / Royalty:</span>
+                <span className="font-medium text-ink tabular">{formatMoney(demandNoteSplit.gras.amount)}</span>
+              </div>
+
+              <div className="border-t border-neutral-100 pt-2.5 flex justify-between items-baseline font-bold text-ink">
+                <span>Payable to GRAS:</span>
+                <span className="text-title font-bold text-emerald-700 tabular">
+                  {formatMoney(grasDemandAmount)}
+                </span>
+              </div>
+            </div>
+
+            {/* If Paid: Verified Credentials & Receipt */}
+            {isStep1Done && (
+              <div className="mt-3 space-y-2">
+                <div className="rounded-2xl bg-emerald-100/70 border border-emerald-200 p-3 text-[11px] text-emerald-950 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-emerald-800">Challan GRN:</span>
+                    <strong className="font-mono font-bold">MH000242672202627E</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-emerald-800">CIN Number:</span>
+                    <strong className="font-mono font-bold">02003942026090389173</strong>
+                  </div>
+                  <div className="flex justify-between border-t border-emerald-200/80 pt-1">
+                    <span className="text-emerald-800">Treasury Scroll:</span>
+                    <span className="font-bold text-emerald-700 flex items-center gap-1">
+                      <Check size={13} strokeWidth={3} /> Verified & Settled
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const content = `================================================================================
+GOVERNMENT OF MAHARASHTRA — GRAS e-CHALLAN RECEIPT
+CYBER TREASURY PAYMENT ACKNOWLEDGEMENT (MH-GRAS)
+================================================================================
+Challan Ref (GRN)      : MH000242672202627E
+CIN Number             : 02003942026090389173
+Date & Time            : ${new Date().toLocaleString('en-IN')}
+Major Head / Account   : 0853 - Non-Ferrous Mining & Metallurgical Industries
+Department             : Directorate of Geology and Mining
+--------------------------------------------------------------------------------
+Applicant / Entity     : ${application.applicant.fullName}
+Application Ref No     : ${application.applicationNumber}
+Plot / Survey Location : Gat No-${application.surveyNumber}, ${application.village}
+Mineral Type & Volume  : Stone / Excavation (${formatQuantity(application.estimatedQuantity)})
+--------------------------------------------------------------------------------
+Payment Head           : Mineral Extraction Royalty
+Challan Amount Paid    : ${formatMoney(grasDemandAmount)}
+Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
+================================================================================`;
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `GRAS_eChallan_${application.applicationNumber}.txt`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl border border-emerald-300 bg-white p-2.5 text-caption font-semibold text-emerald-800 shadow-2xs hover:bg-emerald-50 active:scale-[0.99] transition-all cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Receipt size={14} className="text-emerald-700" />
+                    <span>Download GRAS e-Challan (GRN & CIN)</span>
+                  </span>
+                  <Download size={14} />
+                </button>
+              </div>
             )}
           </div>
 
           {/* ========================================================
-              STEP 2 CARD: MAHAKHANIJ PORTAL PAYMENT (DMF & SI)
+              CARD 2 OF 2: MAHAKHANIJ PORTAL (DMF & CHARGES)
              ======================================================== */}
           <div
             className={cn(
-              'rounded-2xl border p-4 shadow-xs transition-all',
+              'rounded-3xl border p-4.5 shadow-xs transition-all',
               isStep2Done
-                ? 'border-emerald-200 bg-emerald-50/40'
+                ? 'border-emerald-300 bg-[#f0fdf4]'
                 : isStep1Done
-                ? 'border-[#bfd5fb] bg-white ring-2 ring-[#eef4fe]'
-                : 'border-neutral-200 bg-neutral-50 opacity-75'
+                ? 'border-emerald-300 bg-[#f0fdf4]'
+                : 'border-neutral-200 bg-[#f8fafc] opacity-75'
             )}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    'flex size-7 items-center justify-center rounded-lg text-body-sm font-bold',
-                    isStep2Done
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : isStep1Done
-                      ? 'bg-[#eef4fe] text-[#1241a6]'
-                      : 'bg-neutral-200 text-neutral-500'
-                  )}
-                >
-                  ⛏️
-                </span>
-                <div>
-                  <h3 className="text-body-sm font-bold text-ink">Step 2: MahaKhanij Payment (DMF & Charges)</h3>
-                  <p className="text-[11px] text-neutral-500">District Mineral Foundation & Portal Services</p>
-                </div>
-              </div>
+              <h3 className={cn('text-caption font-bold uppercase tracking-wider', isStep1Done || isStep2Done ? 'text-emerald-900' : 'text-neutral-600')}>
+                PAYMENT 2 OF 2 · MAHAKHANIJ PORTAL & TRUST
+              </h3>
               <span
                 className={cn(
-                  'rounded-full px-2.5 py-0.5 text-[11px] font-bold border',
-                  isStep2Done
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                    : isStep1Done
-                    ? 'bg-amber-100 text-amber-800 border-amber-200'
-                    : 'bg-neutral-200 text-neutral-600 border-neutral-300'
+                  'flex size-7 items-center justify-center rounded-full text-body-sm font-bold',
+                  isStep1Done || isStep2Done ? 'bg-emerald-100 text-emerald-800' : 'bg-neutral-200 text-neutral-500'
                 )}
               >
-                {isStep2Done ? 'Settled' : isStep1Done ? 'Ready to Pay' : 'Locked'}
+                ⛏️
               </span>
             </div>
 
-            {/* MahaKhanij Table Breakdown */}
-            <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 space-y-1.5 text-caption">
-              {paymentPurpose === 'APPLICATION_FEE' ? (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">SI Inspection Charges:</span>
-                    <span className="tabular font-medium text-ink">₹100</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">SI Tax (18% GST):</span>
-                    <span className="tabular font-medium text-ink">₹18</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">District DMF (10% of Royalty):</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.dmf || { amount: 220, currency: 'INR' })}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">SI Charges (Transit monitoring):</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.siCharges || { amount: 250, currency: 'INR' })}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">SI Tax (18% GST on SI):</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.siTax || { amount: 45, currency: 'INR' })}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">District TCS (2%):</span>
-                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.tcs || { amount: 44, currency: 'INR' })}</span>
-                  </div>
-                </>
-              )}
-              <div className="flex justify-between items-center border-t border-dashed border-neutral-200 pt-2 font-bold text-ink">
-                <span>Net Payable (Part B):</span>
-                <span className="tabular text-primary-700 font-bold">{formatMoney(mahakhanijAmount)}</span>
+            <p className={cn('mt-1.5 text-caption leading-relaxed', isStep1Done || isStep2Done ? 'text-emerald-800/90' : 'text-neutral-500')}>
+              District Mineral Foundation (10% Trust Fund), Supervision & Inspection, and statutory tax assessments.
+            </p>
+
+            {/* Inner White Breakdown Card */}
+            <div className="mt-3.5 rounded-2xl bg-white p-4 shadow-2xs border border-neutral-100 space-y-2.5 text-caption">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">District Mineral Foundation (10%):</span>
+                <span className="font-medium text-ink tabular">{formatMoney(demandNoteSplit.mahakhanij.dmf)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">Supervision & Inspection (SI):</span>
+                <span className="font-medium text-ink tabular">{formatMoney(demandNoteSplit.mahakhanij.siCharges)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">SI Tax (18% GST):</span>
+                <span className="font-medium text-ink tabular">{formatMoney(demandNoteSplit.mahakhanij.siTax)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-500">District cess / TCS (2%):</span>
+                <span className="font-medium text-ink tabular">{formatMoney(demandNoteSplit.mahakhanij.tcs)}</span>
+              </div>
+
+              <div className="border-t border-neutral-100 pt-2.5 flex justify-between items-baseline font-bold text-ink">
+                <span>Payable to MahaKhanij:</span>
+                <span className="text-title font-bold text-emerald-700 tabular">
+                  {formatMoney(mahakhanijDemandAmount)}
+                </span>
               </div>
             </div>
 
-            {/* If Paid: Show MahaKhanij Transaction History */}
+            {/* If Paid: Verified Credentials & Receipt */}
             {isStep2Done ? (
-              <div className="mt-3 rounded-xl bg-emerald-100/60 p-2.5 text-[11px] text-emerald-900 space-y-1">
-                <div className="flex justify-between">
-                  <span>Transaction Ref:</span>
-                  <strong className="font-mono">BB5167841AE0492457C9BF1F</strong>
+              <div className="mt-3 space-y-2">
+                <div className="rounded-2xl bg-emerald-100/70 border border-emerald-200 p-3 text-[11px] text-emerald-950 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-emerald-800">Transaction ID:</span>
+                    <strong className="font-mono font-bold">BB5167841AE0492457C9BF1F</strong>
+                  </div>
+                  <div className="flex justify-between border-t border-emerald-200/80 pt-1">
+                    <span className="text-emerald-800">DMF Portal Status:</span>
+                    <span className="font-bold text-emerald-700 flex items-center gap-1">
+                      <Check size={13} strokeWidth={3} /> Reconciled & Cleared
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Status:</span>
-                  <span className="font-bold text-emerald-700">Reconciled & Cleared</span>
-                </div>
-              </div>
-            ) : isStep1Done ? (
-              <div className="mt-3">
-                <Button
-                  size="md"
-                  fullWidth
-                  leftIcon={<Sparkles size={14} />}
-                  onClick={() => startPayment('MAHAKHANIJ', false)}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const content = `================================================================================
+MAHAKHANIJ PORTAL — TAX INVOICE & DMF TRUST RECEIPT
+GOVERNMENT OF MAHARASHTRA / DISTRICT COLLECTORATE
+================================================================================
+Transaction Number     : BB5167841AE0492457C9BF1F
+Transaction Date       : ${new Date().toLocaleString('en-IN')}
+Lessee / Payer Entity  : ${application.applicant.fullName}
+Application Ref No     : ${application.applicationNumber}
+--------------------------------------------------------------------------------
+FEE HEADS BREAKDOWN:
+1. District DMF (10%)  : ${formatMoney(demandNoteSplit.mahakhanij.dmf)}
+2. SI Charges          : ${formatMoney(demandNoteSplit.mahakhanij.siCharges)}
+3. SI Tax (18% GST)    : ${formatMoney(demandNoteSplit.mahakhanij.siTax)}
+4. District TCS (2%)   : ${formatMoney(demandNoteSplit.mahakhanij.tcs)}
+--------------------------------------------------------------------------------
+Total Portal Amount    : ${formatMoney(mahakhanijDemandAmount)}
+Payment Status         : VERIFIED & SETTLED
+================================================================================`;
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `MahaKhanij_DMF_Receipt_${application.applicationNumber}.txt`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl border border-emerald-300 bg-white p-2.5 text-caption font-semibold text-emerald-800 shadow-2xs hover:bg-emerald-50 active:scale-[0.99] transition-all cursor-pointer"
                 >
-                  Pay {formatMoney(mahakhanijAmount)} via MahaKhanij →
-                </Button>
+                  <span className="flex items-center gap-1.5">
+                    <FileCheck size={14} className="text-emerald-700" />
+                    <span>Download MahaKhanij DMF & Tax Invoice</span>
+                  </span>
+                  <Download size={14} />
+                </button>
               </div>
-            ) : (
-              <div className="mt-3 rounded-xl bg-neutral-100 p-2.5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
+            ) : !isStep1Done ? (
+              <div className="mt-3 rounded-2xl bg-neutral-100 p-2.5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5 font-medium">
                 <Lock size={12} />
-                <span>Complete Step 1 (GRAS Payment) to unlock Step 2.</span>
+                <span>Unlocks automatically once Step 1 (Royalty) is paid.</span>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </Screen>
