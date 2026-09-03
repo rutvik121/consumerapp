@@ -85,23 +85,28 @@ export const authRepository = {
       }
 
       const createdAt = new Date().toISOString();
+      const address = draft.address ?? draft.delivery;
 
       if (draft.userType === 'ORGANIZATION') {
         const details = draft.organization;
-        if (!details) return { status: 'INVALID_OTP' } as const;
+        if (!details || !address) return { status: 'INVALID_OTP' } as const;
+
+        const regNum =
+          details.registrationNumber?.trim() ||
+          draft.kyc?.documentNumber?.trim() ||
+          `MH/MK/ORG/${nextSequence('org')}`;
 
         const organization: Organization = {
           id: `org-${nextSequence('org')}`,
           name: details.organizationName.trim(),
-          // Metadata only. It is displayed, and it branches nothing.
           type: details.organizationType,
-          registrationNumber: details.registrationNumber.trim(),
+          registrationNumber: regNum,
           address: {
-            line1: '—',
-            taluka: '—',
-            district: '—',
+            line1: address.addressLine.trim(),
+            taluka: address.taluka.trim(),
+            district: address.district.trim(),
             state: 'Maharashtra',
-            pincode: '—',
+            pincode: address.pincode.trim(),
           },
           primaryContact: { name: draft.fullName.trim(), mobileNumber: normalized },
         };
@@ -120,8 +125,7 @@ export const authRepository = {
         return { status: 'SIGNED_IN', user, organization } as const;
       }
 
-      const delivery = draft.delivery;
-      if (!delivery) return { status: 'INVALID_OTP' } as const;
+      if (!address) return { status: 'INVALID_OTP' } as const;
 
       const user: NormalConsumerUser = {
         id: `user-con-${nextSequence('user')}`,
@@ -130,11 +134,11 @@ export const authRepository = {
         mobileNumber: normalized,
         createdAt,
         deliveryAddress: {
-          line1: delivery.addressLine.trim(),
-          taluka: delivery.taluka.trim(),
-          district: delivery.district.trim(),
+          line1: address.addressLine.trim(),
+          taluka: address.taluka.trim(),
+          district: address.district.trim(),
           state: 'Maharashtra',
-          pincode: delivery.pincode.trim(),
+          pincode: address.pincode.trim(),
         },
         /**
          * PROVISIONAL: a real implementation geocodes the address. The

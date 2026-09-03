@@ -558,26 +558,64 @@ export const en = {
     registerTitle: 'Create account',
     userTypeQuestion: 'How will you use Mahakhanij?',
     userTypeHelp: 'This decides what the app shows you. It cannot be changed later.',
+    individualTab: 'Individual',
+    organizationTab: 'Organization',
     consumerSummary: 'For an individual buying mineral for personal use.',
     organizationSummary:
       'For a builder, contractor, government body or any other organization working across projects and packages.',
 
+    stepDetailsTitle: 'Basic & Address details',
+    stepKycTitle: 'KYC Verification',
+    stepDetailsHelpIndividual: 'Enter your personal contact and delivery destination details.',
+    stepDetailsHelpOrganization: 'Enter authorized representative, entity and registered office details.',
+
     detailsTitle: 'Your details',
     fullNameLabel: 'Full name',
+    repFullNameLabel: 'Authorized person full name',
 
     organizationTitle: 'Organization details',
     organizationNameLabel: 'Organization name',
     organizationTypeLabel: 'Organization type',
     organizationTypeHint: 'Every organization type uses the same experience.',
-    registrationNumberLabel: 'Mahakhanij registration number',
+    registrationNumberLabel: 'Mahakhanij registration number (optional)',
 
     deliveryTitle: 'Where should mineral be delivered?',
     deliveryHelp: 'Used to find nearby stock points and to verify deliveries on arrival.',
-    addressLabel: 'Address',
+    addressLabel: 'Address (House / Flat / Street / Area)',
+    orgAddressLabel: 'Registered office / site address',
     talukaLabel: 'Taluka',
     districtLabel: 'District',
     pincodeLabel: 'PIN code',
     pincodeInvalid: 'Enter a valid 6-digit PIN code.',
+
+    // KYC Verification strings
+    kycTitleIndividual: 'Individual KYC Verification',
+    kycDescIndividual: 'Verify identity via Aadhaar. An OTP will be sent to your Aadhaar-linked mobile number.',
+    kycTitleOrganization: 'Organization KYC Verification',
+    kycDescOrganization: 'Verify entity via PAN. An OTP will be sent to your PAN-registered mobile number.',
+
+    aadhaarLabel: 'Aadhaar card number',
+    aadhaarPlaceholder: '12-digit Aadhaar number',
+    aadhaarInvalid: 'Enter a valid 12-digit Aadhaar number.',
+    uploadAadhaarLabel: 'Upload Aadhaar Card',
+    uploadAadhaarHint: 'Front or combined copy of Aadhaar card',
+
+    panLabel: 'Organization PAN number',
+    panPlaceholder: '10-character PAN (e.g. ABCDE1234F)',
+    panInvalid: 'Enter a valid 10-character PAN (e.g. ABCDE1234F).',
+    uploadPanLabel: 'Upload Organization PAN Card',
+    uploadPanHint: 'Clear copy of entity PAN card',
+
+    kycDocRequired: 'Please upload the required KYC document to continue.',
+    kycNoticeIndividual: 'A secure 6-digit OTP will be dispatched to your Aadhaar-linked mobile number for UIDAI verification.',
+    kycNoticeOrganization: 'A secure 6-digit OTP will be dispatched to the authorized mobile number registered with this PAN.',
+    verifyAndSendOtp: 'Verify & Send OTP',
+    continueToKyc: 'Continue to KYC Verification',
+
+    verifyAadhaarTitle: 'Verify Aadhaar OTP',
+    verifyPanTitle: 'Verify PAN OTP',
+    verifyAadhaarSentTo: 'Enter the 6-digit OTP sent to your Aadhaar-linked mobile number',
+    verifyPanSentTo: 'Enter the 6-digit OTP sent to the authorized number registered with PAN',
 
     required: 'This field is required.',
     haveAccount: 'Already have an account?',

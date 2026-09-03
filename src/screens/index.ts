@@ -28,6 +28,8 @@ export {
   CreateProjectScreen,
   CreatePackageScreen,
   PackageDetailsScreen,
+  RegisterSupervisorScreen,
+  SupervisorsScreen,
 } from './organization';
 
 export { StockPointMapScreen, StockPointDetailsScreen } from './discovery';

@@ -99,9 +99,25 @@ export function OtpScreen() {
 
   if (!mobileNumber) return null;
 
+  const isRegister = intent === 'REGISTER';
+  const kyc = registrationDraft?.kyc;
+
+  let pageTitle: string = t.auth.verifyTitle;
+  let sentPrompt: string = t.auth.verifySentTo;
+
+  if (isRegister) {
+    if (kyc?.documentKind === 'AADHAAR') {
+      pageTitle = t.auth.verifyAadhaarTitle;
+      sentPrompt = t.auth.verifyAadhaarSentTo;
+    } else if (kyc?.documentKind === 'PAN') {
+      pageTitle = t.auth.verifyPanTitle;
+      sentPrompt = t.auth.verifyPanSentTo;
+    }
+  }
+
   return (
     <AuthLayout
-      title={t.auth.verifyTitle}
+      title={pageTitle}
       onBack={true}
       footer={
         secondsLeft > 0 ? (
@@ -115,7 +131,7 @@ export function OtpScreen() {
         )
       }
     >
-      <p className="mt-2 text-body text-ink-secondary">{t.auth.verifySentTo}</p>
+      <p className="mt-2 text-body text-ink-secondary">{sentPrompt}</p>
 
       <div className="mt-1.5 flex items-center gap-3">
         <span className="tabular text-title text-ink">{formatMobileWithCode(mobileNumber)}</span>
@@ -127,6 +143,22 @@ export function OtpScreen() {
           {t.auth.changeNumber}
         </button>
       </div>
+
+      {isRegister && kyc && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-primary-50/80 px-3 py-2 text-caption text-primary-900 border border-primary-100">
+          <span className="font-semibold">
+            {kyc.documentKind === 'AADHAAR' ? 'Aadhaar Card' : 'Organization PAN'}:
+          </span>
+          <span className="tabular font-medium">
+            {kyc.documentKind === 'AADHAAR'
+              ? `•••• •••• ${kyc.documentNumber.slice(-4)}`
+              : kyc.documentNumber}
+          </span>
+          <span className="ml-auto text-caption text-primary-700 font-medium">
+            KYC Pending
+          </span>
+        </div>
+      )}
 
       <div className="mt-8">
         <OtpInput

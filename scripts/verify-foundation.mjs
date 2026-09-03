@@ -301,25 +301,31 @@ check('/verify without a pending verification redirects to Login',
 /* --- REGISTRATION: the step that establishes the user type --- */
 
 await page.goto(BASE + '/register', { waitUntil: 'networkidle' });
-check('Registration asks for user type first',
-  (await page.textContent('main')).includes('How will you use Mahakhanij?'));
-
-// Continue is blocked until a type is chosen.
-check('Registration cannot proceed without choosing a user type',
-  await page.getByRole('button', { name: 'Continue' }).isDisabled());
+check('Registration opens on details step with Individual/Organization toggle',
+  (await page.textContent('main')).includes('Basic & Address details') &&
+  (await page.textContent('main')).includes('Individual') &&
+  (await page.textContent('main')).includes('Organization'));
 
 // Register a NEW Organization whose type is GOVERNMENT.
-await page.getByRole('radio', { name: /Organization/ }).click();
-await page.getByRole('button', { name: 'Continue' }).click();
-await page.getByLabel('Full name').fill('K. R. Patil');
+await page.getByRole('button', { name: 'Organization' }).click();
+await page.getByLabel(/Authorized person full name/i).fill('K. R. Patil');
 await page.locator('input[type="tel"]').fill('9812345678');
-await page.getByRole('button', { name: 'Continue' }).click();
-check('Organization registration asks for organization details',
-  (await mainText()).includes('Organization name'));
-await page.getByLabel('Organization name').fill('Nagpur Municipal Corporation');
+await page.getByLabel(/Organization name/i).fill('Nagpur Municipal Corporation');
 await page.selectOption('select', 'GOVERNMENT');
-await page.getByLabel(/registration number/i).fill('MH/MK/ENT/2026/000123');
-await page.getByRole('button', { name: /Verify your number/ }).click();
+await page.getByLabel(/Address/i).fill('12 Civil Lines');
+await page.getByLabel('Taluka').fill('Nagpur');
+await page.getByLabel('District').fill('Nagpur');
+await page.getByLabel('PIN code').fill('440001');
+await page.getByRole('button', { name: /Continue to KYC/i }).click();
+
+check('Organization registration moves to KYC Verification',
+  (await mainText()).includes('KYC Verification') &&
+  (await mainText()).includes('Organization PAN number'));
+
+await page.getByLabel(/Organization PAN number/i).fill('ABCDE1234F');
+await page.getByRole('button', { name: /Use demo sample/i }).click();
+await page.getByRole('button', { name: /Verify & Send OTP/i }).click();
+
 await page.waitForURL('**/verify');
 await page.locator('input[autocomplete="one-time-code"]').fill('123456');
 await page.waitForURL('**/home', { timeout: 5000 });
@@ -346,18 +352,23 @@ check('Newly registered GOVERNMENT organization reaches Temporary Excavation',
 await signOutInApp();
 await page.getByRole('button', { name: 'Create account' }).click();
 await page.waitForURL('**/register');
-await page.getByRole('radio', { name: /Normal Consumer/ }).click();
-await page.getByRole('button', { name: 'Continue' }).click();
-await page.getByLabel('Full name').fill('Duplicate Person');
+
+// Default is Individual
+await page.getByLabel(/^Full name/i).fill('Duplicate Person');
 await page.locator('input[type="tel"]').fill('9812345678');
-await page.getByRole('button', { name: 'Continue' }).click();
-check('Consumer registration asks for a delivery location, not organization details',
-  (await mainText()).includes('Where should mineral be delivered?'));
-await page.getByLabel('Address').fill('12 Civil Lines');
+await page.getByLabel(/Address/i).fill('12 Civil Lines');
 await page.getByLabel('Taluka').fill('Nagpur');
 await page.getByLabel('District').fill('Nagpur');
 await page.getByLabel('PIN code').fill('440001');
-await page.getByRole('button', { name: /Verify your number/ }).click();
+await page.getByRole('button', { name: /Continue to KYC/i }).click();
+
+check('Consumer registration asks for Aadhaar KYC',
+  (await mainText()).includes('Aadhaar card number'));
+
+await page.getByLabel(/Aadhaar card number/i).fill('123456789012');
+await page.getByRole('button', { name: /Use demo sample/i }).click();
+await page.getByRole('button', { name: /Verify & Send OTP/i }).click();
+
 await page.waitForURL('**/verify');
 await page.locator('input[autocomplete="one-time-code"]').fill('123456');
 await page.waitForSelector('[role="alert"]', { timeout: 5000 });

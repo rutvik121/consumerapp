@@ -11,9 +11,12 @@ export type PackageStatus = 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
  * dashboards, or workflows to this application.
  */
 export interface SupervisorInfo {
+  id?: ID;
   name: string;
   mobileNumber: string;
   employeeCode: string;
+  assignedPackageId?: ID;
+  assignedPackageName?: string;
 }
 
 /**

@@ -28,6 +28,8 @@ export const ROUTES = {
   createPackage: (projectId: ID = ':projectId') => `/projects/${projectId}/packages/new`,
   packageDetails: (projectId: ID = ':projectId', packageId: ID = ':packageId') =>
     `/projects/${projectId}/packages/${packageId}`,
+  supervisors: '/supervisors',
+  registerSupervisor: '/supervisors/new',
 
   /** Normal Consumer's mineral tab (Increment 3). */
   mineral: '/mineral',

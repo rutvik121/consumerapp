@@ -20,6 +20,7 @@ import type {
   Project,
   StockPoint,
   StockPointSearchResult,
+  SupervisorInfo,
   TemporaryExcavationApplication,
   User,
 } from '@/domain';
@@ -77,8 +78,14 @@ export const projectRepository = {
     input: {
       name: string;
       code: string;
+      projectType?: Project['projectType'];
+      department?: string;
+      workOrderNumber?: string;
+      category?: Project['category'];
+      city?: string;
+      village?: string;
       location: Address;
-      geo: GeoPoint;
+      geo?: GeoPoint;
       materialIds?: ID[];
       status?: Project['status'];
       startDate?: string;
@@ -91,8 +98,14 @@ export const projectRepository = {
         organizationId,
         name: input.name.trim(),
         code: input.code.trim(),
+        ...(input.projectType ? { projectType: input.projectType } : {}),
+        ...(input.department?.trim() ? { department: input.department.trim() } : {}),
+        ...(input.workOrderNumber?.trim() ? { workOrderNumber: input.workOrderNumber.trim() } : {}),
+        ...(input.category ? { category: input.category } : {}),
+        ...(input.city?.trim() ? { city: input.city.trim() } : {}),
+        ...(input.village?.trim() ? { village: input.village.trim() } : {}),
         location: input.location,
-        geo: input.geo,
+        ...(input.geo ? { geo: input.geo } : {}),
         ...(input.materialIds ? { materialIds: input.materialIds } : {}),
         status: input.status ?? 'ACTIVE',
         startDate: today,
@@ -107,8 +120,14 @@ export const projectRepository = {
     input: {
       name: string;
       code: string;
+      projectType?: Project['projectType'];
+      department?: string;
+      workOrderNumber?: string;
+      category?: Project['category'];
+      city?: string;
+      village?: string;
       location: Address;
-      geo: GeoPoint;
+      geo?: GeoPoint;
       materialIds?: ID[];
       status?: Project['status'];
       startDate?: string;
@@ -121,8 +140,14 @@ export const projectRepository = {
         organizationId: userId,
         name: input.name.trim(),
         code: input.code.trim(),
+        ...(input.projectType ? { projectType: input.projectType } : {}),
+        ...(input.department?.trim() ? { department: input.department.trim() } : {}),
+        ...(input.workOrderNumber?.trim() ? { workOrderNumber: input.workOrderNumber.trim() } : {}),
+        ...(input.category ? { category: input.category } : {}),
+        ...(input.city?.trim() ? { city: input.city.trim() } : {}),
+        ...(input.village?.trim() ? { village: input.village.trim() } : {}),
         location: input.location,
-        geo: input.geo,
+        ...(input.geo ? { geo: input.geo } : {}),
         ...(input.materialIds ? { materialIds: input.materialIds } : {}),
         status: input.status ?? 'ACTIVE',
         startDate: today,
@@ -143,6 +168,46 @@ export const packageRepository = {
   getById: (id: ID): Promise<Package | null> =>
     request(() => db.packages.find((pkg) => pkg.id === id) ?? null),
 
+  listSupervisors: (): Promise<SupervisorInfo[]> =>
+    request(() => db.supervisors),
+
+  createSupervisor: (input: {
+    name: string;
+    mobileNumber: string;
+    assignedPackageId?: string;
+  }): Promise<SupervisorInfo> =>
+    request(() => {
+      const code = `SUP-${Math.floor(1000 + Math.random() * 9000)}`;
+      let assignedPkgName: string | undefined;
+
+      if (input.assignedPackageId) {
+        const pkg = db.packages.find((p) => p.id === input.assignedPackageId);
+        if (pkg) {
+          assignedPkgName = pkg.name;
+          pkg.supervisor = {
+            id: `sup-${db.supervisors.length + 1}`,
+            name: input.name.trim(),
+            mobileNumber: input.mobileNumber.trim(),
+            employeeCode: code,
+            assignedPackageId: pkg.id,
+            assignedPackageName: pkg.name,
+          };
+        }
+      }
+
+      const supervisor: SupervisorInfo = {
+        id: `sup-${db.supervisors.length + 1}`,
+        name: input.name.trim(),
+        mobileNumber: input.mobileNumber.trim(),
+        employeeCode: code,
+        ...(input.assignedPackageId ? { assignedPackageId: input.assignedPackageId } : {}),
+        ...(assignedPkgName ? { assignedPackageName: assignedPkgName } : {}),
+      };
+
+      db.supervisors.unshift(supervisor);
+      return supervisor;
+    }),
+
   create: (
     projectId: ID,
     organizationId: ID,
@@ -150,7 +215,8 @@ export const packageRepository = {
       name: string;
       code: string;
       siteAddress: Address;
-      siteGeo: GeoPoint;
+      siteGeo?: GeoPoint;
+      supervisor?: SupervisorInfo;
       status?: Package['status'];
       startDate?: string;
       expectedEndDate?: string;
@@ -165,9 +231,10 @@ export const packageRepository = {
         name: input.name.trim(),
         code: input.code.trim(),
         siteAddress: input.siteAddress,
-        siteGeo: input.siteGeo,
+        siteGeo: input.siteGeo ?? { latitude: 19.75, longitude: 75.71 },
         status: input.status ?? 'ACTIVE',
         startDate: today,
+        ...(input.supervisor ? { supervisor: input.supervisor } : {}),
         ...(input.expectedEndDate ? { expectedEndDate: input.expectedEndDate } : {}),
       };
 

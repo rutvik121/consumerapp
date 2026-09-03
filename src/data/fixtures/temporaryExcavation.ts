@@ -17,6 +17,7 @@ const applicant: ApplicantDetails = {
   email: organizationUser.email,
   idProofType: 'PAN',
   idProofNumber: 'AFZPS1234K',
+  panNumber: 'AFZPS1234K',
   alternatePhone: '02225001842',
   registeredAddress: {
     line1: '4th Floor, Sanghavi House, LBS Marg',

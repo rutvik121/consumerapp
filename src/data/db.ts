@@ -10,6 +10,7 @@ import type {
   Project,
   StockPoint,
   Payment,
+  SupervisorInfo,
   TemporaryExcavationApplication,
   User,
 } from '@/domain';
@@ -17,24 +18,13 @@ import * as fixtures from './fixtures';
 
 /**
  * IN-MEMORY DATABASE
- *
- * A mutable copy of the fixtures. Repositories read from here; from
- * Increment 5 onwards, confirming a receipt will write to it so that
- * inventory genuinely reflects what was received.
- *
- * That write-through behaviour is what turns the prototype from a set of
- * screens into a connected application.
- *
- * PERSISTENCE: intentionally in-memory only for now — the dataset resets on
- * reload. Session and organization context ARE persisted (see @/state), so a
- * refresh keeps you signed in and inside your package. Operational persistence
- * arrives with the first real mutation in Increment 5.
  */
 export interface Database {
   users: User[];
   organizations: Organization[];
   projects: Project[];
   packages: Package[];
+  supervisors: SupervisorInfo[];
   minerals: Mineral[];
   stockPoints: StockPoint[];
   enquiries: Enquiry[];
@@ -52,6 +42,50 @@ function seed(): Database {
     organizations: fixtures.organizations,
     projects: fixtures.projects,
     packages: fixtures.packages,
+    supervisors: [
+      {
+        id: 'sup-1',
+        name: 'S. R. Pawar',
+        mobileNumber: '9145220087',
+        employeeCode: 'SUP-4417',
+        assignedPackageId: 'pkg-001',
+        assignedPackageName: 'Package A — Km 12 to Km 28',
+      },
+      {
+        id: 'sup-2',
+        name: 'M. A. Kulkarni',
+        mobileNumber: '9028117744',
+        employeeCode: 'SUP-4482',
+        assignedPackageId: 'pkg-002',
+        assignedPackageName: 'Package B — Km 28 to Km 41',
+      },
+      {
+        id: 'sup-3',
+        name: 'D. P. Jadhav',
+        mobileNumber: '9011456623',
+        employeeCode: 'SUP-5109',
+        assignedPackageId: 'pkg-003',
+        assignedPackageName: 'Package C — Station Box CH-04',
+      },
+      {
+        id: 'sup-4',
+        name: 'R. K. Shinde',
+        mobileNumber: '9822334455',
+        employeeCode: 'SUP-5220',
+      },
+      {
+        id: 'sup-5',
+        name: 'V. S. Deshmukh',
+        mobileNumber: '9890123456',
+        employeeCode: 'SUP-5331',
+      },
+      {
+        id: 'sup-6',
+        name: 'A. N. More',
+        mobileNumber: '9765432100',
+        employeeCode: 'SUP-5442',
+      },
+    ],
     minerals: fixtures.minerals,
     stockPoints: fixtures.stockPoints,
     enquiries: fixtures.enquiries,

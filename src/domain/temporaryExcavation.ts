@@ -78,12 +78,47 @@ export type IdProofType = 'AADHAAR' | 'PAN' | 'VOTER_ID' | 'DRIVING_LICENCE';
 export interface ApplicantDetails {
   fullName: string;
   mobileNumber: string;
+  landlineNumber?: string;
   email?: string;
   idProofType: IdProofType;
   idProofNumber: string;
+  panNumber: string;
+  aadhaarNumber?: string;
+  gstNumber?: string;
   /** Landline or second number the department can reach. */
   alternatePhone?: string;
   registeredAddress: Address;
+}
+
+/** Application proposal type as displayed on the desktop portal. */
+export type ProposalApplicationType =
+  | 'QUARRY_TEMPORARY_PLOT'
+  | 'QUARRY_PROJECT_SELF_CONSUMPTION';
+
+/** Proposal clearance level. */
+export type ProposalLevel =
+  | 'DISTRICT_LEVEL'
+  | 'SUB_DIVISIONAL_LEVEL'
+  | 'STATE_LEVEL';
+
+/** Rural vs Urban classification for plot/quarry. */
+export type LocationCategory = 'RURAL' | 'URBAN';
+
+/** Plot location classification. */
+export type PlotLocationType =
+  | 'INTERIOR'
+  | 'RIVERBED'
+  | 'PLAIN_AGRICULTURAL'
+  | 'HILLY';
+
+/** Assigned survey record. */
+export interface SurveyEntry {
+  id: string;
+  surveyNumber: string;
+  subDivision?: string;
+  areaInHectares?: number;
+  sevenTwelveAttached?: boolean;
+  ownerApprovalAttached?: boolean;
 }
 
 /**
@@ -98,15 +133,36 @@ export type ExcavationMethod = 'MANUAL' | 'SEMI_MECHANISED' | 'MECHANISED';
 
 /**
  * The document checklist. A stable key per row so the checklist, the upload
- * state and the stored document all refer to the same thing — a free-text
- * label could not be matched back to a checklist row.
+ * state and the stored document all refer to the same thing.
  */
 export type ApplicationDocumentKind =
+  /* Core Identity & Land */
+  | 'PAN_CARD'
+  | 'AADHAAR_CARD'
+  | 'GST_CERTIFICATE'
+  | 'SEVEN_TWELVE'
+  | 'OWNER_APPROVAL'
+  /* Legacy keys for backward compatibility */
   | 'SITE_PLAN'
   | 'LAND_RECORD'
   | 'LAND_OWNER_CONSENT'
   | 'IDENTITY_PROOF'
   | 'ENVIRONMENTAL_CLEARANCE'
+  /* NOC Documents */
+  | 'NOC_PWD'
+  | 'NOC_MSEB'
+  | 'NOC_MPCB'
+  | 'NOC_FOREST'
+  | 'NOC_GRAM_PANCHAYAT'
+  /* Excavation Permission Documents */
+  | 'LAND_MUTATION'
+  | 'IOD_CERTIFICATE'
+  | 'LOI'
+  | 'IOD_APPROVED_BUILDING_PLAN'
+  | 'EARTH_WORK_MEASUREMENT'
+  | 'BORE_LOG'
+  | 'DP_REMARKS'
+  /* Other */
   | 'OTHER';
 
 /** Supporting document attached to an application. */
@@ -116,6 +172,7 @@ export interface ApplicationDocument {
   fileName: string;
   /** Human label for the kind, resolved at upload time. */
   documentType: string;
+  documentNumber?: string;
   uploadedAt: ISODateTime;
 }
 
@@ -150,10 +207,26 @@ export interface TemporaryExcavationApplication {
   /** Party the order is issued to. Pre-filled from the account, editable. */
   applicant: ApplicantDetails;
 
+  /* Desktop application specifications */
+  applicationType?: ProposalApplicationType;
+  leaseType?: 'TEMPORARY';
+  proposalLevel?: ProposalLevel;
+  excavationQuantityBrass?: number;
+  liftingPeriodDays?: number;
+  reasonForApplying?: string;
+
   mineralId: ID;
   estimatedQuantity: Quantity;
   excavationMethod: ExcavationMethod;
   purpose: string;
+
+  /* Desktop plot, survey and treasury office specifications */
+  category?: LocationCategory;
+  plotLocationType?: PlotLocationType;
+  surveyEntries?: SurveyEntry[];
+  totalPlotAreaHectare?: number;
+  demandNoteOffice?: string;
+  grasOfficeName?: string;
 
   siteAddress: Address;
   /**

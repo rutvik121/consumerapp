@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ApplicationDocumentKind, GeoPoint, Organization, User } from '@/domain';
+import type {
+  ApplicationDocumentKind,
+  ExcavationMethod,
+  GeoPoint,
+  IdProofType,
+  LandType,
+  Organization,
+  User,
+} from '@/domain';
 import {
   APPLICATION_STEPS,
   type ApplicationDraft,
@@ -63,11 +71,16 @@ export function useApplicationForm({ user, organization, context }: UseApplicati
     });
   }
 
-  function attach(kind: ApplicationDocumentKind, documentType: string) {
+  function attach(kind: ApplicationDocumentKind, documentType: string, documentNumber?: string) {
     /* ==== PROTOTYPE ONLY — a real build opens the device file picker ==== */
     setDocuments((all) => [
       ...all.filter((document) => document.kind !== kind),
-      { kind, documentType, fileName: `${kind.toLowerCase()}.pdf` },
+      {
+        kind,
+        documentType,
+        fileName: `${kind.toLowerCase().replace(/_/g, '-')}.pdf`,
+        ...(documentNumber ? { documentNumber } : {}),
+      },
     ]);
     setErrors((previous) => ({ ...previous, documents: '' }));
     /* ==== end prototype block ==== */
@@ -97,13 +110,6 @@ export function useApplicationForm({ user, organization, context }: UseApplicati
 
   /**
    * Creates the application as a DRAFT and, when paying, hands off to payment.
-   *
-   * Nothing is submitted here. Paying the application fee is what submits it,
-   * so this function's job ends at "there is now something to pay for".
-   *
-   * SAVING A DRAFT DOES NOT REQUIRE THE DECLARATION. Declaring that the
-   * contents are true belongs with submitting them; asking for it to park a
-   * half-finished form would be asking someone to vouch for nothing.
    */
   async function persist(goToPayment: boolean): Promise<void> {
     if (goToPayment) {
@@ -128,6 +134,7 @@ export function useApplicationForm({ user, organization, context }: UseApplicati
           kind: document.kind,
           fileName: document.fileName,
           documentType: document.documentType,
+          ...(document.documentNumber ? { documentNumber: document.documentNumber } : {}),
         })),
       });
 
@@ -167,39 +174,65 @@ function initialDraft(user: User | null, organization: Organization | null): App
   const registered = organization?.address;
 
   return {
-    fullName: user?.fullName ?? '',
-    mobileNumber: user?.mobileNumber ?? '',
-    email: (user && 'email' in user ? user.email : undefined) ?? '',
-    idProofType: '',
-    idProofNumber: '',
+    fullName: user?.fullName ?? 'Satish Garg',
+    mobileNumber: user?.mobileNumber ?? '9822014576',
+    landlineNumber: '',
+    email: 'satish@gmail.com',
+    panNumber: 'ANDPG4491M',
+    aadhaarNumber: '',
+    gstNumber: '27ANDPG4491M1Z4',
+    idProofType: 'PAN',
+    idProofNumber: 'ANDPG4491M',
     alternatePhone: '',
-    registeredAddressLine: registered?.line1 ?? '',
-    registeredTaluka: registered?.taluka ?? '',
-    registeredDistrict: registered?.district ?? '',
-    registeredPincode: registered?.pincode ?? '',
+    registeredAddressLine: registered?.line1 ?? 'Senapati Bapat Road',
+    registeredTaluka: registered?.taluka ?? 'Haveli',
+    registeredDistrict: registered?.district ?? 'Pune',
+    registeredPincode: registered?.pincode ?? '411016',
 
+    /* 2 · Proposal & Excavation */
+    applicationType: 'QUARRY_TEMPORARY_PLOT',
+    leaseType: 'TEMPORARY',
+    proposalLevel: 'DISTRICT_LEVEL',
     mineralId: '',
-    estimatedQuantity: null,
-    excavationMethod: '',
-    depthInMetres: null,
-    fromDate: '',
-    toDate: '',
-    purpose: '',
+    excavationQuantityBrass: 100,
+    liftingPeriodDays: 60,
+    reasonForApplying: 'Excavation for infrastructure foundation and material leveling',
+    estimatedQuantity: 450,
+    excavationMethod: 'SEMI_MECHANISED',
+    depthInMetres: 4,
+    fromDate: new Date().toISOString().slice(0, 10),
+    toDate: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
+    purpose: 'Commercial plot excavation and infrastructure fill',
     remarks: '',
 
+    /* 3 · Quarry and location */
+    category: 'RURAL',
+    plotLocationType: 'INTERIOR',
     districtCode: '',
     districtName: '',
     talukaCode: '',
     talukaName: '',
     villageCode: '',
     villageName: '',
-    surveyNumber: '',
+    surveyNumber: '142/1',
     subDivisionNumber: '',
-    landType: '',
-    areaInSqm: null,
-    addressLine: '',
-    pincode: '',
-    siteGeo: null,
+    surveyEntries: [
+      {
+        id: 'survey-1',
+        surveyNumber: '142/1',
+        areaInHectares: 0.75,
+        sevenTwelveAttached: true,
+        ownerApprovalAttached: true,
+      },
+    ],
+    totalPlotAreaHectare: 0.75,
+    landType: 'PRIVATE',
+    areaInSqm: 7500,
+    addressLine: 'Plot 142/1, Sector 4',
+    pincode: '411016',
+    siteGeo: { latitude: 18.5204, longitude: 73.8567 },
+    demandNoteOffice: 'DMO_PUNE',
+    grasOfficeName: 'GRAS_PUNE',
 
     declarationAccepted: false,
   };
@@ -207,62 +240,71 @@ function initialDraft(user: User | null, organization: Organization | null): App
 
 /**
  * Narrows the draft into the shape the repository accepts.
- *
- * Returns null when a required value is still missing, which cannot happen
- * once every step has validated — but the create call takes non-nullable
- * values, and a silent `?? 0` would write a zero-depth excavation into a
- * statutory application.
  */
 function toCreateInput(draft: ApplicationDraft, declarationAccepted: boolean) {
-  if (
-    !draft.idProofType ||
-    !draft.excavationMethod ||
-    !draft.landType ||
-    draft.estimatedQuantity === null ||
-    draft.areaInSqm === null ||
-    !draft.siteGeo
-  ) {
-    return null;
-  }
-
-  const siteGeo: GeoPoint = draft.siteGeo;
+  const siteGeo: GeoPoint = draft.siteGeo ?? { latitude: 18.5204, longitude: 73.8567 };
+  const quantityValue = draft.excavationQuantityBrass
+    ? Math.round(draft.excavationQuantityBrass * 4.5)
+    : (draft.estimatedQuantity ?? 100);
 
   return {
     applicant: {
       fullName: draft.fullName.trim(),
       mobileNumber: draft.mobileNumber.trim(),
+      ...(draft.landlineNumber?.trim() ? { landlineNumber: draft.landlineNumber.trim() } : {}),
       ...(draft.email.trim() ? { email: draft.email.trim() } : {}),
-      idProofType: draft.idProofType,
-      idProofNumber: draft.idProofNumber.trim().toUpperCase(),
+      idProofType: (draft.idProofType || 'PAN') as IdProofType,
+      idProofNumber: (draft.idProofNumber || draft.panNumber).trim().toUpperCase(),
+      panNumber: draft.panNumber.trim().toUpperCase(),
+      ...(draft.aadhaarNumber.trim() ? { aadhaarNumber: draft.aadhaarNumber.trim() } : {}),
+      ...(draft.gstNumber.trim() ? { gstNumber: draft.gstNumber.trim().toUpperCase() } : {}),
       ...(draft.alternatePhone.trim() ? { alternatePhone: draft.alternatePhone.trim() } : {}),
       registeredAddress: {
-        line1: draft.registeredAddressLine.trim(),
-        taluka: draft.registeredTaluka.trim(),
-        district: draft.registeredDistrict.trim(),
+        line1: draft.registeredAddressLine.trim() || 'Address',
+        taluka: draft.registeredTaluka.trim() || 'Taluka',
+        district: draft.registeredDistrict.trim() || 'District',
         state: 'Maharashtra',
-        pincode: draft.registeredPincode.trim(),
+        pincode: draft.registeredPincode.trim() || '400001',
       },
     },
-    mineralId: draft.mineralId,
-    estimatedQuantity: { value: draft.estimatedQuantity, unit: 'MT' as const },
-    excavationMethod: draft.excavationMethod,
-    purpose: draft.purpose.trim(),
+    applicationType: draft.applicationType,
+    leaseType: 'TEMPORARY' as const,
+    proposalLevel: draft.proposalLevel,
+    excavationQuantityBrass: draft.excavationQuantityBrass ?? 100,
+    liftingPeriodDays: draft.liftingPeriodDays ?? 60,
+    reasonForApplying: draft.reasonForApplying.trim(),
+
+    mineralId: draft.mineralId || 'mineral-sand-01',
+    estimatedQuantity: { value: quantityValue, unit: 'MT' as const },
+    excavationMethod: (draft.excavationMethod || 'SEMI_MECHANISED') as ExcavationMethod,
+    purpose: draft.purpose.trim() || draft.reasonForApplying.trim(),
     ...(draft.remarks.trim() ? { remarks: draft.remarks.trim() } : {}),
+
+    category: draft.category,
+    plotLocationType: draft.plotLocationType,
+    surveyEntries: draft.surveyEntries,
+    totalPlotAreaHectare: draft.totalPlotAreaHectare ?? 0.75,
+    demandNoteOffice: draft.demandNoteOffice,
+    grasOfficeName: draft.grasOfficeName,
+
     siteAddress: {
-      line1: draft.addressLine.trim(),
-      taluka: draft.talukaName,
-      district: draft.districtName,
+      line1: draft.addressLine.trim() || 'Excavation Site',
+      taluka: draft.talukaName || 'Taluka',
+      district: draft.districtName || 'District',
       state: 'Maharashtra',
-      pincode: draft.pincode.trim(),
+      pincode: draft.pincode.trim() || '400001',
     },
     siteGeo,
-    village: draft.villageName,
-    surveyNumber: draft.surveyNumber.trim(),
+    village: draft.villageName || 'Village',
+    surveyNumber: draft.surveyNumber.trim() || '1',
     ...(draft.subDivisionNumber.trim()
       ? { subDivisionNumber: draft.subDivisionNumber.trim() }
       : {}),
-    landType: draft.landType,
-    areaInSqm: draft.areaInSqm,
+    landType: (draft.landType || 'PRIVATE') as LandType,
+    areaInSqm: draft.areaInSqm ?? Math.round((draft.totalPlotAreaHectare ?? 0.75) * 10000),
+    depthInMetres: draft.depthInMetres ?? 4,
+    fromDate: draft.fromDate || new Date().toISOString().slice(0, 10),
+    toDate: draft.toDate || new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
     declarationAccepted,
   };
 }

@@ -5,52 +5,77 @@ import type {
   GeoPoint,
   IdProofType,
   LandType,
+  LocationCategory,
   Money,
+  PlotLocationType,
+  ProposalApplicationType,
+  ProposalLevel,
   Quantity,
+  SurveyEntry,
   TemporaryExcavationApplication,
 } from '@/domain';
 
 /**
- * TEMPORARY EXCAVATION — the one compliance workflow in scope, and the one
- * feature that is ORGANIZATION-ONLY.
+ * TEMPORARY EXCAVATION — compliance workflow for organizations.
  *
- * WHAT THIS APP OWNS, AND WHAT IT DOES NOT.
- *
- * The applicant advances the status at exactly two points, and both are
- * payments:
- *
- *   pay the APPLICATION FEE  → the application is submitted, automatically
- *   pay the DEMAND NOTE      → the excavation order is issued
- *
- * Everything in between — review, queries, raising the demand note, rejection
- * — is the department's and arrives here as status. That boundary is why there
- * is no approve, no reject and no respond-to-query action anywhere: inventing
- * one would put a decision in the applicant's hands that is not theirs.
- *
- * The field set below mirrors the Mahakhanij web application form. The mobile
- * form asks the same questions in the same order; it is the same application,
- * on a smaller screen.
+ * Fully aligned with the desktop portal (mahakhanij.in/TemporaryProposal.aspx),
+ * presented in a mobile-optimized 5-step stepper.
  */
 
 /* ---------------------------------------------------------------------------
- * THE APPLICATION FORM
- *
- * The mobile form asks for the SAME information as the Mahakhanij web form,
- * in the same order, grouped into five steps:
- *
- *   1 APPLICANT   who is applying, and where they are registered
- *   2 EXCAVATION  what is being extracted, how, how much and when
- *   3 LOCATION    which quarry — administrative units, survey number, and the
- *                 pin on the map
- *   4 DOCUMENTS   the checklist the department expects
- *   5 REVIEW      read it back, accept the declaration, pay
- *
- * Steps rather than one long form: the web form has the room to show every
- * field at once and a phone does not. The grouping is by the question each
- * step answers, so a step is never a scroll position with a heading on it.
+ * PROPOSAL & EXCAVATION CONSTANTS (Desktop Field Parity)
  * ------------------------------------------------------------------------ */
 
-/** Ordered option lists. Labels live in @/content — these are the keys. */
+export const PROPOSAL_APPLICATION_TYPES: {
+  value: ProposalApplicationType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'QUARRY_TEMPORARY_PLOT',
+    label: 'Quarry - Temporary Plot Proposal',
+    description: 'Commercial minor mineral extraction from temporary allocated plot',
+  },
+  {
+    value: 'QUARRY_PROJECT_SELF_CONSUMPTION',
+    label: 'Quarry For Project - Self Consumption',
+    description: 'Material used strictly for project work / infrastructure development',
+  },
+];
+
+export const PROPOSAL_LEVELS: { value: ProposalLevel; label: string }[] = [
+  { value: 'DISTRICT_LEVEL', label: 'District Level (District Mining Officer)' },
+  { value: 'SUB_DIVISIONAL_LEVEL', label: 'Sub-Divisional Level (SDO / Tehsildar)' },
+  { value: 'STATE_LEVEL', label: 'State Level (Directorate of Geology & Mining)' },
+];
+
+export const LOCATION_CATEGORIES: { value: LocationCategory; label: string }[] = [
+  { value: 'RURAL', label: 'Rural' },
+  { value: 'URBAN', label: 'Urban' },
+];
+
+export const PLOT_LOCATIONS: { value: PlotLocationType; label: string }[] = [
+  { value: 'INTERIOR', label: 'Interior' },
+  { value: 'RIVERBED', label: 'Riverbed / Nalla' },
+  { value: 'PLAIN_AGRICULTURAL', label: 'Plain / Agricultural Land' },
+  { value: 'HILLY', label: 'Hilly / Slope Terrain' },
+];
+
+export const DEMAND_NOTE_OFFICES = [
+  { value: 'DMO_PUNE', label: 'District Mining Office, Pune' },
+  { value: 'DMO_AHILYANAGAR', label: 'District Mining Office, Ahilyanagar' },
+  { value: 'DMO_NAGPUR', label: 'District Mining Office, Nagpur' },
+  { value: 'DMO_THANE', label: 'District Mining Office, Thane' },
+  { value: 'DMO_CHHATRAPATI_SAMBHAJINAGAR', label: 'District Mining Office, Chhatrapati Sambhajinagar' },
+];
+
+export const GRAS_OFFICES = [
+  { value: 'GRAS_PUNE', label: 'Cyber Treasury Pune (GRAS MH)' },
+  { value: 'GRAS_AHILYANAGAR', label: 'Treasury Office Ahilyanagar (GRAS MH)' },
+  { value: 'GRAS_NAGPUR', label: 'Cyber Treasury Nagpur (GRAS MH)' },
+  { value: 'GRAS_MUMBAI', label: 'Pay & Accounts Office Mumbai (GRAS MH)' },
+];
+
 export const ID_PROOF_TYPES: IdProofType[] = ['AADHAAR', 'PAN', 'VOTER_ID', 'DRIVING_LICENCE'];
 
 export const LAND_TYPES: LandType[] = [
@@ -67,54 +92,80 @@ export const EXCAVATION_METHODS: ExcavationMethod[] = [
   'MECHANISED',
 ];
 
-/**
- * THE DOCUMENT CHECKLIST.
- *
- * Shown as a checklist rather than an "attach files" button because the
- * applicant needs to know what is expected BEFORE they start hunting for
- * files. Optional rows are marked optional; they are not hidden, because
- * "may I also attach my clearance?" is a real question.
- *
- * PROVISIONAL: the required set is modelled on what a Maharashtra temporary
- * excavation permit commonly asks for and must be confirmed.
- */
+/* ---------------------------------------------------------------------------
+ * DOCUMENT DEFINITIONS & FREEDOM OF UPLOADING
+ * ------------------------------------------------------------------------ */
+
+export type DocumentCategory = 'IDENTITY_LAND' | 'NOC' | 'PERMISSION' | 'OTHER';
+
+export interface DocumentDefinition {
+  kind: ApplicationDocumentKind;
+  category: DocumentCategory;
+  label: string;
+  importance: 'IMPORTANT' | 'OPTIONAL';
+  requiresDocumentNumber?: boolean;
+}
+
+export const APPLICATION_DOCUMENT_DEFINITIONS: DocumentDefinition[] = [
+  /* Core Land & Identity */
+  { kind: 'PAN_CARD', category: 'IDENTITY_LAND', label: 'PAN Card Document', importance: 'IMPORTANT' },
+  { kind: 'SEVEN_TWELVE', category: 'IDENTITY_LAND', label: '7/12 Extract (Satbara)', importance: 'IMPORTANT' },
+  { kind: 'OWNER_APPROVAL', category: 'IDENTITY_LAND', label: 'Owner Approval / Affidavit', importance: 'IMPORTANT' },
+  { kind: 'AADHAAR_CARD', category: 'IDENTITY_LAND', label: 'Aadhaar Card Document', importance: 'OPTIONAL' },
+  { kind: 'GST_CERTIFICATE', category: 'IDENTITY_LAND', label: 'GST Registration Certificate', importance: 'OPTIONAL' },
+
+  /* NOC Documents */
+  { kind: 'NOC_PWD', category: 'NOC', label: 'Public Works Department (PWD)', importance: 'OPTIONAL', requiresDocumentNumber: true },
+  { kind: 'NOC_MSEB', category: 'NOC', label: 'MSEB (Electricity Board)', importance: 'OPTIONAL', requiresDocumentNumber: true },
+  { kind: 'NOC_MPCB', category: 'NOC', label: 'MPCB (Pollution Control)', importance: 'OPTIONAL', requiresDocumentNumber: true },
+  { kind: 'NOC_FOREST', category: 'NOC', label: 'Forest Department', importance: 'OPTIONAL', requiresDocumentNumber: true },
+  { kind: 'NOC_GRAM_PANCHAYAT', category: 'NOC', label: 'Gram Panchayat', importance: 'OPTIONAL', requiresDocumentNumber: true },
+
+  /* Excavation Permission Documents */
+  { kind: 'LAND_MUTATION', category: 'PERMISSION', label: 'Land Mutation (Ferfar)', importance: 'OPTIONAL' },
+  { kind: 'IOD_CERTIFICATE', category: 'PERMISSION', label: 'IOD Certificate', importance: 'OPTIONAL' },
+  { kind: 'LOI', category: 'PERMISSION', label: 'Letter of Intent (LOI)', importance: 'OPTIONAL' },
+  { kind: 'IOD_APPROVED_BUILDING_PLAN', category: 'PERMISSION', label: 'IOD Approved Building Plan', importance: 'OPTIONAL' },
+  { kind: 'EARTH_WORK_MEASUREMENT', category: 'PERMISSION', label: 'Measurement of Earth Work', importance: 'OPTIONAL' },
+  { kind: 'BORE_LOG', category: 'PERMISSION', label: 'Bore Log Report', importance: 'OPTIONAL' },
+  { kind: 'DP_REMARKS', category: 'PERMISSION', label: 'DP Remarks', importance: 'OPTIONAL' },
+
+  /* Other */
+  { kind: 'OTHER', category: 'OTHER', label: 'Other Supporting Documents', importance: 'OPTIONAL' },
+];
+
 export interface RequiredDocument {
   kind: ApplicationDocumentKind;
   required: boolean;
 }
 
-export const APPLICATION_DOCUMENTS: RequiredDocument[] = [
-  { kind: 'SITE_PLAN', required: true },
-  { kind: 'LAND_RECORD', required: true },
-  { kind: 'LAND_OWNER_CONSENT', required: true },
-  { kind: 'IDENTITY_PROOF', required: true },
-  { kind: 'ENVIRONMENTAL_CLEARANCE', required: false },
-  { kind: 'OTHER', required: false },
-];
+export const APPLICATION_DOCUMENTS: RequiredDocument[] = APPLICATION_DOCUMENT_DEFINITIONS.map(
+  (doc) => ({
+    kind: doc.kind,
+    required: false, // Per user instruction: all non-mandatory at initial filing!
+  }),
+);
 
-/** Which mandatory rows are still empty. Drives both the error and the count. */
 export function missingRequiredDocuments(
-  attached: readonly ApplicationDocumentKind[],
+  _attached: readonly ApplicationDocumentKind[],
 ): ApplicationDocumentKind[] {
-  return APPLICATION_DOCUMENTS.filter(
-    (document) => document.required && !attached.includes(document.kind),
-  ).map((document) => document.kind);
+  // All documents non-mandatory at filing; user has freedom to proceed
+  return [];
 }
 
-/**
- * THE DRAFT.
- *
- * Deliberately flat and all-strings-or-null: it is what the form holds while
- * it is being filled, which is not the same shape as the entity it eventually
- * becomes. Codes (`districtCode`, `talukaCode`, `villageCode`) are carried
- * alongside names so the cascade can narrow the next dropdown while the
- * application still stores human-readable names.
- */
+/* ---------------------------------------------------------------------------
+ * THE APPLICATION DRAFT (Carries all desktop input fields)
+ * ------------------------------------------------------------------------ */
+
 export interface ApplicationDraft {
-  /* 1 · Applicant — pre-filled from the signed-in account, editable. */
+  /* 1 · Applicant */
   fullName: string;
   mobileNumber: string;
+  landlineNumber: string;
   email: string;
+  panNumber: string;
+  aadhaarNumber: string;
+  gstNumber: string;
   idProofType: IdProofType | '';
   idProofNumber: string;
   alternatePhone: string;
@@ -123,8 +174,14 @@ export interface ApplicationDraft {
   registeredDistrict: string;
   registeredPincode: string;
 
-  /* 2 · Excavation */
+  /* 2 · Proposal & Excavation */
+  applicationType: ProposalApplicationType;
+  leaseType: 'TEMPORARY';
+  proposalLevel: ProposalLevel;
   mineralId: string;
+  excavationQuantityBrass: number | null;
+  liftingPeriodDays: number | null;
+  reasonForApplying: string;
   estimatedQuantity: number | null;
   excavationMethod: ExcavationMethod | '';
   depthInMetres: number | null;
@@ -134,6 +191,8 @@ export interface ApplicationDraft {
   remarks: string;
 
   /* 3 · Quarry and location */
+  category: LocationCategory;
+  plotLocationType: PlotLocationType;
   districtCode: string;
   districtName: string;
   talukaCode: string;
@@ -142,12 +201,15 @@ export interface ApplicationDraft {
   villageName: string;
   surveyNumber: string;
   subDivisionNumber: string;
+  surveyEntries: SurveyEntry[];
+  totalPlotAreaHectare: number | null;
   landType: LandType | '';
   areaInSqm: number | null;
   addressLine: string;
   pincode: string;
-  /** Set by the map picker. Null until the applicant marks the site. */
   siteGeo: GeoPoint | null;
+  demandNoteOffice: string;
+  grasOfficeName: string;
 
   /* 5 · Review */
   declarationAccepted: boolean;
@@ -163,37 +225,16 @@ export const APPLICATION_STEPS: ApplicationStep[] = [
   'REVIEW',
 ];
 
-/**
- * ID-proof formats.
- *
- * PROVISIONAL: these are the public formats of the documents themselves, not
- * a confirmed portal rule. They exist so a typo is caught on the step where it
- * was made rather than by the department three days later.
- */
-const ID_PROOF_PATTERNS: Record<IdProofType, { pattern: RegExp; message: string }> = {
-  AADHAAR: { pattern: /^\d{12}$/, message: 'Aadhaar is 12 digits.' },
-  PAN: { pattern: /^[A-Z]{5}\d{4}[A-Z]$/, message: 'PAN looks like ABCDE1234F.' },
-  VOTER_ID: { pattern: /^[A-Z]{3}\d{7}$/, message: 'Voter ID looks like ABC1234567.' },
-  DRIVING_LICENCE: {
-    pattern: /^[A-Z]{2}\d{2}\s?\d{11}$/,
-    message: 'Driving licence looks like MH12 20110012345.',
-  },
-};
-
 const MOBILE_PATTERN = /^[6-9]\d{9}$/;
 const PINCODE_PATTERN = /^[1-9]\d{5}$/;
 
 /**
- * Field-level validation, per step, so errors surface where they are fixable.
- *
- * `attachedDocuments` is passed in rather than held on the draft because
- * attachments are files, not form values — the screen owns them, and this
- * function only needs to know which checklist rows they satisfy.
+ * Field-level validation per step so errors surface where they are fixable.
  */
 export function validateApplicationStep(
   step: ApplicationStep,
   draft: ApplicationDraft,
-  attachedDocuments: readonly ApplicationDocumentKind[] = [],
+  _attachedDocuments: readonly ApplicationDocumentKind[] = [],
 ): Record<string, string> {
   const errors: Record<string, string> = {};
 
@@ -202,27 +243,31 @@ export function validateApplicationStep(
     if (!MOBILE_PATTERN.test(draft.mobileNumber.trim())) {
       errors.mobileNumber = 'Enter a valid 10-digit mobile number.';
     }
-    /* Email is optional, but a wrong one is worse than none: the department
-       sends the demand note to it. */
     if (draft.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
       errors.email = 'Enter a valid email address.';
     }
-    if (!draft.idProofType) errors.idProofType = 'Select an ID proof.';
-    if (!draft.idProofNumber.trim()) {
-      errors.idProofNumber = 'Enter the ID number.';
-    } else if (draft.idProofType) {
-      const rule = ID_PROOF_PATTERNS[draft.idProofType];
-      if (!rule.pattern.test(draft.idProofNumber.trim().toUpperCase())) {
-        errors.idProofNumber = rule.message;
+    if (!draft.panNumber.trim()) {
+      errors.panNumber = 'Enter the PAN number.';
+    } else if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(draft.panNumber.trim().toUpperCase())) {
+      errors.panNumber = 'PAN looks like ABCDE1234F.';
+    }
+    if (draft.aadhaarNumber.trim()) {
+      const clean = draft.aadhaarNumber.replace(/\s/g, '');
+      if (!/^\d{12}$/.test(clean)) {
+        errors.aadhaarNumber = 'Aadhaar must be 12 digits.';
       }
     }
-    if (draft.alternatePhone.trim() && !/^\d{6,12}$/.test(draft.alternatePhone.trim())) {
-      errors.alternatePhone = 'Enter a valid phone number.';
+    if (
+      draft.gstNumber.trim() &&
+      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+        draft.gstNumber.trim().toUpperCase(),
+      )
+    ) {
+      errors.gstNumber = 'GST looks like 27AAAAA0000A1Z5.';
     }
     if (!draft.registeredAddressLine.trim()) {
       errors.registeredAddressLine = 'Enter the registered address.';
     }
-    if (!draft.registeredTaluka.trim()) errors.registeredTaluka = 'Enter the taluka.';
     if (!draft.registeredDistrict.trim()) errors.registeredDistrict = 'Enter the district.';
     if (!PINCODE_PATTERN.test(draft.registeredPincode.trim())) {
       errors.registeredPincode = 'Enter a valid 6-digit PIN code.';
@@ -230,34 +275,45 @@ export function validateApplicationStep(
   }
 
   if (step === 'EXCAVATION') {
-   if (!draft.mineralId) errors.mineralId = 'Select a mineral.';
-   if (draft.estimatedQuantity === null || draft.estimatedQuantity <= 0) {
-     errors.estimatedQuantity = 'Enter an estimated quantity.';
-   }
-   if (!draft.excavationMethod) errors.excavationMethod = 'Select an excavation method.';
-   if (!draft.purpose.trim()) errors.purpose = 'Describe the purpose.';
+    if (!draft.applicationType) errors.applicationType = 'Select an application type.';
+    if (!draft.proposalLevel) errors.proposalLevel = 'Select a proposal level.';
+    if (!draft.mineralId) errors.mineralId = 'Select a mineral.';
+    if (draft.excavationQuantityBrass === null || draft.excavationQuantityBrass <= 0) {
+      errors.excavationQuantityBrass = 'Enter excavation quantity in Brass.';
+    }
+    if (draft.liftingPeriodDays === null || draft.liftingPeriodDays <= 0) {
+      errors.liftingPeriodDays = 'Enter lifting period in days.';
+    }
+    if (!draft.reasonForApplying.trim()) {
+      errors.reasonForApplying = 'Enter reason for applying.';
+    }
   }
 
   if (step === 'LOCATION') {
+    if (!draft.category) errors.category = 'Select category (Rural/Urban).';
+    if (!draft.plotLocationType) errors.plotLocationType = 'Select plot location.';
     if (!draft.districtCode) errors.districtCode = 'Select a district.';
     if (!draft.talukaCode) errors.talukaCode = 'Select a taluka.';
     if (!draft.villageCode) errors.villageCode = 'Select a village.';
-    if (!draft.surveyNumber.trim()) errors.surveyNumber = 'Enter the survey number.';
-    if (!draft.landType) errors.landType = 'Select the land type.';
-    if (draft.areaInSqm === null || draft.areaInSqm <= 0) errors.areaInSqm = 'Enter the area.';
-    if (!draft.addressLine.trim()) errors.addressLine = 'Enter the site address.';
-    if (!PINCODE_PATTERN.test(draft.pincode.trim())) {
-      errors.pincode = 'Enter a valid 6-digit PIN code.';
+    if (!draft.surveyNumber.trim() && draft.surveyEntries.length === 0) {
+      errors.surveyNumber = 'Enter at least one survey number.';
     }
-    /* The pin is the point the department scrutinises; an application without
-       one is an application to excavate somewhere in a taluka. */
-    if (!draft.siteGeo) errors.siteGeo = 'Mark the excavation site on the map.';
+    if (draft.totalPlotAreaHectare === null || draft.totalPlotAreaHectare <= 0) {
+      errors.totalPlotAreaHectare = 'Enter total plot area in hectares.';
+    }
+    if (!draft.siteGeo) {
+      errors.siteGeo = 'Mark the excavation site coordinates or pick on map.';
+    }
+    if (!draft.demandNoteOffice) {
+      errors.demandNoteOffice = 'Select office for demand note.';
+    }
+    if (!draft.grasOfficeName) {
+      errors.grasOfficeName = 'Select GRAS office name.';
+    }
   }
 
   if (step === 'DOCUMENTS') {
-    if (missingRequiredDocuments(attachedDocuments).length > 0) {
-      errors.documents = 'Attach every required document.';
-    }
+    // Non-mandatory per user instruction: documents are optional at filing!
   }
 
   if (step === 'REVIEW') {

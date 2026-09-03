@@ -1,97 +1,192 @@
-import { Check, FileText, Paperclip, X } from 'lucide-react';
+import { useState } from 'react';
+import { Check, FileText, Upload, X } from 'lucide-react';
 import type { ApplicationDocumentKind } from '@/domain';
-import { APPLICATION_DOCUMENTS } from '@/rules';
+import {
+  APPLICATION_DOCUMENT_DEFINITIONS,
+  type DocumentCategory,
+  type DocumentDefinition,
+} from '@/rules';
 import { Button, cn } from '@/design-system';
-import { useCopy } from '@/content';
 
 export interface AttachedDocument {
   kind: ApplicationDocumentKind;
   documentType: string;
   fileName: string;
+  documentNumber?: string;
 }
 
 export interface DocumentChecklistProps {
   attached: AttachedDocument[];
-  onAttach: (kind: ApplicationDocumentKind) => void;
+  onAttach: (kind: ApplicationDocumentKind, label: string, docNumber?: string) => void;
   onRemove: (kind: ApplicationDocumentKind) => void;
 }
 
+const CATEGORIES: { id: DocumentCategory; label: string }[] = [
+  { id: 'IDENTITY_LAND', label: 'Identity & Land' },
+  { id: 'NOC', label: 'NOC Documents' },
+  { id: 'PERMISSION', label: 'Excavation Permission' },
+  { id: 'OTHER', label: 'Other Documents' },
+];
+
 /**
- * THE DOCUMENT STEP, AS A CHECKLIST.
+ * Categorized Document Checklist matching desktop portal:
+ * - Identity & Land records
+ * - NOC Documents with document number inputs
+ * - Excavation Permission Clearances
+ * - Other documents
  *
- * The web form shows every expected document as a row with its own upload
- * control, and that is the right shape for a phone too: an applicant who is
- * shown a single "attach files" button has to already know what is expected.
- * Here the expectation is the interface — each row states what it wants,
- * whether it is required, and whether it has been satisfied.
- *
- * Required rows are listed first and never hidden once satisfied: the point of
- * a checklist is to show the whole list, including what is done.
+ * Differentiates Important vs Optional documents, allowing freedom of uploading.
  */
 export function DocumentChecklist({ attached, onAttach, onRemove }: DocumentChecklistProps) {
-  const t = useCopy();
+  const [activeCategory, setActiveCategory] = useState<DocumentCategory>('IDENTITY_LAND');
+  const [docNumbers, setDocNumbers] = useState<Record<string, string>>({});
+
+  const filteredDocs = APPLICATION_DOCUMENT_DEFINITIONS.filter(
+    (doc) => doc.category === activeCategory,
+  );
+
+  function handleDocNumberChange(kind: string, value: string) {
+    setDocNumbers((prev) => ({ ...prev, [kind]: value }));
+  }
+
+  function handleAttach(doc: DocumentDefinition) {
+    const docNum = docNumbers[doc.kind];
+    onAttach(doc.kind, doc.label, docNum);
+  }
 
   return (
-    <ul className="space-y-2">
-      {APPLICATION_DOCUMENTS.map((requirement) => {
-        const file = attached.find((document) => document.kind === requirement.kind);
-        const label = t.excavation.docTypes[requirement.kind];
+    <div className="space-y-4">
+      {/* Category Pills */}
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        {CATEGORIES.map((cat) => {
+          const isSelected = activeCategory === cat.id;
+          const count = APPLICATION_DOCUMENT_DEFINITIONS.filter((d) => d.category === cat.id).length;
+          const attachedCount = attached.filter(
+            (a) => APPLICATION_DOCUMENT_DEFINITIONS.find((d) => d.kind === a.kind)?.category === cat.id,
+          ).length;
 
-        return (
-          <li
-            key={requirement.kind}
-            className={cn(
-              'rounded-lg border p-3',
-              file ? 'border-success-200 bg-success-50/50' : 'border-line-strong bg-surface',
-            )}
-          >
-            <div className="flex items-start gap-3">
+          return (
+            <button
+              type="button"
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={cn(
+                'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-caption font-semibold transition-all',
+                isSelected
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'border border-line bg-surface text-ink-muted hover:border-neutral-300 hover:text-ink',
+              )}
+            >
+              {cat.label}
               <span
                 className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-md',
-                  file ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-ink-muted',
+                  'rounded-full px-1.5 py-0.2 text-[10px]',
+                  isSelected ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600',
                 )}
-                aria-hidden
               >
-                {file ? <Check size={15} strokeWidth={3} /> : <FileText size={15} />}
+                {attachedCount > 0 ? `${attachedCount}/${count}` : count}
               </span>
+            </button>
+          );
+        })}
+      </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="text-body-sm text-ink">{label}</p>
-                <p className="mt-0.5 text-caption text-ink-muted">
-                  {file ? (
-                    <span className="truncate">{file.fileName}</span>
-                  ) : requirement.required ? (
-                    t.excavation.required
-                  ) : (
-                    t.excavation.optional
-                  )}
-                </p>
+      {/* Documents List for Selected Category */}
+      <ul className="space-y-3">
+        {filteredDocs.map((doc) => {
+          const file = attached.find((a) => a.kind === doc.kind);
+          const isImportant = doc.importance === 'IMPORTANT';
+
+          return (
+            <li
+              key={doc.kind}
+              className={cn(
+                'rounded-xl border p-3.5 transition-all',
+                file
+                  ? 'border-success-300 bg-success-50/40 shadow-xs'
+                  : 'border-line bg-surface hover:border-neutral-300',
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2.5">
+                  <span
+                    className={cn(
+                      'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg',
+                      file ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-ink-muted',
+                    )}
+                  >
+                    {file ? <Check size={16} strokeWidth={2.5} /> : <FileText size={16} />}
+                  </span>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-body-sm font-semibold text-ink">{doc.label}</p>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                          isImportant
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300/60'
+                            : 'bg-neutral-100 text-neutral-600 border border-neutral-200',
+                        )}
+                      >
+                        {isImportant ? 'Important' : 'Optional'}
+                      </span>
+                    </div>
+
+                    <p className="mt-0.5 text-caption text-ink-muted">
+                      {file ? (
+                        <span className="font-medium text-success-800">
+                          {file.fileName} {file.documentNumber ? `· Ref: ${file.documentNumber}` : ''}
+                        </span>
+                      ) : isImportant ? (
+                        'Recommended for faster approval'
+                      ) : (
+                        'Can be furnished during scrutiny if required'
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {file ? (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${doc.label}`}
+                    onClick={() => onRemove(doc.kind)}
+                    className="flex size-7 items-center justify-center rounded-full text-ink-muted hover:bg-neutral-200/60 transition-colors"
+                  >
+                    <X size={15} />
+                  </button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Upload size={13} />}
+                    onClick={() => handleAttach(doc)}
+                  >
+                    Upload
+                  </Button>
+                )}
               </div>
 
-              {file ? (
-                <button
-                  type="button"
-                  aria-label={`${t.excavation.remove} ${label}`}
-                  onClick={() => onRemove(requirement.kind)}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-neutral-100"
-                >
-                  <X size={15} aria-hidden />
-                </button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<Paperclip size={13} />}
-                  onClick={() => onAttach(requirement.kind)}
-                >
-                  {t.excavation.attach}
-                </Button>
+              {/* Document Number Input for NOCs */}
+              {doc.requiresDocumentNumber && !file && (
+                <div className="mt-3 border-t border-line/60 pt-2.5">
+                  <label className="block text-[11px] font-medium text-ink-secondary mb-1">
+                    Document / Sanction Order Number (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. NOC/2026/PWD/042"
+                    value={docNumbers[doc.kind] || ''}
+                    onChange={(e) => handleDocNumberChange(doc.kind, e.target.value)}
+                    className="h-9 w-full rounded-lg border border-line bg-surface px-3 text-caption text-ink focus:border-primary-500 focus:outline-none"
+                  />
+                </div>
               )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

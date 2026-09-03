@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, FileText, LogOut, Package as PackageIcon, RotateCcw, Shovel, Warehouse } from 'lucide-react';
+import { Building2, FileText, LogOut, Package as PackageIcon, RotateCcw, Shovel, UserCheck, Warehouse } from 'lucide-react';
 import {
   Button,
   ConfirmDialog,
@@ -11,7 +11,7 @@ import {
 } from '@/design-system';
 import { ROUTES, Screen } from '@/navigation';
 import { userCan } from '@/rules';
-import { resetDatabase } from '@/data';
+import { packageRepository, resetDatabase, useAsync } from '@/data';
 import { useCurrentOrganization, useCurrentUser, useOrganizationContextStore, useSessionStore } from '@/state';
 import { copy } from '@/content';
 import { FoundationCheck } from '@/prototype/FoundationCheck';
@@ -38,6 +38,7 @@ export function MoreScreen() {
 
   const canSeeExcavation = userCan(user, 'TEMPORARY_EXCAVATION');
   const canSeeOrganization = userCan(user, 'VIEW_ORGANIZATION');
+  const supervisors = useAsync(() => packageRepository.listSupervisors(), []);
 
   function handleSignOut() {
     clearContext();
@@ -121,6 +122,15 @@ export function MoreScreen() {
                 leading={<Building2 size={17} />}
                 title={organization.name}
                 subtitle={`${copy.organizationType[organization.type]} · ${organization.registrationNumber}`}
+                trailing={null}
+              />
+            )}
+            {canSeeOrganization && (
+              <ListRow
+                leading={<UserCheck size={17} />}
+                title="Supervisors"
+                subtitle={`${supervisors.data?.length ?? 6} registered supervisors`}
+                onClick={() => navigate(ROUTES.supervisors)}
                 trailing={null}
               />
             )}

@@ -6,13 +6,12 @@ import type { Address, GeoPoint, ID, ISODate } from './common';
  */
 export type ProjectStatus = 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
 
+export type ProjectOwnershipType = 'PRIVATE' | 'GOVERNMENT';
+export type ProjectCategory = 'RURAL' | 'URBAN';
+
 /**
  * Level 2 of the Organization hierarchy:
  *   Organization → Project → Package → Mineral Operations
- *
- * A Project groups Packages. It is contextual information for downstream
- * operations — it is not itself an operational scope. Mineral activity always
- * hangs off a Package, never directly off a Project.
  */
 export interface Project {
   id: ID;
@@ -20,8 +19,14 @@ export interface Project {
   name: string;
   /** Human-readable reference shown in lists and on documents. */
   code: string;
+  projectType?: ProjectOwnershipType;
+  department?: string;
+  workOrderNumber?: string;
+  category?: ProjectCategory;
+  city?: string;
+  village?: string;
   location: Address;
-  geo: GeoPoint;
+  geo?: GeoPoint;
   /** Materials commonly required at this project so downstream enquiries can be
    * scoped to the exact construction or excavation use-case. */
   materialIds?: ID[];

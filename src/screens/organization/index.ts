@@ -13,4 +13,6 @@ export { ProjectDetailsScreen } from './ProjectDetailsScreen';
 export { CreateProjectScreen } from './CreateProjectScreen';
 export { CreatePackageScreen } from './CreatePackageScreen';
 export { PackageDetailsScreen } from './PackageDetailsScreen';
+export { RegisterSupervisorScreen } from './RegisterSupervisorScreen';
+export { SupervisorsScreen } from './SupervisorsScreen';
 export { useOrganizationOverview, type OrganizationOverview } from './useOrganizationOverview';

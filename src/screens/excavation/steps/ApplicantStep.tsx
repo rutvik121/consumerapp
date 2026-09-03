@@ -1,6 +1,5 @@
-import { Input, Select } from '@/design-system';
-import { ID_PROOF_TYPES, type ApplicationDraft } from '@/rules';
-import { useCopy } from '@/content';
+import { Input } from '@/design-system';
+import type { ApplicationDraft } from '@/rules';
 
 export interface StepProps {
   draft: ApplicationDraft;
@@ -9,21 +8,18 @@ export interface StepProps {
 }
 
 /**
- * STEP 1 · WHO IS APPLYING.
+ * STEP 1 · APPLICANT DETAILS & IDENTITY (Desktop Field Parity)
  *
- * Every field here opens pre-filled from the signed-in account and the
- * organization's registered address. They are shown rather than hidden because
- * the order is issued against them and a stale mobile number is the applicant's
- * problem to catch, not the department's — but nothing on this step is a
- * question the app did not already have an answer to.
+ * Captures all desktop fields:
+ * - Applicant Name, Mobile, Landline, Email
+ * - Registered Address, District, Taluka, Pincode
+ * - PAN Number, Aadhaar Number, GST Number
  */
 export function ApplicantStep({ draft, errors, update }: StepProps) {
-  const t = useCopy();
-
   return (
     <div className="space-y-4">
       <Input
-        label={t.excavation.applicantName}
+        label="Applicant Name"
         required
         value={draft.fullName}
         {...(errors.fullName ? { error: errors.fullName } : {})}
@@ -32,7 +28,7 @@ export function ApplicantStep({ draft, errors, update }: StepProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label={t.excavation.applicantMobile}
+          label="Applicant Mobile No."
           required
           inputMode="numeric"
           maxLength={10}
@@ -43,49 +39,26 @@ export function ApplicantStep({ draft, errors, update }: StepProps) {
           }
         />
         <Input
-          label={t.excavation.alternatePhone}
+          label="Applicant Landline No."
           inputMode="tel"
-          value={draft.alternatePhone}
-          {...(errors.alternatePhone ? { error: errors.alternatePhone } : {})}
-          onChange={(event) => update('alternatePhone', event.target.value)}
+          placeholder="e.g. 020-2567890"
+          value={draft.landlineNumber}
+          {...(errors.landlineNumber ? { error: errors.landlineNumber } : {})}
+          onChange={(event) => update('landlineNumber', event.target.value)}
         />
       </div>
 
       <Input
-        label={t.excavation.applicantEmail}
+        label="Applicant Email Id"
         type="email"
-        hint={t.excavation.applicantEmailHint}
+        required
         value={draft.email}
         {...(errors.email ? { error: errors.email } : {})}
         onChange={(event) => update('email', event.target.value)}
       />
 
-      <Select
-        label={t.excavation.idProof}
-        required
-        placeholder="Select an ID proof"
-        value={draft.idProofType}
-        options={ID_PROOF_TYPES.map((type) => ({
-          value: type,
-          label: t.excavation.idProofTypes[type],
-        }))}
-        {...(errors.idProofType ? { error: errors.idProofType } : {})}
-        onChange={(event) =>
-          update('idProofType', event.target.value as ApplicationDraft['idProofType'])
-        }
-      />
-
       <Input
-        label={t.excavation.idProofNumber}
-        required
-        autoCapitalize="characters"
-        value={draft.idProofNumber}
-        {...(errors.idProofNumber ? { error: errors.idProofNumber } : {})}
-        onChange={(event) => update('idProofNumber', event.target.value.toUpperCase())}
-      />
-
-      <Input
-        label={t.excavation.registeredAddress}
+        label="Applicant Address"
         required
         value={draft.registeredAddressLine}
         {...(errors.registeredAddressLine ? { error: errors.registeredAddressLine } : {})}
@@ -94,32 +67,67 @@ export function ApplicantStep({ draft, errors, update }: StepProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label={t.excavation.taluka}
-          required
-          value={draft.registeredTaluka}
-          {...(errors.registeredTaluka ? { error: errors.registeredTaluka } : {})}
-          onChange={(event) => update('registeredTaluka', event.target.value)}
-        />
-        <Input
-          label={t.excavation.district}
+          label="District"
           required
           value={draft.registeredDistrict}
           {...(errors.registeredDistrict ? { error: errors.registeredDistrict } : {})}
           onChange={(event) => update('registeredDistrict', event.target.value)}
         />
+        <Input
+          label="Applicant Pincode"
+          required
+          inputMode="numeric"
+          maxLength={6}
+          value={draft.registeredPincode}
+          {...(errors.registeredPincode ? { error: errors.registeredPincode } : {})}
+          onChange={(event) =>
+            update('registeredPincode', event.target.value.replace(/\D/g, '').slice(0, 6))
+          }
+        />
       </div>
 
-      <Input
-        label={t.excavation.pincode}
-        required
-        inputMode="numeric"
-        maxLength={6}
-        value={draft.registeredPincode}
-        {...(errors.registeredPincode ? { error: errors.registeredPincode } : {})}
-        onChange={(event) =>
-          update('registeredPincode', event.target.value.replace(/\D/g, '').slice(0, 6))
-        }
-      />
+      <div className="rounded-xl border border-line bg-surface-raised p-3.5 space-y-3 mt-2">
+        <h3 className="text-caption font-bold uppercase tracking-wider text-ink-secondary">
+          Tax & Identification Numbers
+        </h3>
+
+        <Input
+          label="PAN Number"
+          required
+          autoCapitalize="characters"
+          maxLength={10}
+          placeholder="ABCDE1234F"
+          value={draft.panNumber}
+          {...(errors.panNumber ? { error: errors.panNumber } : {})}
+          onChange={(event) => update('panNumber', event.target.value.toUpperCase())}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Aadhaar Number"
+            inputMode="numeric"
+            maxLength={14}
+            placeholder="XXXX XXXX XXXX"
+            value={draft.aadhaarNumber}
+            {...(errors.aadhaarNumber ? { error: errors.aadhaarNumber } : {})}
+            onChange={(event) => {
+              const digits = event.target.value.replace(/\D/g, '').slice(0, 12);
+              const formatted = digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+              update('aadhaarNumber', formatted);
+            }}
+          />
+
+          <Input
+            label="GST Number"
+            autoCapitalize="characters"
+            maxLength={15}
+            placeholder="27AAAAA0000A1Z5"
+            value={draft.gstNumber}
+            {...(errors.gstNumber ? { error: errors.gstNumber } : {})}
+            onChange={(event) => update('gstNumber', event.target.value.toUpperCase())}
+          />
+        </div>
+      </div>
     </div>
   );
 }

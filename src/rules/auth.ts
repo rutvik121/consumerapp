@@ -64,37 +64,69 @@ export function formatMobileWithCode(input: string): string {
  */
 export type AuthIntent = 'SIGN_IN' | 'REGISTER';
 
-/**
- * Registration collects different things per user type, so the form asks for
- * the type FIRST and only then asks what that type actually needs. Asking
- * every question to everyone would be the long, overwhelming form the UX
- * principles rule out.
- */
+/** Aadhaar: exactly 12 numeric digits */
+const AADHAAR_PATTERN = /^\d{12}$/;
+
+/** PAN: 5 uppercase letters, 4 digits, 1 uppercase letter */
+const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+export function normalizeAadhaar(input: string): string {
+  return input.replace(/[\s-]/g, '');
+}
+
+export function isValidAadhaar(input: string): boolean {
+  return AADHAAR_PATTERN.test(normalizeAadhaar(input));
+}
+
+/** Formats 12 digits as "1234 5678 9012" */
+export function formatAadhaar(input: string): string {
+  const digits = normalizeAadhaar(input).slice(0, 12);
+  const parts = [];
+  for (let i = 0; i < digits.length; i += 4) {
+    parts.push(digits.slice(i, i + 4));
+  }
+  return parts.join(' ');
+}
+
+export function normalizePan(input: string): string {
+  return input.replace(/[\s-]/g, '').toUpperCase();
+}
+
+export function isValidPan(input: string): boolean {
+  return PAN_PATTERN.test(normalizePan(input));
+}
+
 export interface OrganizationRegistrationDetails {
   organizationName: string;
   organizationType: 'BUILDER' | 'CONTRACTOR' | 'GOVERNMENT' | 'OTHER';
-  registrationNumber: string;
+  registrationNumber?: string;
 }
 
-/**
- * PROVISIONAL (open question #8): a Normal Consumer needs a delivery
- * destination for the same reason an Organization has a Package site — stock
- * point distance is measured to it, and receiving verifies the e-TP
- * destination against it. The real field list is unconfirmed.
- */
-export interface ConsumerRegistrationDetails {
+export interface AddressRegistrationDetails {
   addressLine: string;
   taluka: string;
   district: string;
   pincode: string;
 }
 
+export type ConsumerRegistrationDetails = AddressRegistrationDetails;
+
+export interface KycDetails {
+  documentKind: 'AADHAAR' | 'PAN';
+  documentNumber: string;
+  fileName: string;
+  fileSize?: number;
+  fileUrl?: string;
+}
+
 export interface RegistrationDraft {
   userType: UserType;
   fullName: string;
   mobileNumber: string;
+  address: AddressRegistrationDetails;
   organization?: OrganizationRegistrationDetails;
   delivery?: ConsumerRegistrationDetails;
+  kyc: KycDetails;
 }
 
 export function isValidPincode(input: string): boolean {
@@ -102,11 +134,12 @@ export function isValidPincode(input: string): boolean {
 }
 
 /**
- * Which registration steps apply to a given user type.
- * Step 1 is always the user-type choice; step 3 differs by type.
+ * Step 1: Personal / Org details & Address
+ * Step 2: KYC Verification (Aadhaar upload for Individual, PAN upload for Organization)
+ * Followed by OTP Verification on the verify screen.
  */
 export function registrationStepCount(): number {
-  return 3;
+  return 2;
 }
 
 /** Is the draft complete enough to submit for verification? */
@@ -114,20 +147,29 @@ export function isRegistrationComplete(draft: Partial<RegistrationDraft>): boole
   if (!draft.userType || !draft.fullName?.trim()) return false;
   if (!draft.mobileNumber || !isValidMobile(draft.mobileNumber)) return false;
 
-  if (draft.userType === 'ORGANIZATION') {
-    const organization = draft.organization;
-    return Boolean(
-      organization?.organizationName.trim() &&
-        organization.organizationType &&
-        organization.registrationNumber.trim(),
-    );
+  const address = draft.address ?? draft.delivery;
+  if (
+    !address?.addressLine.trim() ||
+    !address.taluka.trim() ||
+    !address.district.trim() ||
+    !isValidPincode(address.pincode)
+  ) {
+    return false;
   }
 
-  const delivery = draft.delivery;
-  return Boolean(
-    delivery?.addressLine.trim() &&
-      delivery.taluka.trim() &&
-      delivery.district.trim() &&
-      isValidPincode(delivery.pincode),
-  );
+  if (draft.userType === 'ORGANIZATION') {
+    const organization = draft.organization;
+    if (!organization?.organizationName.trim() || !organization.organizationType) {
+      return false;
+    }
+  }
+
+  const kyc = draft.kyc;
+  if (!kyc || !kyc.fileName.trim()) return false;
+
+  if (draft.userType === 'NORMAL_CONSUMER') {
+    return kyc.documentKind === 'AADHAAR' && isValidAadhaar(kyc.documentNumber);
+  }
+
+  return kyc.documentKind === 'PAN' && isValidPan(kyc.documentNumber);
 }

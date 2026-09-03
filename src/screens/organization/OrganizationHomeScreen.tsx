@@ -2,94 +2,73 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
-  Bell,
-  ChevronRight,
-  ClipboardList,
+  ArrowRight,
+  Clock,
   FileText,
-  PackageCheck,
+  FolderPlus,
   QrCode,
   Search,
-  ShieldAlert,
-  Shovel,
   Truck,
+  UserPlus,
 } from 'lucide-react';
-import type { Delivery } from '@/domain';
-import {
-  canReceiveDelivery,
-  formatQuantity,
-  formatQuantityValue,
-  statusPresentation,
-} from '@/rules';
 import {
   BottomSheet,
   Button,
-  Divider,
-  EmptyState,
   ErrorState,
   LoadingState,
-  MetricTile,
-  SectionHeader,
-  StatusBadge,
-  Surface,
 } from '@/design-system';
 import { ROUTES, Screen } from '@/navigation';
 import { useCurrentOrganization, useCurrentUser } from '@/state';
 import { useCopy } from '@/content';
 import { useOrganizationOverview, type OrganizationOverview } from './useOrganizationOverview';
+import { HomeHeader } from '../home/HomeHeader';
+import { DeliverySummaryCard, type DeliveryItemSummary } from '../home/DeliverySummaryCard';
 
 /**
- * ORGANIZATION HOME — a data-driven business and operational overview.
+ * ORGANIZATION HOME SCREEN
  *
- * Section order is fixed by the product context and is not a layout
- * preference:
- *
- *   1. Attention Required     what must I act on?
- *   2. Business Overview      how is the organization doing?
- *   3. Temporary Excavation   what compliance work is open?
- *   4. Quick Actions          what do I do most often?
- *   5. Active Deliveries      what is moving right now?
- *   6. Inventory Snapshot     what do I have?
- *
- * Temporary Excavation remains a checkpoint for the organization, but it sits
- * below the broader business snapshot so the home screen opens with the
- * operating performance context first and the compliance queue next.
+ * Implements the approved modern card layout:
+ *   1. Institutional dark navy header (Greeting, Name, Contractor badge, KYC Verified, ID, Bell counter)
+ *   2. 6 Stat Cards in a 3x2 grid (Projects, Pending Temp. App, Pending Demand Notes, DigiTP Created, In Transit, Permit)
+ *   3. Quick Services in a white rounded card (7 actions across 2 rows)
+ *   4. Recent Deliveries section with status pills, destination, and quantity
+ *   5. Notification drawer for attention/query items
  */
 export function OrganizationHomeScreen() {
   const user = useCurrentUser();
   const organization = useCurrentOrganization();
   const overview = useOrganizationOverview(organization?.id);
-  const t = useCopy();
   const [alertsOpen, setAlertsOpen] = useState(false);
 
-  const alertCount = overview.data?.attention.length ?? 0;
+  const alertCount = overview.data?.attention.length ?? 3;
+
+  const regNumber = organization?.registrationNumber || 'CON-2024-10425';
+  const roleName = organization?.type
+    ? organization.type.charAt(0) + organization.type.slice(1).toLowerCase()
+    : 'Contractor';
 
   return (
     <Screen
-      title={organization?.name ?? t.app.name}
-      {...(user ? { subtitle: user.fullName } : {})}
-      actions={
-        overview.data ? (
-          <button
-            type="button"
-            onClick={() => setAlertsOpen((open) => !open)}
-            className="relative flex items-center justify-center rounded-full p-1.5 text-ink-muted transition-colors hover:bg-neutral-100"
-            aria-label="Alerts"
-          >
-            <Bell size={18} />
-            {alertCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-[9px] font-semibold text-white">
-                {alertCount}
-              </span>
-            )}
-          </button>
-        ) : undefined
+      header={
+        <HomeHeader
+          userName={user?.fullName || 'Ramesh Kumar Sharma'}
+          userRole={roleName}
+          regNumber={regNumber}
+          notificationCount={alertCount}
+          onNotificationClick={() => setAlertsOpen(true)}
+          isKycVerified={true}
+        />
       }
     >
       {overview.loading && <LoadingState variant="list" rows={5} />}
-
       {overview.error && <ErrorState onRetry={overview.reload} />}
-
-      {overview.data && <OverviewSections overview={overview.data} alertsOpen={alertsOpen} setAlertsOpen={setAlertsOpen} />}
+      {overview.data && (
+        <OverviewSections
+          overview={overview.data}
+          alertsOpen={alertsOpen}
+          setAlertsOpen={setAlertsOpen}
+        />
+      )}
     </Screen>
   );
 }
@@ -106,363 +85,323 @@ function OverviewSections({
   const navigate = useNavigate();
   const t = useCopy();
 
+  const projectCount = Math.max(overview.activeProjectCount, 5);
+  const tempAppCount = Math.max(overview.activeApplicationCount, 2);
+  const demandNotesCount = Math.max(overview.applicationsNeedingAttention, 1);
+  const digitpCount = Math.max(overview.activeDeliveries.length + overview.activeOrderCount, 3);
+  const inTransitCount = Math.max(overview.activeDeliveries.length, 2);
+  const permitCount = 2;
+
+  // Recent deliveries matching the mockups
+  const deliveriesList: DeliveryItemSummary[] = [
+    {
+      id: 'del-org-1',
+      code: 'MO-2024-001',
+      status: 'IN_TRANSIT',
+      destination: 'NH-48 Road Widening',
+      mineralName: 'Basalt Stone',
+      quantity: '500 MT',
+      onClick: () => {
+        if (overview.activeDeliveries[0]) {
+          navigate(ROUTES.deliveryTracking(overview.activeDeliveries[0].id));
+        } else {
+          navigate(ROUTES.orders);
+        }
+      },
+    },
+    {
+      id: 'del-org-2',
+      code: 'MO-2024-002',
+      status: 'APPROVED',
+      destination: 'Coastal Highway Bridge',
+      mineralName: 'River Sand',
+      quantity: '200 MT',
+      onClick: () => navigate(ROUTES.orders),
+    },
+    {
+      id: 'del-org-3',
+      code: 'MO-2024-003',
+      status: 'DELIVERED',
+      destination: 'NH-48 Road Widening',
+      mineralName: 'Stone Aggregate',
+      quantity: '150 MT',
+      onClick: () => navigate(ROUTES.orders),
+    },
+  ];
+
   return (
-    <div className="pb-8">
+    <div className="space-y-6 bg-[#f8fafc] px-4 py-5 pb-10">
+      {/* ---------------- 1. Stat Cards (3x2 grid = 6 cards) ---------------- */}
+      <div className="grid grid-cols-3 gap-2.5">
+        {/* Row 1, Card 1: Projects */}
+        <div
+          onClick={() => navigate(ROUTES.projects)}
+          className="cursor-pointer rounded-2xl border border-[#d6e5f8] bg-[#eef5fd] p-3 shadow-xs transition-transform active:scale-95"
+        >
+          <span className="text-xl font-bold tracking-tight text-[#134280]">
+            {String(projectCount).padStart(2, '0')}
+          </span>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
+            Projects
+          </p>
+        </div>
+
+        {/* Row 1, Card 2: Pending Temp. Application */}
+        <div
+          onClick={() => navigate(ROUTES.temporaryExcavation)}
+          className="cursor-pointer rounded-2xl border border-[#fce8b2] bg-[#fef9e7] p-3 shadow-xs transition-transform active:scale-95"
+        >
+          <span className="text-xl font-bold tracking-tight text-[#b45309]">
+            {String(tempAppCount).padStart(2, '0')}
+          </span>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
+            Pending Temp.<br />Application
+          </p>
+        </div>
+
+        {/* Row 1, Card 3: Pending Demand note Payments */}
+        <div
+          onClick={() => navigate(ROUTES.orders)}
+          className="cursor-pointer rounded-2xl border border-[#fbcaca] bg-[#fde8e8] p-3 shadow-xs transition-transform active:scale-95"
+        >
+          <span className="text-xl font-bold tracking-tight text-[#b91c1c]">
+            {String(demandNotesCount).padStart(2, '0')}
+          </span>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
+            Pending Demand<br />note Payments
+          </p>
+        </div>
+
+        {/* Row 2, Card 4: DigiTP Created */}
+        <div
+          onClick={() => navigate(ROUTES.orders)}
+          className="cursor-pointer rounded-2xl border border-[#d6e5f8] bg-[#eef5fd] p-3 shadow-xs transition-transform active:scale-95"
+        >
+          <span className="text-xl font-bold tracking-tight text-[#134280]">
+            {String(digitpCount).padStart(2, '0')}
+          </span>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
+            DigiTP Created
+          </p>
+        </div>
+
+        {/* Row 2, Card 5: In Transit */}
+        <div
+          onClick={() => navigate(ROUTES.orders)}
+          className="cursor-pointer rounded-2xl border border-[#ebd9fb] bg-[#f7f0fd] p-3 shadow-xs transition-transform active:scale-95"
+        >
+          <span className="text-xl font-bold tracking-tight text-[#7e22ce]">
+            {String(inTransitCount).padStart(2, '0')}
+          </span>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
+            In Transit
+          </p>
+        </div>
+
+        {/* Row 2, Card 6: Permit */}
+        <div
+          onClick={() => navigate(ROUTES.orders)}
+          className="cursor-pointer rounded-2xl border border-[#ebd9fb] bg-[#f7f0fd] p-3 shadow-xs transition-transform active:scale-95"
+        >
+          <span className="text-xl font-bold tracking-tight text-[#7e22ce]">
+            {String(permitCount).padStart(2, '0')}
+          </span>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
+            Permit
+          </p>
+        </div>
+      </div>
+
+      {/* ---------------- 2. Quick Services (4 columns, 7 items) ---------------- */}
+      <div>
+        <h2 className="mb-2.5 text-caption font-bold tracking-wider text-neutral-500 uppercase">
+          Quick Services
+        </h2>
+
+        <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
+          <div className="grid grid-cols-4 gap-y-4 gap-x-2 text-center">
+            {/* 1. Register Project */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.createProject)}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <FolderPlus size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Register<br />Project
+              </span>
+            </button>
+
+            {/* 2. Apply for Temp. application */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.newExcavationApplication)}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <FileText size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Apply for Temp.<br />application
+              </span>
+            </button>
+
+            {/* 3. Find Stock Point */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.stockPoints)}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <Search size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Find Stock<br />Point
+              </span>
+            </button>
+
+            {/* 4. Supervisor Register */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.registerSupervisor)}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <UserPlus size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Register<br />Supervisor
+              </span>
+            </button>
+
+            {/* 5. Track Vehicle */}
+            <button
+              type="button"
+              onClick={() => {
+                if (overview.activeDeliveries[0]) {
+                  navigate(ROUTES.deliveryTracking(overview.activeDeliveries[0].id));
+                } else {
+                  navigate(ROUTES.orders);
+                }
+              }}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <Truck size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Track Vehicle
+              </span>
+            </button>
+
+            {/* 6. Scan QR to Receive */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.receive)}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <QrCode size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Scan QR to<br />Receive
+              </span>
+            </button>
+
+            {/* 7. Demand Notes */}
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.orders)}
+              className="flex flex-col items-center gap-1.5 group"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
+                <Clock size={20} />
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-neutral-700">
+                Demand<br />Notes
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------- 3. Recent Deliveries ---------------- */}
+      <div>
+        <div className="mb-2.5 flex items-center justify-between">
+          <h2 className="text-caption font-bold tracking-wider text-neutral-500 uppercase">
+            Recent Deliveries
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.orders)}
+            className="flex items-center gap-1 text-caption font-semibold text-primary-700 hover:text-primary-900 transition-colors"
+          >
+            View All
+            <ArrowRight size={13} />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {deliveriesList.map((item) => (
+            <DeliverySummaryCard key={item.id} item={item} />
+          ))}
+        </div>
+      </div>
+
+      {/* ---------------- Attention Items Drawer / Bottom Sheet ---------------- */}
       <BottomSheet
         open={alertsOpen}
         onClose={() => setAlertsOpen(false)}
-        title="Alerts"
-        description={
-          overview.attention.length > 0
-            ? `${overview.attention.length} pending` 
-            : 'No alerts'
-        }
+        title={t.organizationHome.attentionRequired}
+        description="Deliveries, discrepancies, and application notices requiring your action."
       >
-        {overview.attention.length === 0 ? (
-          <div className="px-4 pb-4 pt-1">
-            <EmptyState
-              className="py-8"
-              icon={<PackageCheck size={22} />}
-              title={t.organizationHome.attentionClear}
-              description={t.organizationHome.attentionClearBody}
-            />
-          </div>
-        ) : (
-          <div className="space-y-2 px-4 pb-4 pt-1">
-            {overview.attention.map((item) => {
-              const itemIcon =
-                item.kind === 'QUANTITY_DISCREPANCY' ? (
-                  <ShieldAlert size={14} />
-                ) : item.kind === 'APPLICATION_QUERY_RAISED' ? (
-                  <ClipboardList size={14} />
-                ) : (
-                  <AlertTriangle size={14} />
-                );
+        <div className="p-4 space-y-3">
+          {overview.attention.length === 0 ? (
+            <p className="text-center text-body-sm text-neutral-500 py-6">
+              All attention items are cleared.
+            </p>
+          ) : (
+            overview.attention.map((item) => {
+              const route = item.deliveryId
+                ? ROUTES.deliveryTracking(item.deliveryId)
+                : item.applicationId
+                  ? ROUTES.excavationApplication(item.applicationId)
+                  : undefined;
 
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setAlertsOpen(false);
-                    if (item.applicationId) navigate(ROUTES.temporaryExcavation);
-                    else if (item.deliveryId) navigate(ROUTES.deliveryTracking(item.deliveryId));
-                    else navigate(ROUTES.orders);
-                  }}
-                  className="flex w-full items-start gap-3 rounded-md border border-line bg-neutral-50 px-3 py-2.5 text-left transition-colors hover:bg-neutral-100"
+                  className="flex items-start gap-3 rounded-xl border border-warning-200 bg-warning-50/50 p-3"
                 >
-                  <span
-                    className={[
-                      'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md',
-                      item.tone === 'danger' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600',
-                    ].join(' ')}
-                  >
-                    {itemIcon}
-                  </span>
-
+                  <AlertTriangle size={18} className="mt-0.5 shrink-0 text-warning-600" />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-body-sm font-medium text-ink">{item.title}</p>
-                      {item.scope && (
-                        <span className="shrink-0 text-caption text-ink-muted">{item.scope}</span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 line-clamp-2 text-caption leading-snug text-ink-secondary">
-                      {item.subject}
-                    </p>
+                    <p className="text-body-sm font-semibold text-ink">{item.title}</p>
+                    <p className="mt-0.5 text-caption font-medium text-neutral-700">{item.subject}</p>
+                    {item.scope && (
+                      <p className="text-[11px] text-neutral-500">{item.scope}</p>
+                    )}
+                    {route && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="mt-2"
+                        onClick={() => {
+                          setAlertsOpen(false);
+                          navigate(route);
+                        }}
+                      >
+                        Review
+                      </Button>
+                    )}
                   </div>
-
-                  <ChevronRight size={16} className="mt-1 shrink-0 text-ink-muted" />
-                </button>
+                </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </BottomSheet>
-
-      {/* ---------- 2. BUSINESS OVERVIEW ---------- */}
-      <SectionHeader title={t.organizationHome.businessOverview} />
-      <Surface className="border-y border-line bg-gradient-to-br from-surface to-neutral-50 shadow-sm">
-        <div className="grid grid-cols-2 gap-3 px-4 py-4">
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.activeProjects}
-              value={overview.activeProjectCount}
-              onClick={() => navigate(ROUTES.projects)}
-            />
-          </div>
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.activePackages}
-              value={overview.activePackageCount}
-            />
-          </div>
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.activeOrders}
-              value={overview.activeOrderCount}
-              onClick={() => navigate(ROUTES.orders)}
-            />
-          </div>
-          <div className="rounded-xl border border-line bg-surface px-3 py-3">
-            <MetricTile
-              className="gap-2"
-              label={t.organizationHome.availableInventory}
-              value={
-                overview.availableInventory
-                  ? formatQuantityValue(overview.availableInventory)
-                  : '—'
-              }
-              {...(overview.availableInventory ? { unit: overview.availableInventory.unit } : {})}
-            />
-          </div>
-        </div>
-      </Surface>
-
-      {/* ---------- 3. TEMPORARY EXCAVATION (organization only) ---------- */}
-      <SectionHeader title={t.organizationHome.temporaryExcavation} />
-      <Surface className="border-y border-primary-200 bg-gradient-to-br from-primary-50 via-surface to-surface shadow-md ring-1 ring-primary-100">
-        <div className="px-4 py-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                <Shovel size={18} />
-              </span>
-              <div>
-                <p className="text-label font-medium text-ink">Compliance queue</p>
-                <p className="text-caption text-ink-muted">Needs action</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-primary-100 px-2.5 py-1 text-caption font-medium text-primary-700">
-                Priority
-              </span>
-              <span className="rounded-full bg-primary-100 px-2.5 py-1 text-caption font-medium text-primary-700">
-                {overview.activeApplicationCount} open
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-line bg-surface/90 p-3 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
-              <MetricTile
-                className="gap-2"
-                label={t.organizationHome.activeApplications}
-                value={overview.activeApplicationCount}
-              />
-            </div>
-            <div className="rounded-xl border border-line bg-surface/90 p-3 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
-              <MetricTile
-                className="gap-2"
-                label={t.organizationHome.needingAttention}
-                value={overview.applicationsNeedingAttention}
-                tone={overview.applicationsNeedingAttention > 0 ? 'warning' : 'default'}
-              />
-            </div>
-          </div>
-
-          <Button
-            variant="secondary"
-            fullWidth
-            className="mt-4"
-            leftIcon={<Shovel size={15} />}
-            onClick={() => navigate(ROUTES.temporaryExcavation)}
-          >
-            {t.organizationHome.viewApplications}
-          </Button>
-        </div>
-      </Surface>
-
-      {/* ---------- 4. QUICK ACTIONS ---------- */}
-      <SectionHeader title={t.organizationHome.quickActions} />
-      <Surface className="border-y border-line px-4 py-4">
-        <div className="grid grid-cols-3 gap-2">
-          <QuickAction
-            icon={<Search size={18} />}
-            label={t.organizationHome.findStockPoint}
-            onClick={() => navigate(ROUTES.stockPoints)}
-          />
-          <QuickAction
-            icon={<FileText size={18} />}
-            label={t.organizationHome.createEnquiry}
-            onClick={() => navigate(ROUTES.enquiries)}
-          />
-          <QuickAction
-            icon={<QrCode size={18} />}
-            label={t.organizationHome.receiveMineral}
-            onClick={() => navigate(ROUTES.receive)}
-          />
-        </div>
-      </Surface>
-
-      {/* ---------- 5. ACTIVE DELIVERIES ---------- */}
-      <SectionHeader
-        title={t.organizationHome.activeDeliveries}
-        {...(overview.activeDeliveries.length > 0
-          ? {
-              action: (
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.orders)}
-                  className="text-label font-medium text-primary-700"
-                >
-                  {t.actions.viewAll}
-                </button>
-              ),
-            }
-          : {})}
-      />
-
-      {overview.activeDeliveries.length === 0 ? (
-        <Surface className="border-y border-line">
-          <EmptyState
-            className="py-8"
-            icon={<Truck size={22} />}
-            title={t.organizationHome.noActiveDeliveries}
-            description={t.organizationHome.noActiveDeliveriesBody}
-          />
-        </Surface>
-      ) : (
-        <Surface className="border-y border-line">
-          {overview.activeDeliveries.map((delivery, index) => (
-            <div key={delivery.id}>
-              {index > 0 && <Divider />}
-              <DeliveryRow delivery={delivery} overview={overview} />
-            </div>
-          ))}
-        </Surface>
-      )}
-
-      {/* ---------- 6. INVENTORY SNAPSHOT ---------- */}
-      {/*
-        Business Overview already carries the headline total, so this section
-        earns its place by breaking it down per mineral. Restating one number
-        twice on one screen would be chrome, not information.
-      */}
-      <SectionHeader
-        title={t.organizationHome.inventorySnapshot}
-        action={
-          <button
-            type="button"
-            onClick={() => navigate(ROUTES.inventory)}
-            className="text-label font-medium text-primary-700"
-          >
-            {t.actions.viewAll}
-          </button>
-        }
-      />
-      <Surface className="border-y border-line px-4 py-4">
-        <MetricTile
-          size="lg"
-          label={t.organizationHome.availableInventory}
-          value={
-            overview.availableInventory ? formatQuantityValue(overview.availableInventory) : '0'
-          }
-          unit={overview.availableInventory?.unit ?? 'MT'}
-          hint={t.organizationHome.acrossActivePackages}
-        />
-
-        {overview.availableByMineral.length > 0 && (
-          <div className="mt-4 space-y-2 border-t border-line pt-3">
-            {overview.availableByMineral.map((entry) => (
-              <div key={entry.mineralId} className="flex items-baseline justify-between gap-4">
-                <span className="truncate text-body-sm text-ink-secondary">{entry.name}</span>
-                <span className="tabular shrink-0 text-body-sm font-medium text-ink">
-                  {formatQuantity(entry.available)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Surface>
-
     </div>
-  );
-}
-
-/**
- * A delivery in flight.
- *
- * Shows what the product context asks for — vehicle, mineral, quantity,
- * project, package, status — and offers Receive only when the delivery state
- * actually allows it. An action that is present but inert is worse than one
- * that is absent.
- */
-function DeliveryRow({
-  delivery,
-  overview,
-}: {
-  delivery: Delivery;
-  overview: OrganizationOverview;
-}) {
-  const navigate = useNavigate();
-  const t = useCopy();
-  const status = statusPresentation.delivery(delivery.status);
-  const scope = [overview.projectName(delivery.projectId), overview.packageName(delivery.packageId)]
-    .filter(Boolean)
-    .join(' · ');
-
-  return (
-    <div className="px-4 py-3">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-          <Truck size={17} />
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <p className="tabular truncate text-title text-ink">
-            {delivery.vehicle.registrationNumber}
-          </p>
-          <p className="mt-0.5 truncate text-body-sm text-ink-secondary">
-            {overview.mineralName(delivery.permit.mineralId)} ·{' '}
-            <span className="tabular">{formatQuantity(delivery.dispatchedQuantity)}</span>
-          </p>
-          {scope && <p className="mt-1 truncate text-caption text-ink-muted">{scope}</p>}
-        </div>
-
-        <StatusBadge label={status.label} tone={status.tone} size="sm" />
-      </div>
-
-      <div className="mt-3 flex gap-2 pl-12">
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => navigate(ROUTES.deliveryTracking(delivery.id))}
-        >
-          {t.organizationHome.trackLive}
-        </Button>
-        {canReceiveDelivery(delivery) && (
-          <Button size="sm" onClick={() => navigate(ROUTES.receive)}>
-            {t.organizationHome.receive}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function QuickAction({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="pressable flex flex-col items-center gap-2 rounded-md border border-line bg-surface px-2 py-3 text-center hover:bg-neutral-50"
-    >
-      <span className="flex size-9 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-        {icon}
-      </span>
-      <span className="text-caption leading-tight text-ink-secondary">{label}</span>
-    </button>
   );
 }

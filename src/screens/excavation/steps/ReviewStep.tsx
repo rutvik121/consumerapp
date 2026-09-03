@@ -3,11 +3,15 @@ import type { Mineral } from '@/domain';
 import { Checkbox, DetailList, type DetailItem } from '@/design-system';
 import {
   APPLICATION_FEE,
+  DEMAND_NOTE_OFFICES,
+  GRAS_OFFICES,
+  PLOT_LOCATIONS,
+  PROPOSAL_APPLICATION_TYPES,
+  PROPOSAL_LEVELS,
   type ApplicationDraft,
   type ApplicationStep,
   formatMoney,
 } from '@/rules';
-import { useCopy } from '@/content';
 import type { AttachedDocument } from '../DocumentChecklist';
 
 export interface ReviewStepProps {
@@ -20,16 +24,14 @@ export interface ReviewStepProps {
 }
 
 /**
- * STEP 5 · READ IT BACK, THEN DECLARE.
+ * STEP 5 · REVIEW SUMMARY & APPLICATION FEE PAYMENT
  *
- * Everything entered, grouped exactly as it was asked, with an edit affordance
- * per group that returns to the step that owns it. A review screen that cannot
- * be acted on is a wall of text: if the applicant spots a wrong depth here,
- * the fix has to be one tap away, not a five-tap walk backwards.
- *
- * The declaration and the fee sit together at the bottom because they are the
- * same moment — accepting the statement is what makes paying meaningful, and
- * paying is what submits the application.
+ * Full read-back of all desktop fields:
+ * - Applicant Details & Tax/ID numbers
+ * - Proposal type, Proposal level, Brass quantity, Lifting days, Reason
+ * - Plot category, location, survey assignments, area in Ha, coordinates, Demand Note & GRAS offices
+ * - Attached documents checklist
+ * - Statutory declaration & application fee
  */
 export function ReviewStep({
   draft,
@@ -39,119 +41,119 @@ export function ReviewStep({
   onDeclarationChange,
   onEdit,
 }: ReviewStepProps) {
-  const t = useCopy();
-  const mineral = minerals.find((candidate) => candidate.id === draft.mineralId);
+  const mineral = minerals.find((m) => m.id === draft.mineralId);
+  const appType = PROPOSAL_APPLICATION_TYPES.find((t) => t.value === draft.applicationType);
+  const propLevel = PROPOSAL_LEVELS.find((l) => l.value === draft.proposalLevel);
+  const plotLoc = PLOT_LOCATIONS.find((p) => p.value === draft.plotLocationType);
+  const dmoOffice = DEMAND_NOTE_OFFICES.find((o) => o.value === draft.demandNoteOffice);
+  const grasOffice = GRAS_OFFICES.find((o) => o.value === draft.grasOfficeName);
 
   const applicant: DetailItem[] = [
-    { label: t.excavation.applicantName, value: draft.fullName },
-    { label: t.excavation.applicantMobile, value: draft.mobileNumber, numeric: true },
-    ...(draft.email ? [{ label: t.excavation.applicantEmail, value: draft.email }] : []),
-    ...(draft.idProofType
-      ? [
-          {
-            label: t.excavation.idProofTypes[draft.idProofType],
-            value: draft.idProofNumber,
-            numeric: true,
-          },
-        ]
-      : []),
+    { label: 'Applicant Name', value: draft.fullName },
+    { label: 'Mobile No.', value: draft.mobileNumber, numeric: true },
+    ...(draft.landlineNumber ? [{ label: 'Landline No.', value: draft.landlineNumber }] : []),
+    { label: 'Email Id', value: draft.email || '—' },
+    { label: 'PAN Number', value: draft.panNumber, numeric: true },
+    ...(draft.aadhaarNumber ? [{ label: 'Aadhaar Number', value: draft.aadhaarNumber, numeric: true }] : []),
+    ...(draft.gstNumber ? [{ label: 'GST Number', value: draft.gstNumber, numeric: true }] : []),
     {
-      label: t.excavation.registeredAddress,
+      label: 'Registered Address',
       value: `${draft.registeredAddressLine}, ${draft.registeredTaluka}, ${draft.registeredDistrict} — ${draft.registeredPincode}`,
     },
   ];
 
-  const excavation: DetailItem[] = [
-    { label: t.excavation.mineral, value: mineral?.name ?? '—' },
+  const proposal: DetailItem[] = [
+    { label: 'Application Type', value: appType?.label ?? draft.applicationType },
+    { label: 'Lease Type', value: 'Temporary' },
+    { label: 'Proposal Level', value: propLevel?.label ?? draft.proposalLevel },
+    { label: 'Mineral', value: mineral?.name ?? '—' },
     {
-      label: t.excavation.estimatedQuantity,
-      value: draft.estimatedQuantity === null ? '—' : `${draft.estimatedQuantity} MT`,
+      label: 'Excavation Quantity',
+      value: draft.excavationQuantityBrass ? `${draft.excavationQuantityBrass} Brass (~${Math.round(draft.excavationQuantityBrass * 4.5)} MT)` : '—',
       numeric: true,
     },
-    ...(draft.excavationMethod
-      ? [
-          {
-            label: t.excavation.excavationMethod,
-            value: t.excavation.excavationMethods[draft.excavationMethod],
-          },
-        ]
-      : []),
-    { label: t.excavation.purpose, value: draft.purpose },
-    ...(draft.remarks ? [{ label: t.excavation.remarks, value: draft.remarks }] : []),
+    {
+      label: 'Lifting Period',
+      value: draft.liftingPeriodDays ? `${draft.liftingPeriodDays} Days` : '—',
+      numeric: true,
+    },
+    { label: 'Reason For Applying', value: draft.reasonForApplying || '—' },
   ];
 
+  const surveySummary = draft.surveyEntries.length > 0
+    ? draft.surveyEntries.map((s) => `Survey ${s.surveyNumber} (${s.sevenTwelveAttached ? '7/12 Verified' : 'Standard'})`).join(', ')
+    : draft.surveyNumber;
+
   const location: DetailItem[] = [
-    { label: t.excavation.village, value: draft.villageName },
-    { label: t.excavation.taluka, value: draft.talukaName },
-    { label: t.excavation.district, value: draft.districtName },
-    { label: t.excavation.surveyNumber, value: draft.surveyNumber, numeric: true },
-    ...(draft.subDivisionNumber
-      ? [{ label: t.excavation.subDivisionNumber, value: draft.subDivisionNumber, numeric: true }]
-      : []),
-    ...(draft.landType
-      ? [{ label: t.excavation.landType, value: t.excavation.landTypes[draft.landType] }]
-      : []),
-    { label: t.excavation.area, value: `${draft.areaInSqm ?? '—'} sq m`, numeric: true },
+    { label: 'Category', value: draft.category === 'RURAL' ? 'Rural' : 'Urban' },
+    { label: 'Plot Location', value: plotLoc?.label ?? draft.plotLocationType },
+    { label: 'District', value: draft.districtName || draft.districtCode || '—' },
+    { label: 'Taluka / CTSO', value: draft.talukaName || draft.talukaCode || '—' },
+    { label: 'Village / City', value: draft.villageName || draft.villageCode || '—' },
+    { label: 'Assigned Surveys', value: surveySummary, numeric: true },
     {
-      label: t.excavation.siteAddressLabel,
-      value: `${draft.addressLine} — ${draft.pincode}`,
+      label: 'Total Plot Area',
+      value: `${draft.totalPlotAreaHectare ?? '—'} Hectare (${(draft.totalPlotAreaHectare ?? 0) * 10000} sq m)`,
+      numeric: true,
     },
     {
-      label: t.excavation.coordinates,
+      label: 'Coordinates',
       value: draft.siteGeo
         ? `${draft.siteGeo.latitude.toFixed(5)}, ${draft.siteGeo.longitude.toFixed(5)}`
         : '—',
       numeric: true,
     },
+    { label: 'Office For Demand Note', value: dmoOffice?.label ?? draft.demandNoteOffice },
+    { label: 'GRAS Office Name', value: grasOffice?.label ?? draft.grasOfficeName },
   ];
 
   return (
     <div className="space-y-5">
       <ReviewSection
-        title={t.excavation.applicant}
+        title="Applicant & Identity Details"
         items={applicant}
         onEdit={() => onEdit('APPLICANT')}
       />
       <ReviewSection
-        title={t.excavation.excavationDetails}
-        items={excavation}
+        title="Proposal & Excavation Details"
+        items={proposal}
         onEdit={() => onEdit('EXCAVATION')}
       />
       <ReviewSection
-        title={t.excavation.site}
+        title="Plot, Survey & Treasury Offices"
         items={location}
         onEdit={() => onEdit('LOCATION')}
       />
       <ReviewSection
-        title={t.excavation.documents}
+        title="Uploaded Documents"
         items={
           documents.length === 0
-            ? [{ label: t.excavation.documents, value: t.excavation.noDocuments }]
-            : documents.map((document) => ({
-                label: document.documentType,
-                value: document.fileName,
+            ? [{ label: 'Clearances', value: 'No documents attached (Can be submitted during review)' }]
+            : documents.map((doc) => ({
+                label: doc.documentType,
+                value: `${doc.fileName} ${doc.documentNumber ? `(Ref: ${doc.documentNumber})` : ''}`,
               }))
         }
         onEdit={() => onEdit('DOCUMENTS')}
       />
 
-      <div className="rounded-lg border border-line-strong bg-surface">
-        <p className="border-b border-line px-4 py-2.5 text-label text-ink-secondary">
-          {t.excavation.paymentSummary}
+      <div className="rounded-xl border border-line bg-surface p-4 shadow-xs">
+        <p className="text-label font-bold text-ink-secondary mb-2">
+          Application Fee Summary
         </p>
-        <div className="flex items-baseline justify-between gap-4 px-4 py-3">
-          <span className="text-body text-ink">{t.excavation.applicationFee}</span>
-          <span className="tabular text-title-lg text-ink">{formatMoney(APPLICATION_FEE)}</span>
+        <div className="flex items-baseline justify-between border-t border-line/60 pt-3">
+          <div>
+            <span className="text-body font-semibold text-ink">Statutory Application Fee</span>
+            <p className="text-caption text-ink-muted">Payable to Revenue Dept via GRAS Cyber Treasury</p>
+          </div>
+          <span className="tabular text-title-lg font-bold text-ink">{formatMoney(APPLICATION_FEE)}</span>
         </div>
-        <p className="border-t border-line px-4 py-2.5 text-caption text-ink-muted">
-          {t.excavation.feeNote}
-        </p>
       </div>
 
       <Checkbox
         checked={draft.declarationAccepted}
         onChange={onDeclarationChange}
-        label={t.excavation.declarationText}
+        label="I solemnly declare that all particulars entered above are true, and the excavation will be executed strictly within permitted boundaries in compliance with the Maharashtra Minor Mineral Extraction Rules."
         {...(errors.declarationAccepted ? { error: errors.declarationAccepted } : {})}
       />
     </div>
@@ -167,23 +169,20 @@ function ReviewSection({
   items: DetailItem[];
   onEdit: () => void;
 }) {
-  const t = useCopy();
-
   return (
-    <section className="overflow-hidden rounded-lg border border-line-strong bg-surface">
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
-        <h3 className="text-label text-ink-secondary">{title}</h3>
+    <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-xs">
+      <div className="flex items-center justify-between gap-3 border-b border-line bg-neutral-50 px-4 py-2.5">
+        <h3 className="text-label font-bold text-ink">{title}</h3>
         <button
           type="button"
           onClick={onEdit}
-          className="flex items-center gap-1 rounded px-1 py-0.5 text-caption text-primary-600 hover:bg-primary-50"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-caption font-semibold text-primary-700 hover:bg-primary-50 transition-colors"
         >
           <Pencil size={12} aria-hidden />
-          {t.excavation.editStep}
+          Edit
         </button>
       </div>
       <DetailList items={items} />
     </section>
   );
 }
-

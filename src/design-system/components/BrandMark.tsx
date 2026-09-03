@@ -1,45 +1,46 @@
 import { cn } from '../utils/cn';
+import mahakhanijLogo from '@/assets/mahakhanij-logo.png';
 
 export interface BrandMarkProps {
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
   /** Shows the Revenue Department attribution beneath the name. */
   showAttribution?: boolean;
+  /** Whether to show the text title beneath the logo (defaults to false since logo includes wordmark) */
+  showTitle?: boolean;
   className?: string;
 }
 
 /**
  * The application's identity.
  *
- * The quarry-face glyph is the source end of the journey this app completes,
- * and the attribution line is what grounds the product as government-connected
- * rather than a private marketplace. Both matter on the first screen a user
- * ever sees, where trust is established or lost.
+ * Displays the official MahaKhanij 2.0 logo with the optional Revenue Department
+ * attribution grounding the product as government-connected.
  */
-export function BrandMark({ size = 'md', showAttribution = false, className }: BrandMarkProps) {
-  const glyph = size === 'lg' ? 'size-14' : 'size-10';
+export function BrandMark({
+  size = 'md',
+  showAttribution = false,
+  showTitle = false,
+  className,
+}: BrandMarkProps) {
+  const logoHeight =
+    size === 'lg' ? 'h-16 sm:h-[72px]' : size === 'sm' ? 'h-8' : 'h-11';
 
   return (
     <div className={cn('flex flex-col items-center text-center', className)}>
-      <svg viewBox="0 0 32 32" className={cn(glyph, 'rounded-lg')} role="img" aria-label="Mahakhanij">
-        <rect width="32" height="32" rx="7" fill="var(--color-primary-800)" />
-        <path d="M6 23h5v-4h5v-4h5v-4h5v12H6z" fill="var(--color-primary-400)" opacity=".55" />
-        <path
-          d="M6 23h5v-4h5v-4h5v-4h5"
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="26" cy="11" r="2.4" fill="#ffffff" />
-      </svg>
+      <img
+        src={mahakhanijLogo}
+        alt="MahaKhanij 2.0"
+        className={cn(logoHeight, 'w-auto object-contain select-none')}
+      />
 
-      <p className={cn('mt-3 text-ink', size === 'lg' ? 'text-display' : 'text-title-lg')}>
-        Mahakhanij
-      </p>
+      {showTitle && (
+        <p className={cn('mt-3 text-ink font-semibold', size === 'lg' ? 'text-display' : 'text-title-lg')}>
+          Mahakhanij
+        </p>
+      )}
 
       {showAttribution && (
-        <p className="mt-1.5 max-w-[26ch] text-caption text-ink-muted">
+        <p className="mt-2.5 max-w-[28ch] text-caption text-ink-muted">
           Revenue Department, Government of Maharashtra
         </p>
       )}

@@ -39,6 +39,8 @@ import {
   ApplicationDetailsScreen,
   NewApplicationScreen,
   PaymentScreen,
+  RegisterSupervisorScreen,
+  SupervisorsScreen,
   TemporaryExcavationScreen,
   WelcomeScreen,
 } from '@/screens';
@@ -148,6 +150,22 @@ export function AppRouter() {
             element={
               <RoleGuard capability="VIEW_PACKAGES">
                 <PackageDetailsScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.supervisors}
+            element={
+              <RoleGuard capability="VIEW_PACKAGES">
+                <SupervisorsScreen />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path={ROUTES.registerSupervisor}
+            element={
+              <RoleGuard capability="VIEW_PACKAGES">
+                <RegisterSupervisorScreen />
               </RoleGuard>
             }
           />

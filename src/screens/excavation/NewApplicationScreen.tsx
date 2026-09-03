@@ -124,7 +124,7 @@ export function NewApplicationScreen() {
                 documents={form.documents}
                 attachedKinds={form.attachedKinds}
                 errors={form.errors}
-                onAttach={(kind) => form.attach(kind, t.excavation.docTypes[kind])}
+                onAttach={(kind, label, docNum) => form.attach(kind, label, docNum)}
                 onRemove={form.detach}
               />
             )}
