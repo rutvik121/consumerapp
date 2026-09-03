@@ -36,8 +36,8 @@ export const PERSONAS: Persona[] = [
   },
   {
     id: 'consumer',
-    label: 'Normal Consumer',
-    description: 'Aniket Deshmukh, Nashik — individual buyer, no organization.',
+    label: 'Individual',
+    description: 'Aniket Deshmukh, Nashik — individual citizen buyer, no organization.',
     user: consumerUser,
     organization: null,
   },

@@ -26,15 +26,6 @@ import { useCurrentOrganization, useCurrentUser, useOrganizationContextStore, us
 import { copy } from '@/content';
 import { FoundationCheck } from '@/prototype/FoundationCheck';
 
-/**
- * The one route in Increment 0 that is genuinely functional, because sign-out
- * and account identity are needed to exercise everything else.
- *
- * It is also where role-based access is most visible: Temporary Excavation and
- * Organization appear here for an Organization user and are simply absent for a
- * Normal Consumer — driven by the same capability matrix as navigation and the
- * route guards, never by a second hand-written condition.
- */
 export function MoreScreen() {
   const user = useCurrentUser();
   const organization = useCurrentOrganization();
@@ -58,90 +49,31 @@ export function MoreScreen() {
 
   return (
     <Screen title={copy.nav.more}>
-      {/* Account identity */}
-      <div className="bg-surface px-4 py-5">
-        <p className="text-title-lg text-ink">{user.fullName}</p>
-        <p className="mt-0.5 text-body-sm text-ink-secondary tabular">{user.mobileNumber}</p>
-        <div className="mt-3">
+      {/* Account identity Header Card */}
+      <div className="bg-surface px-4 py-5 border-b border-line">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h2 className="text-title-lg font-bold text-ink">{user.fullName}</h2>
           <StatusBadge
             label={copy.userType[user.userType]}
             tone={user.userType === 'ORGANIZATION' ? 'info' : 'neutral'}
           />
         </div>
+        <p className="mt-0.5 text-body-sm text-ink-secondary tabular">{user.mobileNumber}</p>
         {organization && (
-          <p className="mt-3 text-body-sm text-ink-secondary">{organization.name}</p>
+          <div className="mt-3 pt-2.5 border-t border-line text-body-sm text-ink-secondary">
+            <p className="font-semibold text-ink">{organization.name}</p>
+            <p className="text-caption text-neutral-500 font-mono">
+              {copy.organizationType[organization.type]} · {organization.registrationNumber}
+            </p>
+          </div>
         )}
       </div>
 
-      <SectionHeader title="Operations" />
-      <ListGroup className="border-y border-line">
-        <ListRow
-          leading={<Warehouse size={17} />}
-          title="Inventory"
-          subtitle="Received, consumed and available quantity"
-          onClick={() => navigate(ROUTES.inventory)}
-          trailing={null}
-        />
-        <ListRow
-          leading={<FileText size={17} />}
-          title="Enquiries"
-          subtitle="Mineral requirements you have raised"
-          onClick={() => navigate(ROUTES.enquiries)}
-          trailing={null}
-        />
-        <ListRow
-          leading={<PackageIcon size={17} />}
-          title="Receive Mineral"
-          subtitle="Verify and receive an arriving vehicle"
-          onClick={() => navigate(ROUTES.receive)}
-          trailing={null}
-        />
-        <ListRow
-          leading={<BarChart3 size={17} />}
-          title="Reports & Statements"
-          subtitle="DigiTP transit pass logs, tax summaries and material receipts"
-          onClick={() => navigate(ROUTES.reports)}
-          trailing={null}
-        />
-        {user.userType === 'NORMAL_CONSUMER' && (
-          <ListRow
-            leading={<Building2 size={17} />}
-            title="Minerals"
-            subtitle="Explore mineral availability and nearby stock points"
-            onClick={() => navigate(ROUTES.mineral)}
-            trailing={null}
-          />
-        )}
-      </ListGroup>
-
-      {user.userType === 'NORMAL_CONSUMER' && (
-        <>
-          <SectionHeader title="More options" />
-          <ListGroup className="border-y border-line">
-            <ListRow
-              leading={<Building2 size={17} />}
-              title="Projects"
-              subtitle="Create and manage your registered sites"
-              onClick={() => navigate(ROUTES.consumerProjects)}
-              trailing={null}
-            />
-          </ListGroup>
-        </>
-      )}
-
-      {/* ORGANIZATION ONLY — absent, not disabled, for Normal Consumers. */}
+      {/* ORGANIZATION MANAGEMENT ON TOP (For Organization users) */}
       {(canSeeExcavation || canSeeOrganization) && (
         <>
-          <SectionHeader title="Organization" />
+          <SectionHeader title="Organization Management" />
           <ListGroup className="border-y border-line">
-            {canSeeOrganization && organization && (
-              <ListRow
-                leading={<Building2 size={17} />}
-                title={organization.name}
-                subtitle={`${copy.organizationType[organization.type]} · ${organization.registrationNumber}`}
-                trailing={null}
-              />
-            )}
             {canSeeOrganization && (
               <ListRow
                 leading={<UserCheck size={17} />}
@@ -162,6 +94,58 @@ export function MoreScreen() {
           </ListGroup>
         </>
       )}
+
+      <SectionHeader title="Operations" />
+      <ListGroup className="border-y border-line">
+        <ListRow
+          leading={<Warehouse size={17} />}
+          title="Inventory"
+          subtitle="Received, consumed and available quantity"
+          onClick={() => navigate(ROUTES.inventory)}
+          trailing={null}
+        />
+        {user.userType === 'NORMAL_CONSUMER' && (
+          <ListRow
+            leading={<Building2 size={17} />}
+            title="Projects"
+            subtitle="Create and manage your registered sites"
+            onClick={() => navigate(ROUTES.consumerProjects)}
+            trailing={null}
+          />
+        )}
+        <ListRow
+          leading={<FileText size={17} />}
+          title="Enquiries"
+          subtitle="Mineral requirements you have raised"
+          onClick={() => navigate(ROUTES.enquiries)}
+          trailing={null}
+        />
+        <ListRow
+          leading={<PackageIcon size={17} />}
+          title="Receive Mineral"
+          subtitle="Verify and receive an arriving vehicle"
+          onClick={() => navigate(ROUTES.receive)}
+          trailing={null}
+        />
+        {user.userType === 'ORGANIZATION' && (
+          <ListRow
+            leading={<BarChart3 size={17} />}
+            title="Reports & Statements"
+            subtitle="DigiTP transit pass logs, tax summaries and material receipts"
+            onClick={() => navigate(ROUTES.reports)}
+            trailing={null}
+          />
+        )}
+        {user.userType === 'NORMAL_CONSUMER' && (
+          <ListRow
+            leading={<Building2 size={17} />}
+            title="Minerals"
+            subtitle="Explore mineral availability and nearby stock points"
+            onClick={() => navigate(ROUTES.mineral)}
+            trailing={null}
+          />
+        )}
+      </ListGroup>
 
       {/* ==== PROTOTYPE ONLY — remove with src/prototype ==== */}
       <SectionHeader title={copy.prototype.demoSection} />

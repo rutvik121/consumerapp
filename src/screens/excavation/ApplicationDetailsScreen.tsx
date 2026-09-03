@@ -95,140 +95,214 @@ export function ApplicationDetailsScreen() {
   if (application && (hasExcavationOrder(application) || payments.some((p) => p.purpose === 'DEMAND_NOTE'))) issuedDocsCount += 1; // Royalty Receipt
   if (application && hasExcavationOrder(application)) issuedDocsCount += 1; // Permit Certificate
 
-  // 1. Download Official Excavation Permit
+  // 1. Download Official Excavation Permit (PDF 3 Format: Ordnrno-04/08/2026-1)
   const handleDownloadPermit = () => {
     if (!application || !application.excavationOrder) return;
     setDownloading(true);
     try {
-      const content = `=====================================================
-GOVERNMENT OF MAHARASHTRA
-DEPARTMENT OF MINES & GEOLOGY
-OFFICIAL TEMPORARY EXCAVATION & MOVEMENT PERMIT
-=====================================================
-Permit / Order No      : ${application.excavationOrder.orderNumber}
-Application Ref No     : ${application.applicationNumber}
-Issue Date             : ${formatDate(application.excavationOrder.issuedAt)}
-Status                 : OFFICIAL EXTRACTION PERMIT GRANTED
------------------------------------------------------
-APPLICANT & ENTITY DETAILS
-Applicant Name         : ${application.applicant.fullName}
-Entity / Organization  : Maharashtra Infrastructure Corporation Ltd.
-Authorized Signatory   : Aadhaar Verified (•••• 9104)
-Mobile Number          : ${application.applicant.mobileNumber}
------------------------------------------------------
-MINERAL & EXCAVATION SPECIFICATIONS
-Authorized Mineral     : ${mineral?.name || 'Murum / Earth'}
-Permitted Quantity     : ${formatQuantity(application.excavationOrder.permittedQuantity)}
-Excavation Method      : ${application.excavationMethod}
-Survey / Plot Number   : ${application.surveyNumber}
-Village & Taluka       : ${application.village}, ${application.siteAddress.taluka}
-District               : ${application.siteAddress.district}
-Land Classification    : ${application.landType}
-Valid From             : ${formatDate(application.excavationOrder.validFrom)}
-Valid Until            : ${formatDate(application.excavationOrder.validUntil)}
------------------------------------------------------
-FINANCIAL & ROYALTY SETTLEMENT
-Demand Note Ref        : ${application.demandNote?.demandNoteNumber || 'DN/2026/004471'}
-Royalty Amount Paid    : ${application.demandNote ? formatMoney(application.demandNote.totalAmount) : '₹4,03,200'}
-GRAS Challan Ref       : MHA-GRAS-998241
-Payment Status         : FULLY SETTLED (TREASURY VERIFIED)
------------------------------------------------------
-This is a digitally signed electronic permit authorized by the District Collectorate & Mining Officer, Government of Maharashtra.
-=====================================================`;
+      const content = `================================================================================
+महाराष्ट्र शासन — महसूल व वन विभाग
+तहसीलदार तथा तालुका दंडाधिकारी कार्यालय, अहमदनगर
+अल्प / तात्पुरता मुदतीचा गौण खनिज उत्खनन परवाना आदेश
+================================================================================
+आदेश क्रमांक (Order No)   : ${application.excavationOrder.orderNumber || 'Ordnrno-04/08/2026-1'}
+दिनांक (Issue Date)       : ${formatDate(application.excavationOrder.issuedAt || '2026-08-04')}
+अर्ज संदर्भ (App Ref)     : ${application.applicationNumber || 'MK/TPPA/20260804-1'}
+कार्यालय पत्ता (Office)    : Nagar Tahsil Office, Savedi, Ahmednagar 414003
+ई-मेल / संपर्क            : nagartahsildar@gmail.com
+--------------------------------------------------------------------------------
+परवानाधारक व जागेचा तपशील (LESSEE & SITE SPECIFICATIONS)
+अर्जदार / परवानाधारक      : ${application.applicant.fullName || 'Kira K Patil'}
+पत्ता (Address)           : Pune, Maharashtra, India (Mobile: ${application.applicant.mobileNumber})
+गाव / तालुका (Village)    : ${application.village || 'Bardari'}, ${application.siteAddress.taluka || 'Ahmednagar'}
+जिल्हा (District)         : ${application.siteAddress.district || 'Ahilyanagar'}
+स.नं / गट नं (Survey No)  : ${application.surveyNumber || '76'}
+उत्खननाचे क्षेत्र (Area)  : ${application.areaInSqm ? (application.areaInSqm / 10000).toFixed(2) : '5.00'} हे.आर
+गौण खनिज प्रकार (Mineral) : ${mineral?.name || 'Stone / Murum'}
+गौण खनिज परिमाण (Volume)  : ${formatQuantity(application.excavationOrder.permittedQuantity)} (100 Brass)
+मुदत (Validity Period)    : ${formatDate(application.excavationOrder.validFrom)} ते ${formatDate(application.excavationOrder.validUntil)}
+--------------------------------------------------------------------------------
+शासकीय जमा रकमांचा तपशील (OFFICIAL PAYMENT SCHEDULE)
+अ.क्र  तपशील                               रक्कम (रू.)     धनादेश / चलन क्र     भरणा दिनांक
+1      अर्ज फी (Application Fee)           520.00         MH091123313123      04-08-2026
+2      स्वामित्वधन (Royalty 100 Brass)     60000.00       MH091123313123      04-08-2026
+3      जिल्हा खनिज प्रतिष्ठान (DMF 10%)    6000.00        DM No. - 272        04-08-2026
+4      वाहतूक पासेस / SI Charges with tax  4814.40        DM No. - 272        04-08-2026
+5      TDS                                 0.00           —                   —
+--------------------------------------------------------------------------------
+एकूण भरलेली रक्कम (Total Paid)             ₹71,334.00
+--------------------------------------------------------------------------------
+Digitally Signed by:
+Akash Khutwad
+Tahsildar Ahmednagar, Ahilyanagar
+================================================================================
+टीप: सदर आदेश महाखनिज संगणकीय प्रणालीद्वारे तयार केलेला असून स्वाक्षरीची आवश्यकता नाही.`;
 
-      triggerDownload(content, `Permit_${application.excavationOrder.orderNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
+      triggerDownload(content, `Permit_Order_${application.excavationOrder.orderNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
     } finally {
       setTimeout(() => setDownloading(false), 500);
     }
   };
 
-  // 2. Download Application Fee Receipt
+  // 2. Download Application Fee Demand Note (PDF 1 Format: DM No. 244)
+  const handleDownloadApplicationFeeDemandNote = () => {
+    if (!application) return;
+    const content = `================================================================================
+REVENUE DEPARTMENT, GOVERNMENT OF MAHARASHTRA
+MAHAKHANIJ — DEMAND NOTE (APPLICATION FEE)
+================================================================================
+DM No.                 : 244
+Date & Time            : 03-08-2026 09:57:06 AM
+Tahsil Office          : Tahsil Office Akole, Amrut Nagar, Akole 422601
+Contact & Email        : 9226055647 | tahsildarakole@gmail.com
+Jurisdiction           : Maharashtra/ Nashik/ Ahilyanagar/ Sangamner/ Akole
+--------------------------------------------------------------------------------
+APPLICATION & LESSEE DETAILS
+Application No.        : ${application.applicationNumber || 'MK/TPPA/20260803-1'}
+Applicant Name         : ${application.applicant.fullName || 'Kira K Patil'}
+Mobile Number          : ${application.applicant.mobileNumber || '7543534535'}
+Address                : Pune, Maharashtra, India
+Lessee / Permit Holder : ${application.applicant.fullName.toUpperCase() || 'KIRA K PATIL'}
+PAN No.                : ${application.applicant.idProofNumber || 'LKMJK0987F'}
+Email ID               : kirank@gmail.com
+--------------------------------------------------------------------------------
+PLOT & EXCAVATION SPECIFICATIONS
+District               : ${application.siteAddress.district || 'Ahilyanagar'}
+SubDivision / Taluka   : ${application.siteAddress.taluka || 'Ahmednagar'}
+City / Village         : ${application.village || 'Avhadwadi'}
+Survey / Plot / Gat No : ${application.surveyNumber || '323'}
+Permit Type            : TTP (Temporary Transport Permit)
+Primary Mineral        : ${mineral?.name || 'Stone'}
+Quantity               : ${formatQuantity(application.estimatedQuantity)} (122 Brass)
+--------------------------------------------------------------------------------
+FEE ASSESSMENT
+Application Fee Payable: ₹520.00
+Challan Ref            : MH091123313123
+Payment Status         : ${application.status !== 'DRAFT' ? 'PAID & SETTLED' : 'PAYMENT DUE'}
+--------------------------------------------------------------------------------
+* Note:
+1. This is a system generated Demand note, no signature is required.
+2. Transport Permit will be issued only after successful completion and verification of Payment.
+3. Pay application fee within 30 days, otherwise it will not be considered for further process.
+
+Tahsildar Akole, Ahilyanagar
+Copyright © 2026 mahakhanij All Rights Reserved.
+================================================================================`;
+    triggerDownload(content, `Demand_Note_App_Fee_DM244_${application.applicationNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
+  };
+
+  // 3. Download Application Fee Payment Receipt (Challan MH091123313123)
   const handleDownloadApplicationFeeReceipt = () => {
     if (!application) return;
-    const content = `=====================================================
+    const content = `================================================================================
 GOVERNMENT OF MAHARASHTRA — GRAS e-RECEIPT
-DEPARTMENT OF MINES & GEOLOGY
+DEPARTMENT OF REVENUE & FORESTS (MAHAKHANIJ)
 APPLICATION FEE PAYMENT ACKNOWLEDGEMENT
-=====================================================
-Challan / Receipt No   : MHA-GRAS-110294
+================================================================================
+GRAS Challan Number    : MH091123313123
 Application Ref No     : ${application.applicationNumber}
-Payment Date           : ${application.submittedAt ? formatDate(application.submittedAt) : '17 Aug 2026'}
-Payment Mode           : Online Net Banking (State Bank of India)
------------------------------------------------------
-Fee Description        : Temporary Excavation Application Processing Fee
-Amount Paid            : ₹1,000.00 (One Thousand Rupees Only)
-Status                 : SUCCESS / TREASURY CREDITED
------------------------------------------------------
+Payment Date           : ${application.submittedAt ? formatDate(application.submittedAt) : '04-08-2026'}
+Payment Mode           : Online Net Banking / GRAS Treasury Portal
+--------------------------------------------------------------------------------
+FEE PARTICULARS
+Head of Account        : 0853-00-102-01 (Mines & Minerals Application Processing Fee)
+Amount Paid            : ₹520.00 (Five Hundred Twenty Rupees Only)
+Payment Status         : SUCCESS / TREASURY CREDITED
+--------------------------------------------------------------------------------
 Applicant Name         : ${application.applicant.fullName}
-Entity                 : Maharashtra Infrastructure Corporation Ltd.
-District               : ${application.siteAddress.district}
-=====================================================`;
-    triggerDownload(content, `Receipt_Application_Fee_${application.applicationNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
+Entity / Jurisdiction  : Tahsil Office Akole / Ahmednagar, Ahilyanagar
+================================================================================`;
+    triggerDownload(content, `Receipt_Application_Fee_MH091123313123_${application.applicationNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
   };
 
-  // 3. Download Demand Note Assessment Copy
+  // 4. Download Royalty & DMF Demand Note (PDF 2 Format: DM No. 936)
   const handleDownloadDemandNoteAssessment = () => {
     if (!application || !application.demandNote) return;
-    const content = `=====================================================
-GOVERNMENT OF MAHARASHTRA
-DEPARTMENT OF MINES & GEOLOGY
-DEMAND NOTE & ROYALTY ASSESSMENT
-=====================================================
-Demand Note Number     : ${application.demandNote.demandNoteNumber}
-Application Ref No     : ${application.applicationNumber}
-Issued Date            : ${formatDate(application.demandNote.issuedAt)}
-Due Date               : ${formatDate(application.demandNote.dueDate)}
------------------------------------------------------
-ASSESSMENT BREAKDOWN
-Mineral Name           : ${mineral?.name || 'Murum / Earth'}
-Estimated Volume       : ${formatQuantity(application.estimatedQuantity)}
-${application.demandNote.breakdown.map((b) => `${b.label.padEnd(23)}: ${formatMoney(b.amount)}`).join('\n')}
------------------------------------------------------
-TOTAL AMOUNT PAYABLE   : ${formatMoney(application.demandNote.totalAmount)}
-Payable To             : Government Treasury, Mahakhnij Account
------------------------------------------------------
-Issued by: District Mining Officer, ${application.siteAddress.district}
-=====================================================`;
-    triggerDownload(content, `Demand_Note_${application.demandNote.demandNoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
+    const content = `================================================================================
+REVENUE DEPARTMENT, GOVERNMENT OF MAHARASHTRA
+MAHAKHANIJ — DEMAND NOTE (ROYALTY & CHARGES)
+================================================================================
+DM No.                 : 936
+Date & Time            : 02-09-2026 06:06:43 PM
+Office Address         : Nagar Tahsil Office, Zila Prashaskiy Building, TV Center, Savedi, Ahmednagar 414003
+Contact & Email        : 9766860900 | nagartahsildar@gmail.com
+Jurisdiction           : Maharashtra/ Nashik/ Ahilyanagar/ Ahmednagar/ Ahmednagar
+--------------------------------------------------------------------------------
+LESSEE & PLOT DETAILS
+Lessee Name            : ${application.applicant.fullName || 'SATISH GARG'}
+Address                : Pune, Maharashtra, India
+Mobile Number          : ${application.applicant.mobileNumber || '6435435345'}
+PAN Number             : ${application.applicant.idProofNumber || 'ANDPG4491M'}
+Plot Name / Gat No.    : Gat No-${application.surveyNumber || '323'}, ${application.village || 'Ismalpur'}
+Plot Type              : Quarry
+Issuing Authority      : TAHSILDAR NAGAR
+Permit Type            : TTP | TP Type: RTP
+Primary Mineral        : ${mineral?.name || 'Stone'} | Quantity: ${formatQuantity(application.estimatedQuantity)} (10.00 Brass)
+--------------------------------------------------------------------------------
+PAYMENT BREAKDOWN
+PART A : GOVERNMENT RECEIPT ACCOUNTING SYSTEM (GRAS)
+Sr.No  Account Head Details                 Amount (₹)
+1      Fees and Royalties                   ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.75), currency: 'INR' })}
+       Total Amount (Part A)                ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.75), currency: 'INR' })}
+
+PART B : MAHAKHANIJ PORTAL
+Sr.No  Account Head Details                 Amount (₹)
+1      Ahmednagar DMF (10% of Royalty)       ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.10), currency: 'INR' })}
+2      SI Charges                           ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.08), currency: 'INR' })}
+3      SI Tax (18% GST on SI Charges)       ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.015), currency: 'INR' })}
+4      Ahmednagar TCS                       ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.02), currency: 'INR' })}
+5      SI_ROFF                              ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.035), currency: 'INR' })}
+       Total Amount (Part B)                ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.25), currency: 'INR' })}
+--------------------------------------------------------------------------------
+GRAND TOTAL AMOUNT PAYABLE : ${formatMoney(application.demandNote.totalAmount)}
+================================================================================
+Note:
+1. This is a system generated Demand note, no signature is required.
+2. Transport Permit will be issued only after successful completion and verification of Payment.
+
+Tahsildar Ahmednagar, Ahilyanagar
+Copyright © 2026 Revenue Department, Government of Maharashtra, India.
+================================================================================`;
+    triggerDownload(content, `Demand_Note_DM936_${application.demandNote.demandNoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
   };
 
-  // 4. Download Royalty Payment Receipt
+  // 5. Download Royalty Payment Challan Receipt
   const handleDownloadDemandNoteReceipt = () => {
     if (!application) return;
-    const total = application.demandNote ? formatMoney(application.demandNote.totalAmount) : '₹4,03,200';
-    const content = `=====================================================
+    const total = application.demandNote ? formatMoney(application.demandNote.totalAmount) : '₹71,334.00';
+    const content = `================================================================================
 GOVERNMENT OF MAHARASHTRA — GRAS e-CHALLAN RECEIPT
-DEPARTMENT OF MINES & GEOLOGY
-MINERAL EXTRACTION ROYALTY RECEIPT
-=====================================================
-GRAS Challan Number    : MHA-GRAS-998241
-Demand Note Ref        : ${application.demandNote?.demandNoteNumber || 'DN/2026/004471'}
+DEPARTMENT OF REVENUE & FORESTS (MAHAKHANIJ)
+MINERAL EXTRACTION ROYALTY & LEVY RECEIPT
+================================================================================
+GRAS Challan Number    : MH091123313123 / DM-272
+Demand Note Ref        : ${application.demandNote?.demandNoteNumber || 'DM No. 936'}
 Application Ref No     : ${application.applicationNumber}
 Payment Date           : ${formatDate(application.statusUpdatedAt || new Date().toISOString())}
-Payment Mode           : NEFT/RTGS Treasury Transfer
------------------------------------------------------
+Payment Mode           : Online Net Banking / SBI e-Pay Treasury Transfer
+--------------------------------------------------------------------------------
 Total Royalty Paid     : ${total}
-Status                 : TRANSACTION SUCCESSFUL (VERIFIED)
-Bank Ref / UTR         : SBI-UTR-20260826998241
------------------------------------------------------
+Payment Status         : TRANSACTION SUCCESSFUL (VERIFIED & SETTLED)
+Treasury Scroll Ref    : MAH-GRAS-20260902-99824
+--------------------------------------------------------------------------------
 Payer Entity           : Maharashtra Infrastructure Corporation Ltd.
-Authorized Mineral     : ${mineral?.name || 'Murum / Earth'}
-Site Survey No         : ${application.surveyNumber}, ${application.village}, ${application.siteAddress.taluka}
-=====================================================`;
-    triggerDownload(content, `Royalty_Receipt_${(application.demandNote?.demandNoteNumber || 'DN-001').replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
+Authorized Mineral     : ${mineral?.name || 'Stone / Murum'}
+Site Survey / Gat No   : ${application.surveyNumber}, ${application.village}, ${application.siteAddress.taluka}
+================================================================================`;
+    triggerDownload(content, `Royalty_Challan_Receipt_${(application.demandNote?.demandNoteNumber || 'DM936').replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`);
   };
 
-  // 5. Download Attached Document Copy
+  // 6. Download Attached Compliance Document
   const handleDownloadAttachedDoc = (fileName: string, docType: string) => {
-    const content = `=====================================================
-MAHAKHANIJ COMPLIANCE DOCUMENT RECORD
-=====================================================
+    const content = `================================================================================
+MAHAKHANIJ COMPLIANCE DOCUMENT ARCHIVE
+================================================================================
 Document Type          : ${docType}
 File Name              : ${fileName}
 Application Ref No     : ${application?.applicationNumber}
 Uploaded At            : Verified Government Submission
 Status                 : Digitally Archived
-=====================================================`;
+================================================================================`;
     triggerDownload(content, `${fileName}.txt`);
   };
 
@@ -419,8 +493,8 @@ Status                 : Digitally Archived
                       </div>
                       <p className="text-[12px] text-neutral-500 mt-0.5">
                         {application.status === 'DRAFT'
-                          ? 'Application fee of ₹1,000 pending payment to submit for review.'
-                          : 'Application fee of ₹1,000 paid & verified via GRAS (Receipt: MHA-GRAS-110294).'}
+                          ? 'Application fee of ₹520 pending payment to submit for review.'
+                          : 'Application fee of ₹520 paid & verified via GRAS (Receipt: MH091123313123).'}
                       </p>
                     </div>
                   </div>
@@ -487,7 +561,7 @@ Status                 : Digitally Archived
                       </div>
                       <p className="text-[12px] text-neutral-500 mt-0.5">
                         {application.demandNote
-                          ? `Royalty assessment completed (${formatMoney(application.demandNote.totalAmount)}). Notice: ${application.demandNote.demandNoteNumber}.`
+                          ? `Royalty assessment completed (${formatMoney(application.demandNote.totalAmount)}). Notice: ${application.demandNote.demandNoteNumber || 'DM No. 936'}.`
                           : 'Official assessment of mineral extraction royalty, DMF, and district cess.'}
                       </p>
                     </div>
@@ -724,99 +798,123 @@ Status                 : Digitally Archived
               {/* 1. Excavation Permit (if ORDER_ISSUED) */}
               {hasExcavationOrder(application) && application.excavationOrder && (
                 <div className="rounded-2xl border border-[#86efac] bg-[#f0fdf4] p-4 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex size-9 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d] shrink-0">
-                        <ScrollText size={18} />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex size-10 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d] shrink-0">
+                        <ScrollText size={20} />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-body-sm font-bold text-ink truncate">Excavation Permit Certificate</p>
-                        <p className="font-mono text-[11px] text-[#166534] truncate">{application.excavationOrder.orderNumber} · Active</p>
+                        <p className="text-body-sm font-bold text-ink">Excavation Permit Certificate</p>
+                        <p className="font-mono text-[11px] text-[#166534]">{application.excavationOrder.orderNumber || 'Ordnrno-04/08/2026-1'} · Active</p>
                       </div>
                     </div>
                     <button
                       type="button"
+                      aria-label="Download Permit Certificate"
                       onClick={handleDownloadPermit}
-                      className="shrink-0 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[12px] font-bold text-white transition-all active:scale-95 cursor-pointer shadow-xs"
-                      style={{ backgroundColor: '#15803d', color: '#ffffff' }}
+                      className="shrink-0 flex size-9 items-center justify-center rounded-xl bg-[#dcfce7] hover:bg-[#bbf7d0] text-[#15803d] border border-[#86efac] transition-all active:scale-90 cursor-pointer shadow-2xs"
                     >
-                      <Download size={14} className="text-white" />
-                      <span className="text-white">Download</span>
+                      <Download size={17} />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* 2. Royalty Payment Receipt */}
-              {(hasExcavationOrder(application) || payments.some((p) => p.purpose === 'DEMAND_NOTE')) && (
-                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex size-9 items-center justify-center rounded-xl bg-[#eef4fe] text-[#1241a6] shrink-0">
-                        <IndianRupee size={18} />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-body-sm font-bold text-ink truncate">Royalty Challan Receipt</p>
-                        <p className="font-mono text-[11px] text-neutral-500 truncate">MHA-GRAS-998241 · {application.demandNote ? formatMoney(application.demandNote.totalAmount) : '₹4,03,200'}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleDownloadDemandNoteReceipt}
-                      className="shrink-0 flex items-center gap-1.5 rounded-xl bg-[#1241a6] hover:bg-[#0f3484] text-white px-3.5 py-2 text-[12px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
-                    >
-                      <Download size={14} />
-                      <span>Receipt</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* 3. Department Demand Note Assessment Copy */}
+              {/* 2. Royalty Demand Note (DM-936) */}
               {application.demandNote && (
                 <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-[#1241a6] shrink-0">
-                        <FileText size={18} />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-[#1241a6] shrink-0">
+                        <FileText size={20} />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-body-sm font-bold text-ink truncate">Department Demand Note Notice</p>
-                        <p className="font-mono text-[11px] text-neutral-500 truncate">{application.demandNote.demandNoteNumber} · Assessment</p>
+                        <p className="text-body-sm font-bold text-ink">Royalty Demand Note (DM-936)</p>
+                        <p className="font-mono text-[11px] text-neutral-500">{application.demandNote.demandNoteNumber || 'DM No. 936'} · Part A & B Assessment</p>
                       </div>
                     </div>
                     <button
                       type="button"
+                      aria-label="Download Royalty Demand Note"
                       onClick={handleDownloadDemandNoteAssessment}
-                      className="shrink-0 flex items-center gap-1.5 rounded-xl bg-[#1241a6] hover:bg-[#0f3484] text-white px-3.5 py-2 text-[12px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                      className="shrink-0 flex size-9 items-center justify-center rounded-xl bg-neutral-50 hover:bg-[#eef4fe] text-neutral-600 hover:text-[#1241a6] border border-neutral-200 hover:border-[#bfd5fb] transition-all active:scale-90 cursor-pointer shadow-2xs"
                     >
-                      <Download size={14} />
-                      <span>Notice</span>
+                      <Download size={17} />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* 4. Application Fee Receipt */}
-              {application.status !== 'DRAFT' && (
+              {/* 3. Royalty Payment Receipt */}
+              {(hasExcavationOrder(application) || payments.some((p) => p.purpose === 'DEMAND_NOTE')) && (
                 <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-[#1241a6] shrink-0">
-                        <FileCheck size={18} />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex size-10 items-center justify-center rounded-xl bg-[#eef4fe] text-[#1241a6] shrink-0">
+                        <IndianRupee size={20} />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-body-sm font-bold text-ink truncate">Application Fee Receipt</p>
-                        <p className="font-mono text-[11px] text-neutral-500 truncate">MHA-GRAS-110294 · ₹1,000 Paid</p>
+                        <p className="text-body-sm font-bold text-ink">Royalty Challan Receipt</p>
+                        <p className="font-mono text-[11px] text-neutral-500">MH091123313123 / DM-272 · {application.demandNote ? formatMoney(application.demandNote.totalAmount) : '₹71,334'}</p>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={handleDownloadApplicationFeeReceipt}
-                      className="shrink-0 flex items-center gap-1.5 rounded-xl bg-[#1241a6] hover:bg-[#0f3484] text-white px-3.5 py-2 text-[12px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                      aria-label="Download Royalty Receipt"
+                      onClick={handleDownloadDemandNoteReceipt}
+                      className="shrink-0 flex size-9 items-center justify-center rounded-xl bg-neutral-50 hover:bg-[#eef4fe] text-neutral-600 hover:text-[#1241a6] border border-neutral-200 hover:border-[#bfd5fb] transition-all active:scale-90 cursor-pointer shadow-2xs"
                     >
-                      <Download size={14} />
-                      <span>Receipt</span>
+                      <Download size={17} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Application Fee Demand Note (DM-244) */}
+              {application.status !== 'DRAFT' && (
+                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-[#1241a6] shrink-0">
+                        <FileText size={20} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-body-sm font-bold text-ink">Application Fee Demand Note</p>
+                        <p className="font-mono text-[11px] text-neutral-500">DM No. 244 · Akole Tahsil Office</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Download Application Fee Demand Note"
+                      onClick={handleDownloadApplicationFeeDemandNote}
+                      className="shrink-0 flex size-9 items-center justify-center rounded-xl bg-neutral-50 hover:bg-[#eef4fe] text-neutral-600 hover:text-[#1241a6] border border-neutral-200 hover:border-[#bfd5fb] transition-all active:scale-90 cursor-pointer shadow-2xs"
+                    >
+                      <Download size={17} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Application Fee Payment Receipt */}
+              {application.status !== 'DRAFT' && (
+                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex size-10 items-center justify-center rounded-xl bg-[#dcfce7] text-[#15803d] shrink-0">
+                        <FileCheck size={20} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-body-sm font-bold text-ink">Application Fee GRAS Receipt</p>
+                        <p className="font-mono text-[11px] text-neutral-500">Challan: MH091123313123 · ₹520 Paid</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Download Fee Payment Receipt"
+                      onClick={handleDownloadApplicationFeeReceipt}
+                      className="shrink-0 flex size-9 items-center justify-center rounded-xl bg-[#dcfce7] hover:bg-[#bbf7d0] text-[#15803d] border border-[#86efac] transition-all active:scale-90 cursor-pointer shadow-2xs"
+                    >
+                      <Download size={17} />
                     </button>
                   </div>
                 </div>

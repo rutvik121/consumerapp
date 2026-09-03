@@ -85,7 +85,7 @@ export const en = {
   },
 
   userType: {
-    NORMAL_CONSUMER: 'Normal Consumer',
+    NORMAL_CONSUMER: 'Individual',
     ORGANIZATION: 'Organization',
   },
 
@@ -635,7 +635,7 @@ export const en = {
     demoSection: 'Prototype controls',
     notBuiltYet: 'Not built yet',
     otpHint: 'Prototype — the code is 123456. Any other code shows the error state.',
-    seededAccounts: 'Seeded accounts: 9822014576 (Organization) · 9730845120 (Normal Consumer)',
+    seededAccounts: 'Seeded accounts: 9822014576 (Organization) · 9730845120 (Individual)',
   },
 } as const;
 

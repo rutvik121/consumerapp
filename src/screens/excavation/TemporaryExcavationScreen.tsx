@@ -434,40 +434,47 @@ function ApplicationCard({
       </div>
 
       {/* Action footer button / pill */}
-      <div className="mt-3.5 flex items-center justify-between pt-2 border-t border-neutral-100">
+      <div className="mt-3.5 flex items-center justify-between pt-2 border-t border-neutral-100 flex-wrap gap-2">
         <span className="text-[11px] text-neutral-400">
           Updated: {application.statusUpdatedAt ? new Date(application.statusUpdatedAt).toLocaleDateString('en-IN') : 'Recent'}
         </span>
 
-        {awaitsDemandNotePayment(application) && application.demandNote ? (
-          <button
-            type="button"
-            style={{ backgroundColor: '#15803d', color: '#ffffff' }}
-            className="inline-flex items-center gap-1 rounded-lg py-1 px-3 text-[11px] font-bold text-white shadow-xs transition-all active:scale-95 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(ROUTES.applicationPayment(application.id, 'demand-note'));
-            }}
-          >
-            <IndianRupee size={12} className="text-white" />
-            <span className="text-white">Pay Demand Note ({formatMoney(application.demandNote.totalAmount)})</span>
-          </button>
-        ) : needsApplicantResponse(application) ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-            <AlertTriangle size={12} />
-            <span>Respond to Query</span>
-          </span>
-        ) : hasExcavationOrder(application) ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-            <Download size={12} />
-            <span>Permit Ready</span>
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-primary-700 hover:text-primary-900">
-            <span>View Details</span>
-            <ArrowRight size={12} />
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {hasExcavationOrder(application) ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#15803d] bg-[#dcfce7] px-2.5 py-1 rounded-lg border border-[#86efac]">
+              <Download size={12} />
+              <span>Permit Ready (Ordnrno-04/08/2026-1)</span>
+            </span>
+          ) : awaitsDemandNotePayment(application) && application.demandNote ? (
+            <button
+              type="button"
+              style={{ backgroundColor: '#15803d', color: '#ffffff' }}
+              className="inline-flex items-center gap-1 rounded-lg py-1 px-3 text-[11px] font-bold text-white shadow-xs transition-all active:scale-95 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(ROUTES.applicationPayment(application.id, 'demand-note'));
+              }}
+            >
+              <IndianRupee size={12} className="text-white" />
+              <span className="text-white">Pay Demand Note ({formatMoney(application.demandNote.totalAmount)})</span>
+            </button>
+          ) : needsApplicantResponse(application) ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+              <AlertTriangle size={12} />
+              <span>Respond to Query</span>
+            </span>
+          ) : application.status !== 'DRAFT' ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1241a6] bg-[#eef4fe] px-2 py-0.5 rounded-lg border border-[#bfd5fb]">
+              <FileText size={11} />
+              <span>DM-244 Paid</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-primary-700 hover:text-primary-900">
+              <span>View Details</span>
+              <ArrowRight size={12} />
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

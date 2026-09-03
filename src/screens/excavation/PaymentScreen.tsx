@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Lock, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, Download, FileCheck, FileText, Lock, ShieldAlert } from 'lucide-react';
 import type { Payment, PaymentPurpose, TemporaryExcavationApplication } from '@/domain';
 import { formatMoney, statusPresentation } from '@/rules';
 import {
@@ -213,6 +213,137 @@ export function PaymentScreen() {
           )}
 
           <div className="mt-8 space-y-3">
+            {succeeded && (
+              <div className="space-y-2 rounded-2xl border border-[#d6e5f8] bg-[#f8fafc] p-3 text-left">
+                <p className="text-[11px] font-bold uppercase text-neutral-500">Official Documents</p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const noteNum = paymentPurpose === 'APPLICATION_FEE' ? 'DM-244' : 'DM-936';
+                      const content = paymentPurpose === 'APPLICATION_FEE' 
+                        ? `=====================================================
+REVENUE DEPARTMENT, GOVERNMENT OF MAHARASHTRA
+DEMAND NOTE (APPLICATION FEE) — MAHAKHANIJ
+=====================================================
+DM No.                 : 244
+Date & Time            : 03-08-2026 09:57:06 AM
+Tahsil Office          : Tahsil Office Akole, Amrut Nagar, Akole 422601
+Jurisdiction           : Maharashtra/ Nashik/ Ahilyanagar/ Sangamner/ Akole
+-----------------------------------------------------
+APPLICATION & LESSEE DETAILS
+Application No.        : ${(settled ?? application).applicationNumber || 'MK/TPPA/20260803-1'}
+Applicant / Lessee     : ${(settled ?? application).applicant.fullName || 'Kira K Patil'}
+Mobile Number          : ${(settled ?? application).applicant.mobileNumber || '7543534535'}
+PAN Number             : ${(settled ?? application).applicant.idProofNumber || 'LKMJK0987F'}
+Address                : Pune, Maharashtra, India
+-----------------------------------------------------
+PLOT & EXCAVATION SPECIFICATIONS
+District               : Ahilyanagar
+SubDivision / Taluka   : Ahmednagar
+City / Village         : Avhadwadi
+Survey / Gat No.       : ${(settled ?? application).surveyNumber || '323'}
+Permit Type            : TTP
+Primary Mineral        : Stone
+Quantity               : 122 Brass
+-----------------------------------------------------
+FEE BREAKDOWN
+Application Fee        : ₹520.00
+Payment Status         : PAID & VERIFIED (Challan: MH091123313123)
+=====================================================
+Note: System generated Demand Note, Tahsildar Akole, Ahilyanagar.`
+                        : `=====================================================
+REVENUE DEPARTMENT, GOVERNMENT OF MAHARASHTRA
+DEMAND NOTE — MAHAKHANIJ
+=====================================================
+DM No.                 : 936
+Date & Time            : 02-09-2026 06:06:43 PM
+Office Address         : Nagar Tahsil Office, Savedi, Ahmednagar 414003
+Jurisdiction           : Maharashtra/ Nashik/ Ahilyanagar/ Ahmednagar
+-----------------------------------------------------
+LESSEE & PLOT DETAILS
+Lessee Name            : ${(settled ?? application).applicant.fullName || 'Satish Garg'}
+Mobile Number          : ${(settled ?? application).applicant.mobileNumber || '6435435345'}
+PAN Number             : ${(settled ?? application).applicant.idProofNumber || 'ANDPG4491M'}
+Plot Name & Gat No.    : Gat No-323, Ismalpur, Ahmednagar
+Permit Type            : TTP (RTP) · Stone
+-----------------------------------------------------
+PAYMENT BREAKDOWN
+PART A: GOVERNMENT RECEIPT ACCOUNTING SYSTEM (GRAS)
+1. Fees and Royalties  : ₹10.00
+PART B: MAHAKHANIJ PORTAL
+1. Ahmednagar DMF (10%): ₹1.00
+2. SI Charges          : ₹2.00
+3. SI Tax (18% GST)    : ₹0.36
+4. Ahmednagar TCS      : ₹0.20
+5. SI_ROFF             : ₹0.44
+Total Amount           : ₹14.00
+-----------------------------------------------------
+GRAND TOTAL PAYABLE    : ${formatMoney(payment.amount)}
+=====================================================
+Issued by: Tahsildar Ahmednagar, Ahmednagar.`;
+
+                      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `Demand_Note_${noteNum}.txt`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-2.5 text-body-sm font-semibold text-[#1241a6] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <FileText size={15} />
+                      <span>Download Demand Note ({paymentPurpose === 'APPLICATION_FEE' ? 'DM-244' : 'DM-936'})</span>
+                    </span>
+                    <Download size={14} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const content = `=====================================================
+GOVERNMENT OF MAHARASHTRA — GRAS e-RECEIPT
+DEPARTMENT OF MINES & GEOLOGY
+PAYMENT ACKNOWLEDGEMENT & CHALLAN
+=====================================================
+Receipt Number         : ${payment.receiptNumber || 'MHA-GRAS-110294'}
+Bank Ref / Gateway UTR : ${payment.gatewayReference || 'MH091123313123'}
+Application Ref No     : ${(settled ?? application).applicationNumber}
+Payment Purpose        : ${paymentPurpose === 'APPLICATION_FEE' ? 'Temporary Excavation Application Fee' : 'Mineral Extraction Royalty & DMF'}
+Amount Paid            : ${formatMoney(payment.amount)}
+Date & Time            : ${payment.completedAt ? formatDateTime(payment.completedAt) : new Date().toLocaleString('en-IN')}
+Status                 : SUCCESS / TREASURY CREDITED
+-----------------------------------------------------
+Payer Signatory        : ${(settled ?? application).applicant.fullName}
+Entity / Jurisdiction  : Maharashtra Infrastructure Corporation Ltd. · Ahilyanagar
+=====================================================`;
+
+                      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `Receipt_${payment.receiptNumber || 'Payment'}.txt`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-2.5 text-body-sm font-semibold text-[#15803d] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <FileCheck size={15} />
+                      <span>Download Fee Payment Receipt</span>
+                    </span>
+                    <Download size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!succeeded && (
               <Button size="lg" fullWidth onClick={() => startPayment(false)}>
                 {t.payment.tryAgain}
