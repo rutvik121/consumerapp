@@ -75,6 +75,8 @@ export function RegisterScreen() {
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [kycFile, setKycFile] = useState<UploadedFile | null>(null);
+  const [panFile, setPanFile] = useState<UploadedFile | null>(null);
+  const [aadhaarFile, setAadhaarFile] = useState<UploadedFile | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -84,6 +86,8 @@ export function RegisterScreen() {
     setErrors({});
     // Reset KYC if type switches
     setKycFile(null);
+    setPanFile(null);
+    setAadhaarFile(null);
   }
 
   function back() {
@@ -130,15 +134,17 @@ export function RegisterScreen() {
           ? {
               organizationName: organization.organizationName.trim(),
               organizationType: organization.organizationType,
-              registrationNumber: organization.registrationNumber?.trim() || normalizePan(panNumber),
+              registrationNumber: normalizePan(panNumber),
             }
           : undefined,
       kyc: {
-        documentKind: isIndividual ? 'AADHAAR' : 'PAN',
-        documentNumber: isIndividual ? normalizeAadhaar(aadhaarNumber) : normalizePan(panNumber),
-        fileName: kycFile?.name || (isIndividual ? 'aadhaar_card.pdf' : 'pan_card.pdf'),
-        fileSize: kycFile?.size,
-        fileUrl: kycFile?.url,
+        documentKind: 'AADHAAR',
+        documentNumber: normalizeAadhaar(aadhaarNumber),
+        fileName: isIndividual
+          ? (kycFile?.name || 'aadhaar_card.pdf')
+          : (aadhaarFile?.name || 'signatory_aadhaar_card.pdf'),
+        fileSize: isIndividual ? kycFile?.size : aadhaarFile?.size,
+        fileUrl: isIndividual ? kycFile?.url : aadhaarFile?.url,
       },
     });
 
@@ -174,8 +180,14 @@ export function RegisterScreen() {
         if (!isValidPan(panNumber)) {
           found.panNumber = t.auth.panInvalid;
         }
-        if (!kycFile) {
-          found.kycFile = t.auth.kycDocRequired;
+        if (!panFile) {
+          found.panFile = t.auth.kycDocRequired;
+        }
+        if (!isValidAadhaar(aadhaarNumber)) {
+          found.aadhaarNumber = t.auth.aadhaarInvalid;
+        }
+        if (!aadhaarFile) {
+          found.aadhaarFile = t.auth.kycDocRequired;
         }
       }
     }
@@ -394,32 +406,67 @@ export function RegisterScreen() {
               </>
             ) : (
               <>
-                {/* Organization: PAN KYC */}
-                <Input
-                  label={t.auth.panLabel}
-                  autoFocus
-                  placeholder={t.auth.panPlaceholder}
-                  maxLength={10}
-                  value={panNumber}
-                  {...(errors.panNumber ? { error: errors.panNumber } : {})}
-                  onChange={(event) => {
-                    const raw = normalizePan(event.target.value).slice(0, 10);
-                    setPanNumber(raw);
-                  }}
-                />
+                {/* 1. Organization: Company PAN KYC */}
+                <div className="space-y-3">
+                  <p className="text-caption font-bold tracking-wider text-ink-muted uppercase">
+                    1. Company PAN Card Verification
+                  </p>
+                  <Input
+                    label={t.auth.panLabel}
+                    autoFocus
+                    placeholder={t.auth.panPlaceholder}
+                    maxLength={10}
+                    value={panNumber}
+                    {...(errors.panNumber ? { error: errors.panNumber } : {})}
+                    onChange={(event) => {
+                      const raw = normalizePan(event.target.value).slice(0, 10);
+                      setPanNumber(raw);
+                    }}
+                  />
 
-                <DocumentUpload
-                  label={t.auth.uploadPanLabel}
-                  description={t.auth.uploadPanHint}
-                  file={kycFile}
-                  onFileSelect={setKycFile}
-                  onRemove={() => setKycFile(null)}
-                  error={errors.kycFile}
-                  required
-                  sampleFileName="company_pan_card.pdf"
-                />
+                  <DocumentUpload
+                    label={t.auth.uploadPanLabel}
+                    description={t.auth.uploadPanHint}
+                    file={panFile}
+                    onFileSelect={setPanFile}
+                    onRemove={() => setPanFile(null)}
+                    error={errors.panFile}
+                    required
+                    sampleFileName="company_pan_card.pdf"
+                  />
+                </div>
 
-                {/* PAN Notice Banner */}
+                {/* 2. Authorized Signatory Aadhaar KYC */}
+                <div className="space-y-3 pt-2">
+                  <p className="text-caption font-bold tracking-wider text-ink-muted uppercase">
+                    2. Authorized Signatory Aadhaar Verification
+                  </p>
+                  <Input
+                    label="Authorized Signatory Aadhaar Number"
+                    inputMode="numeric"
+                    placeholder="12-digit Aadhaar Number"
+                    maxLength={14}
+                    value={formatAadhaar(aadhaarNumber)}
+                    {...(errors.aadhaarNumber ? { error: errors.aadhaarNumber } : {})}
+                    onChange={(event) => {
+                      const raw = event.target.value.replace(/\D/g, '').slice(0, 12);
+                      setAadhaarNumber(raw);
+                    }}
+                  />
+
+                  <DocumentUpload
+                    label="Upload Signatory Aadhaar Document"
+                    description="Clear copy of authorized signatory's Aadhaar (front & back)"
+                    file={aadhaarFile}
+                    onFileSelect={setAadhaarFile}
+                    onRemove={() => setAadhaarFile(null)}
+                    error={errors.aadhaarFile}
+                    required
+                    sampleFileName="signatory_aadhaar_card.pdf"
+                  />
+                </div>
+
+                {/* PAN & Aadhaar Notice Banner */}
                 <div className="flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/60 p-3.5 text-primary-950">
                   <ShieldCheck size={20} className="mt-0.5 shrink-0 text-primary-700" />
                   <p className="text-body-sm leading-relaxed text-ink">

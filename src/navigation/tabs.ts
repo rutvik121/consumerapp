@@ -1,4 +1,4 @@
-import { Boxes, Home, Layers, MoreHorizontal, Package } from 'lucide-react';
+import { Activity, BarChart3, Home, Layers, MoreHorizontal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { UserType } from '@/domain';
 import { copy } from '@/content';
@@ -14,28 +14,23 @@ export interface TabItem {
  * ROLE-DRIVEN BOTTOM NAVIGATION.
  *
  *   Organization      Home · Projects · Orders · More
- *   Normal Consumer   Home · Inventory · Orders · More
+ *   Normal Consumer   Home · Activity · Report · More
  *
  * Two tab sets, ONE navigation component. This is the visible expression of
  * "one application, two experiences".
- *
- * Note what is absent from the consumer set: Projects and Packages never
- * appear, and Temporary Excavation appears in neither — it is reached from
- * within the Organization experience and is protected at the route level, so
- * it can never be surfaced to a consumer by a navigation change alone.
  */
 export const TABS_BY_USER_TYPE: Record<UserType, readonly TabItem[]> = {
   ORGANIZATION: [
     { label: copy.nav.home, path: ROUTES.home, icon: Home },
     { label: copy.nav.projects, path: ROUTES.projects, icon: Layers },
-    { label: copy.nav.orders, path: ROUTES.orders, icon: Package },
+    { label: copy.nav.activity, path: ROUTES.activity, icon: Activity },
     { label: copy.nav.more, path: ROUTES.more, icon: MoreHorizontal },
   ],
 
   NORMAL_CONSUMER: [
     { label: copy.nav.home, path: ROUTES.home, icon: Home },
-    { label: copy.nav.inventory, path: ROUTES.inventory, icon: Boxes },
-    { label: copy.nav.orders, path: ROUTES.orders, icon: Package },
+    { label: copy.nav.activity, path: ROUTES.activity, icon: Activity },
+    { label: copy.nav.report, path: ROUTES.reports, icon: BarChart3 },
     { label: copy.nav.more, path: ROUTES.more, icon: MoreHorizontal },
   ],
 };

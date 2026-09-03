@@ -38,11 +38,14 @@ export {
   EnquiriesScreen,
   EnquiryDetailsScreen,
 } from './enquiry';
+export { ConsumerActivityScreen } from './activity';
 export { ReceiveScreen, ReceiveDeliveryScreen } from './receiving';
 export { InventoryScreen, InventoryBalanceScreen } from './inventory';
 export { MineralScreen } from './MineralScreen';
 export { ConsumerProjectsScreen } from './consumer/ConsumerProjectsScreen';
+export { ConsumerProjectDetailsScreen } from './consumer/ConsumerProjectDetailsScreen';
 export { ConsumerProjectRegistrationScreen } from './consumer/ConsumerProjectRegistrationScreen';
+export { ConsumerReportsScreen } from './reports';
 export {
   OrdersScreen,
   OrderDetailsScreen,

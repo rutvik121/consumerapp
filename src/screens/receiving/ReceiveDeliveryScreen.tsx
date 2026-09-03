@@ -100,7 +100,7 @@ export function ReceiveDeliveryScreen() {
     const verified = verifyTransport(delivery, payload);
 
     if (!verified.results[0]?.passed) {
-      setScanError('That permit does not match this delivery. Check the e-TP number and try again.');
+      setScanError('That permit does not match this delivery. Check the DigiTP number and try again.');
       return;
     }
 

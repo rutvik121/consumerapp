@@ -54,7 +54,7 @@ export function ConsumerProjectsScreen() {
                   title={project.name}
                   subtitle={`${project.location.taluka}, ${project.location.district}`}
                   detail={project.code}
-                  trailing={null}
+                  onClick={() => navigate(ROUTES.consumerProjectDetails(project.id))}
                 />
               ))}
             </ListGroup>

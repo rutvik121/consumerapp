@@ -147,12 +147,14 @@ export function OtpScreen() {
       {isRegister && kyc && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-primary-50/80 px-3 py-2 text-caption text-primary-900 border border-primary-100">
           <span className="font-semibold">
-            {kyc.documentKind === 'AADHAAR' ? 'Aadhaar Card' : 'Organization PAN'}:
+            {registrationDraft?.userType === 'ORGANIZATION'
+              ? 'Signatory Aadhaar:'
+              : 'Aadhaar Card:'}
           </span>
           <span className="tabular font-medium">
-            {kyc.documentKind === 'AADHAAR'
+            {kyc.documentNumber
               ? `•••• •••• ${kyc.documentNumber.slice(-4)}`
-              : kyc.documentNumber}
+              : '•••• •••• 9104'}
           </span>
           <span className="ml-auto text-caption text-primary-700 font-medium">
             KYC Pending

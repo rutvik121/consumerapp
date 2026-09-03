@@ -26,6 +26,9 @@ export const en = {
     mineral: 'Mineral',
     inventory: 'Inventory',
     orders: 'Orders',
+    enquiry: 'Enquiry',
+    activity: 'Activity',
+    report: 'Report',
     more: 'More',
   },
 
@@ -78,7 +81,7 @@ export const en = {
     received: 'Received',
     consumed: 'Consumed',
     supervisor: 'Supervisor',
-    etpNumber: 'e-TP number',
+    etpNumber: 'DigiTP number',
   },
 
   userType: {
@@ -243,7 +246,7 @@ export const en = {
     source: 'Source',
     destination: 'Destination',
     transportPermit: 'Transport permit',
-    permitNumber: 'e-TP number',
+    permitNumber: 'DigiTP number',
     permittedQuantity: 'Permitted quantity',
     validUntil: 'Valid until',
     quarry: 'Quarry',
@@ -263,7 +266,7 @@ export const en = {
     noArrivals: 'No vehicles waiting',
     noArrivalsBody: 'Vehicles that have arrived at your sites will appear here to be received.',
     scanTitle: 'Scan the transport permit',
-    scanBody: 'Point the camera at the QR code printed on the e-TP or enter the OTP sent by SMS.',
+    scanBody: 'Point the camera at the QR code printed on the DigiTP or enter the OTP sent by SMS.',
     scanAction: 'Scan QR code',
     enterManually: 'Enter OTP instead',
     etpLabel: 'OTP',
@@ -608,14 +611,14 @@ export const en = {
 
     kycDocRequired: 'Please upload the required KYC document to continue.',
     kycNoticeIndividual: 'A secure 6-digit OTP will be dispatched to your Aadhaar-linked mobile number for UIDAI verification.',
-    kycNoticeOrganization: 'A secure 6-digit OTP will be dispatched to the authorized mobile number registered with this PAN.',
+    kycNoticeOrganization: 'A secure 6-digit OTP will be dispatched to the authorized mobile number registered with this Aadhaar.',
     verifyAndSendOtp: 'Verify & Send OTP',
     continueToKyc: 'Continue to KYC Verification',
 
     verifyAadhaarTitle: 'Verify Aadhaar OTP',
-    verifyPanTitle: 'Verify PAN OTP',
+    verifyPanTitle: 'Verify Signatory Aadhaar OTP',
     verifyAadhaarSentTo: 'Enter the 6-digit OTP sent to your Aadhaar-linked mobile number',
-    verifyPanSentTo: 'Enter the 6-digit OTP sent to the authorized number registered with PAN',
+    verifyPanSentTo: 'Enter the 6-digit OTP sent to the authorized mobile number registered with Aadhaar',
 
     required: 'This field is required.',
     haveAccount: 'Already have an account?',

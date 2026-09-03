@@ -96,36 +96,39 @@ function OverviewSections({
   const deliveriesList: DeliveryItemSummary[] = [
     {
       id: 'del-org-1',
-      code: 'MO-2024-001',
+      code: 'DTP-2024-8842',
+      digiTpNumber: 'DTP-2024-8842',
+      purchasedFrom: 'Shree Ganesh Stone Quarry',
       status: 'IN_TRANSIT',
-      destination: 'NH-48 Road Widening',
+      destination: 'NH-48 Road Widening Site',
       mineralName: 'Basalt Stone',
       quantity: '500 MT',
       onClick: () => {
-        if (overview.activeDeliveries[0]) {
-          navigate(ROUTES.deliveryTracking(overview.activeDeliveries[0].id));
-        } else {
-          navigate(ROUTES.orders);
-        }
+        const activeId = overview.activeDeliveries[0]?.id || 'del-001';
+        navigate(ROUTES.liveVehicleTracking(activeId));
       },
     },
     {
       id: 'del-org-2',
-      code: 'MO-2024-002',
-      status: 'APPROVED',
-      destination: 'Coastal Highway Bridge',
+      code: 'DTP-2024-7931',
+      digiTpNumber: 'DTP-2024-7931',
+      purchasedFrom: 'Krishna River Sand Depo',
+      status: 'PASS_ISSUED',
+      destination: 'Coastal Highway Bridge Site',
       mineralName: 'River Sand',
       quantity: '200 MT',
-      onClick: () => navigate(ROUTES.orders),
+      onClick: () => navigate(`${ROUTES.activity}?tab=live`),
     },
     {
       id: 'del-org-3',
-      code: 'MO-2024-003',
-      status: 'DELIVERED',
-      destination: 'NH-48 Road Widening',
+      code: 'DTP-2024-6420',
+      digiTpNumber: 'DTP-2024-6420',
+      purchasedFrom: 'Sahyadri Aggregate Hub',
+      status: 'RECEIVED',
+      destination: 'NH-48 Road Widening Site',
       mineralName: 'Stone Aggregate',
       quantity: '150 MT',
-      onClick: () => navigate(ROUTES.orders),
+      onClick: () => navigate(`${ROUTES.activity}?tab=delivered`),
     },
   ];
 
@@ -146,35 +149,35 @@ function OverviewSections({
           </p>
         </div>
 
-        {/* Row 1, Card 2: Pending Temp. Application */}
+        {/* Row 1, Card 2: Pending Application */}
         <div
-          onClick={() => navigate(ROUTES.temporaryExcavation)}
+          onClick={() => navigate(`${ROUTES.temporaryExcavation}?filter=UNDER_REVIEW`)}
           className="cursor-pointer rounded-2xl border border-[#fce8b2] bg-[#fef9e7] p-3 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-xl font-bold tracking-tight text-[#b45309]">
             {String(tempAppCount).padStart(2, '0')}
           </span>
           <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
-            Pending Temp.<br />Application
+            Pending<br />Application
           </p>
         </div>
 
-        {/* Row 1, Card 3: Pending Demand note Payments */}
+        {/* Row 1, Card 3: Pending Demand note */}
         <div
-          onClick={() => navigate(ROUTES.orders)}
+          onClick={() => navigate(`${ROUTES.temporaryExcavation}?filter=DEMAND_NOTE`)}
           className="cursor-pointer rounded-2xl border border-[#fbcaca] bg-[#fde8e8] p-3 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-xl font-bold tracking-tight text-[#b91c1c]">
             {String(demandNotesCount).padStart(2, '0')}
           </span>
           <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
-            Pending Demand<br />note Payments
+            Pending<br />Demand note
           </p>
         </div>
 
         {/* Row 2, Card 4: DigiTP Created */}
         <div
-          onClick={() => navigate(ROUTES.orders)}
+          onClick={() => navigate(`${ROUTES.activity}?tab=live`)}
           className="cursor-pointer rounded-2xl border border-[#d6e5f8] bg-[#eef5fd] p-3 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-xl font-bold tracking-tight text-[#134280]">
@@ -187,7 +190,10 @@ function OverviewSections({
 
         {/* Row 2, Card 5: In Transit */}
         <div
-          onClick={() => navigate(ROUTES.orders)}
+          onClick={() => {
+            const activeId = overview.activeDeliveries[0]?.id || 'del-001';
+            navigate(ROUTES.liveVehicleTracking(activeId));
+          }}
           className="cursor-pointer rounded-2xl border border-[#ebd9fb] bg-[#f7f0fd] p-3 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-xl font-bold tracking-tight text-[#7e22ce]">
@@ -198,16 +204,16 @@ function OverviewSections({
           </p>
         </div>
 
-        {/* Row 2, Card 6: Permit */}
+        {/* Row 2, Card 6: Permits */}
         <div
-          onClick={() => navigate(ROUTES.orders)}
+          onClick={() => navigate(`${ROUTES.temporaryExcavation}?filter=PERMIT_ISSUED`)}
           className="cursor-pointer rounded-2xl border border-[#ebd9fb] bg-[#f7f0fd] p-3 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-xl font-bold tracking-tight text-[#7e22ce]">
             {String(permitCount).padStart(2, '0')}
           </span>
           <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">
-            Permit
+            Permits
           </p>
         </div>
       </div>
@@ -234,7 +240,7 @@ function OverviewSections({
               </span>
             </button>
 
-            {/* 2. Apply for Temp. application */}
+            {/* 2. Apply for Permits */}
             <button
               type="button"
               onClick={() => navigate(ROUTES.newExcavationApplication)}
@@ -244,11 +250,11 @@ function OverviewSections({
                 <FileText size={20} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-neutral-700">
-                Apply for Temp.<br />application
+                Apply for<br />Permits
               </span>
             </button>
 
-            {/* 3. Find Stock Point */}
+            {/* 3. Find Mineral Places */}
             <button
               type="button"
               onClick={() => navigate(ROUTES.stockPoints)}
@@ -258,7 +264,7 @@ function OverviewSections({
                 <Search size={20} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-neutral-700">
-                Find Stock<br />Point
+                Find Mineral<br />Places
               </span>
             </button>
 
@@ -280,11 +286,8 @@ function OverviewSections({
             <button
               type="button"
               onClick={() => {
-                if (overview.activeDeliveries[0]) {
-                  navigate(ROUTES.deliveryTracking(overview.activeDeliveries[0].id));
-                } else {
-                  navigate(ROUTES.orders);
-                }
+                const activeId = overview.activeDeliveries[0]?.id || 'del-001';
+                navigate(ROUTES.liveVehicleTracking(activeId));
               }}
               className="flex flex-col items-center gap-1.5 group"
             >
@@ -313,7 +316,7 @@ function OverviewSections({
             {/* 7. Demand Notes */}
             <button
               type="button"
-              onClick={() => navigate(ROUTES.orders)}
+              onClick={() => navigate(`${ROUTES.temporaryExcavation}?filter=DEMAND_NOTE`)}
               className="flex flex-col items-center gap-1.5 group"
             >
               <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
@@ -335,7 +338,7 @@ function OverviewSections({
           </h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.orders)}
+            onClick={() => navigate(ROUTES.activity)}
             className="flex items-center gap-1 text-caption font-semibold text-primary-700 hover:text-primary-900 transition-colors"
           >
             View All

@@ -92,44 +92,47 @@ export function ConsumerHomeScreen() {
 function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
   const navigate = useNavigate();
 
-  const projectCount = Math.max(data.projects.length, 5);
-  const digitpCount = Math.max(data.orders.length + data.enquiries.length, 3);
-  const inTransitCount = Math.max(data.activeDeliveries.length, 2);
+  const projectCount = 1;
+  const digitpCount = 2;
+  const inTransitCount = 1;
 
   // Map real deliveries or provide realistic prototype preview deliveries matching the design
   const deliveriesList: DeliveryItemSummary[] = [
     {
       id: 'del-demo-1',
-      code: 'MO-2024-001',
+      code: 'DTP-2024-8842',
+      digiTpNumber: 'DTP-2024-8842',
+      purchasedFrom: 'Shree Ganesh Stone Quarry',
       status: 'IN_TRANSIT',
-      destination: 'NH-48 Road Widening',
+      destination: 'NH-48 Road Widening Site',
       mineralName: 'Basalt Stone',
       quantity: '500 MT',
       onClick: () => {
-        if (data.activeDeliveries[0]) {
-          navigate(ROUTES.deliveryTracking(data.activeDeliveries[0].id));
-        } else {
-          navigate(ROUTES.orders);
-        }
+        const id = data.activeDeliveries[0]?.id || 'del-004';
+        navigate(ROUTES.liveVehicleTracking(id));
       },
     },
     {
       id: 'del-demo-2',
-      code: 'MO-2024-002',
-      status: 'APPROVED',
-      destination: 'Coastal Highway Bridge',
+      code: 'DTP-2024-7931',
+      digiTpNumber: 'DTP-2024-7931',
+      purchasedFrom: 'Krishna River Sand Depo',
+      status: 'PASS_ISSUED',
+      destination: 'Coastal Highway Bridge Site',
       mineralName: 'River Sand',
       quantity: '200 MT',
-      onClick: () => navigate(ROUTES.orders),
+      onClick: () => navigate(`${ROUTES.activity}?tab=live`),
     },
     {
       id: 'del-demo-3',
-      code: 'MO-2024-003',
-      status: 'DELIVERED',
-      destination: 'NH-48 Road Widening',
+      code: 'DTP-2024-6420',
+      digiTpNumber: 'DTP-2024-6420',
+      purchasedFrom: 'Sahyadri Aggregate Hub',
+      status: 'RECEIVED',
+      destination: 'NH-48 Road Widening Site',
       mineralName: 'Stone Aggregate',
       quantity: '150 MT',
-      onClick: () => navigate(ROUTES.orders),
+      onClick: () => navigate(`${ROUTES.activity}?tab=delivered`),
     },
   ];
 
@@ -137,7 +140,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
     <div className="space-y-6 bg-[#f8fafc] px-4 py-5 pb-10">
       {/* ---------------- 1. Stat Cards (3 columns) ---------------- */}
       <div className="grid grid-cols-3 gap-3">
-        {/* Projects */}
+        {/* Projects (1) -> Lands on Registered Consumer Projects */}
         <div
           onClick={() => navigate(ROUTES.consumerProjects)}
           className="cursor-pointer rounded-2xl border border-[#d6e5f8] bg-[#eef5fd] p-3.5 shadow-xs transition-transform active:scale-95"
@@ -148,9 +151,9 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
           <p className="mt-1 text-caption font-medium text-neutral-600">Projects</p>
         </div>
 
-        {/* DigiTP Created */}
+        {/* DigiTP Created (2) -> Lands on Activity > Live Deliveries */}
         <div
-          onClick={() => navigate(ROUTES.orders)}
+          onClick={() => navigate(`${ROUTES.activity}?tab=live`)}
           className="cursor-pointer rounded-2xl border border-[#d6e5f8] bg-[#eef5fd] p-3.5 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-2xl font-bold tracking-tight text-[#134280]">
@@ -159,19 +162,22 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
           <p className="mt-1 text-caption font-medium text-neutral-600">DigiTP Created</p>
         </div>
 
-        {/* In Transit */}
+        {/* In Transit Vehicle (1) -> Lands directly on Live Vehicle Tracking */}
         <div
-          onClick={() => navigate(ROUTES.orders)}
+          onClick={() => {
+            const activeId = data.activeDeliveries[0]?.id || 'del-004';
+            navigate(ROUTES.liveVehicleTracking(activeId));
+          }}
           className="cursor-pointer rounded-2xl border border-[#ebd9fb] bg-[#f7f0fd] p-3.5 shadow-xs transition-transform active:scale-95"
         >
           <span className="text-2xl font-bold tracking-tight text-[#7e22ce]">
             {String(inTransitCount).padStart(2, '0')}
           </span>
-          <p className="mt-1 text-caption font-medium text-neutral-600">In Transit</p>
+          <p className="mt-1 text-[11px] font-medium leading-tight text-neutral-600">In Transit Vehicle</p>
         </div>
       </div>
 
-      {/* ---------------- 2. Quick Services ---------------- */}
+      {/* ---------------- 2. Quick Services (Swapped Order) ---------------- */}
       <div>
         <h2 className="mb-2.5 text-caption font-bold tracking-wider text-neutral-500 uppercase">
           Quick Services
@@ -179,29 +185,26 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
 
         <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
           <div className="grid grid-cols-4 gap-2 text-center">
-            {/* Register Project */}
+            {/* 1. Receive Material (Swapped to Pos 1) */}
             <button
               type="button"
-              onClick={() => navigate(ROUTES.consumerProjects)}
+              onClick={() => navigate(ROUTES.receive)}
               className="flex flex-col items-center gap-2 group"
             >
               <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
-                <FolderPlus size={20} />
+                <QrCode size={20} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-neutral-700">
-                Register<br />Project
+                Receive<br />Material
               </span>
             </button>
 
-            {/* Track Vehicle */}
+            {/* 2. Track Vehicle */}
             <button
               type="button"
               onClick={() => {
-                if (data.activeDeliveries[0]) {
-                  navigate(ROUTES.deliveryTracking(data.activeDeliveries[0].id));
-                } else {
-                  navigate(ROUTES.orders);
-                }
+                const activeId = data.activeDeliveries[0]?.id || 'del-004';
+                navigate(ROUTES.liveVehicleTracking(activeId));
               }}
               className="flex flex-col items-center gap-2 group"
             >
@@ -213,7 +216,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
               </span>
             </button>
 
-            {/* Find Stock Point */}
+            {/* 3. Find Mineral Places */}
             <button
               type="button"
               onClick={() => navigate(ROUTES.stockPoints)}
@@ -223,21 +226,21 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
                 <Search size={20} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-neutral-700">
-                Find Stock<br />Point
+                Find Mineral<br />Places
               </span>
             </button>
 
-            {/* Scan QR to Receive */}
+            {/* 4. Register Project (Swapped to Pos 4) */}
             <button
               type="button"
-              onClick={() => navigate(ROUTES.receive)}
+              onClick={() => navigate(ROUTES.consumerProjectRegistration)}
               className="flex flex-col items-center gap-2 group"
             >
               <span className="flex size-12 items-center justify-center rounded-full bg-[#eef4fe] text-[#1241a6] transition-transform group-hover:scale-105 group-active:scale-95">
-                <QrCode size={20} />
+                <FolderPlus size={20} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-neutral-700">
-                Scan QR to<br />Receive
+                Register<br />Project
               </span>
             </button>
           </div>
@@ -252,7 +255,7 @@ function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
           </h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.orders)}
+            onClick={() => navigate(`${ROUTES.activity}?tab=live`)}
             className="flex items-center gap-1 text-caption font-semibold text-primary-700 hover:text-primary-900 transition-colors"
           >
             View All

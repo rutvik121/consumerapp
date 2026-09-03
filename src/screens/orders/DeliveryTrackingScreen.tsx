@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Circle, CheckCircle2, MapPinned, Phone, Truck } from 'lucide-react';
+import { Circle, CheckCircle2, FileCheck, MapPinned, Phone, Truck } from 'lucide-react';
 import { CircleMarker, MapContainer, Polyline, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Delivery } from '@/domain';
@@ -16,31 +17,16 @@ import {
 import { ROUTES, Screen } from '@/navigation';
 import { deliveryRepository, mineralRepository, useAsync } from '@/data';
 import { useCopy } from '@/content';
+import { DigiTpPassModal } from './DigiTpPassModal';
 
 /**
- * VEHICLE TRACKING — an operational workflow, not a courier ETA screen.
- *
- * The product context lists the questions this screen exists to answer, and
- * they are answered in that order:
- *
- *   Which vehicle?              → the header, in the largest type on screen
- *   What mineral and quantity?  → immediately under it
- *   What is the current status? → status badge and how stale the update is
- *   Where is source and destination? → the route strip
- *   What transport transaction? → the e-TP block
- *   When was it last updated?   → the movement record
- *
- * NO map dominates this screen, and no progress bar animates on a timer. The
- * route strip is derived from actual reported position, and the movement
- * record below is the authoritative source — a map may support tracking but
- * must never be the only place the important information lives.
- *
- * PRODUCTION adds real map tiles beside the route strip. Nothing else changes.
+ * DELIVERY & TRANSIT DETAILS — an operational workflow for tracking & compliance.
  */
 export function DeliveryTrackingScreen() {
   const { deliveryId } = useParams<{ deliveryId: string }>();
   const navigate = useNavigate();
   const t = useCopy();
+  const [isDigiTpOpen, setIsDigiTpOpen] = useState(false);
 
   const query = useAsync(async () => {
     if (!deliveryId) throw new Error('A delivery is required');
@@ -61,7 +47,7 @@ export function DeliveryTrackingScreen() {
 
   return (
     <Screen
-      title={t.tracking.title}
+      title="Delivery & Transit Details"
       {...(delivery ? { subtitle: delivery.deliveryNumber } : {})}
       onBack
       footer={
@@ -77,6 +63,13 @@ export function DeliveryTrackingScreen() {
 
       {query.data && delivery && (
         <div className="pb-8">
+          {/* Modal for official DigiTP Pass View */}
+          <DigiTpPassModal
+            isOpen={isDigiTpOpen}
+            onClose={() => setIsDigiTpOpen(false)}
+            delivery={delivery}
+          />
+
           {/* ---------- 1. Which vehicle, carrying what ---------- */}
           <Surface className="border-b border-line px-4 py-4">
             <div className="flex items-start gap-3">
@@ -94,13 +87,26 @@ export function DeliveryTrackingScreen() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-4 flex items-center justify-between gap-3">
               <StatusBadge {...statusPresentation.delivery(delivery.status)} />
               {lastUpdate && (
                 <span className="text-caption text-ink-muted">
                   {t.tracking.lastUpdate} {relativeTime(lastUpdate.at)}
                 </span>
               )}
+            </div>
+
+            {/* Quick Action to View DigiTP Pass */}
+            <div className="mt-4">
+              <Button
+                variant="subtle"
+                fullWidth
+                leftIcon={<FileCheck size={16} />}
+                onClick={() => setIsDigiTpOpen(true)}
+                className="border border-[#c6daf6] bg-[#eef5fd] text-[#1241a6] hover:bg-[#dfeefe] font-semibold"
+              >
+                View DigiTP
+              </Button>
             </div>
 
             {canReceive && (

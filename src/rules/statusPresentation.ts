@@ -31,36 +31,36 @@ export interface StatusPresentation {
 }
 
 const ENQUIRY: Record<EnquiryStatus, StatusPresentation> = {
-  SUBMITTED: { label: 'Submitted', tone: 'info' },
-  ACKNOWLEDGED: { label: 'Acknowledged', tone: 'info' },
-  RESPONDED: { label: 'Responded', tone: 'warning' },
-  CONVERTED_TO_ORDER: { label: 'Ordered', tone: 'success' },
+  SUBMITTED: { label: 'Enquiry Sent', tone: 'info' },
+  ACKNOWLEDGED: { label: 'Under Review', tone: 'info' },
+  RESPONDED: { label: 'Action Required', tone: 'warning' },
+  CONVERTED_TO_ORDER: { label: 'DigiTP Generated', tone: 'success' },
   CLOSED: { label: 'Closed', tone: 'neutral' },
 };
 
 const DISPATCH: Record<DispatchStatus, StatusPresentation> = {
-  PENDING_DISPATCH: { label: 'Pending dispatch', tone: 'neutral' },
-  PARTIALLY_DISPATCHED: { label: 'Partly dispatched', tone: 'info' },
-  DISPATCHED: { label: 'Dispatched', tone: 'info' },
-  DIGITP_CREATED: { label: 'DigiTP created', tone: 'success' },
-  COMPLETED: { label: 'Completed', tone: 'success' },
+  PENDING_DISPATCH: { label: 'Awaiting Loading', tone: 'neutral' },
+  PARTIALLY_DISPATCHED: { label: 'Partly Dispatched', tone: 'info' },
+  DISPATCHED: { label: 'In Transit', tone: 'info' },
+  DIGITP_CREATED: { label: 'Pass Issued', tone: 'info' },
+  COMPLETED: { label: 'Delivered', tone: 'success' },
 };
 
 const RECEIVING: Record<ReceivingStatus, StatusPresentation> = {
-  NOT_STARTED: { label: 'Not started', tone: 'neutral' },
-  AWAITING_RECEIPT: { label: 'Awaiting receipt', tone: 'warning' },
-  PARTIALLY_RECEIVED: { label: 'Partly received', tone: 'info' },
-  RECEIVED: { label: 'Received', tone: 'success' },
-  RECEIVED_WITH_DISCREPANCY: { label: 'Discrepancy', tone: 'danger' },
+  NOT_STARTED: { label: 'Not Started', tone: 'neutral' },
+  AWAITING_RECEIPT: { label: 'Awaiting Receipt', tone: 'warning' },
+  PARTIALLY_RECEIVED: { label: 'Partly Received', tone: 'info' },
+  RECEIVED: { label: 'Delivered & Verified', tone: 'success' },
+  RECEIVED_WITH_DISCREPANCY: { label: 'Discrepancy Reported', tone: 'danger' },
 };
 
 const DELIVERY: Record<DeliveryStatus, StatusPresentation> = {
-  SCHEDULED: { label: 'Scheduled', tone: 'neutral' },
-  DISPATCHED: { label: 'Dispatched', tone: 'info' },
-  IN_TRANSIT: { label: 'In transit', tone: 'info' },
-  ARRIVED_AT_DESTINATION: { label: 'Arrived', tone: 'warning' },
-  RECEIVED: { label: 'Received', tone: 'success' },
-  RECEIVED_WITH_DISCREPANCY: { label: 'Discrepancy', tone: 'danger' },
+  SCHEDULED: { label: 'Pass Issued', tone: 'info' },
+  DISPATCHED: { label: 'In Transit', tone: 'info' },
+  IN_TRANSIT: { label: 'In Transit', tone: 'info' },
+  ARRIVED_AT_DESTINATION: { label: 'Arrived at Site', tone: 'warning' },
+  RECEIVED: { label: 'Delivered & Verified', tone: 'success' },
+  RECEIVED_WITH_DISCREPANCY: { label: 'Discrepancy Reported', tone: 'danger' },
 };
 
 const PROJECT: Record<ProjectStatus, StatusPresentation> = {

@@ -223,9 +223,9 @@ export function CreateEnquiryScreen() {
             <Button
               size="lg"
               fullWidth
-              onClick={() => navigate(ROUTES.enquiryDetails(sentEnquiryId), { replace: true })}
+              onClick={() => navigate(`${ROUTES.activity}?tab=enquiries`, { replace: true })}
             >
-              {t.enquiry.viewEnquiry}
+              View in Activity
             </Button>
             <Button
               size="lg"

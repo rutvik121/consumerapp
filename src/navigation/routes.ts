@@ -35,6 +35,7 @@ export const ROUTES = {
   mineral: '/mineral',
   consumerProjects: '/consumer/projects',
   consumerProjectRegistration: '/consumer/projects/new',
+  consumerProjectDetails: (projectId: ID = ':projectId') => `/consumer/projects/${projectId}`,
 
   /* --- Shared operational flows --- */
   /** Map-first stock-point discovery; the list is available from its drawer. */
@@ -45,6 +46,7 @@ export const ROUTES = {
     `/stock-points/${stockPointId}/enquiry`,
   enquiries: '/enquiries',
   enquiryDetails: (enquiryId: ID = ':enquiryId') => `/enquiries/${enquiryId}`,
+  activity: '/activity',
   orders: '/orders',
   orderDetails: (orderId: ID = ':orderId') => `/orders/${orderId}`,
   deliveryTracking: (deliveryId: ID = ':deliveryId') => `/deliveries/${deliveryId}/tracking`,
@@ -53,6 +55,7 @@ export const ROUTES = {
   receiveDelivery: (deliveryId: ID = ':deliveryId') => `/receive/${deliveryId}`,
   inventory: '/inventory',
   inventoryBalance: (balanceId: ID = ':balanceId') => `/inventory/${balanceId}`,
+  reports: '/reports',
 
   /** ORGANIZATION ONLY (Increment 7). Guarded by TEMPORARY_EXCAVATION. */
   temporaryExcavation: '/temporary-excavation',

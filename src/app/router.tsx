@@ -13,13 +13,16 @@ import {
   LiveVehicleTrackingScreen,
   EnquiriesScreen,
   EnquiryDetailsScreen,
+  ConsumerActivityScreen,
   HomeScreen,
   InventoryBalanceScreen,
   InventoryScreen,
   LoginScreen,
   MineralScreen,
+  ConsumerProjectDetailsScreen,
   ConsumerProjectRegistrationScreen,
   ConsumerProjectsScreen,
+  ConsumerReportsScreen,
   CreatePackageScreen,
   CreateProjectScreen,
   MoreScreen,
@@ -195,6 +198,14 @@ export function AppRouter() {
               </RoleGuard>
             }
           />
+          <Route
+            path={ROUTES.consumerProjectDetails()}
+            element={
+              <RoleGuard capability="VIEW_MINERAL_TAB">
+                <ConsumerProjectDetailsScreen />
+              </RoleGuard>
+            }
+          />
 
           {/*
             Shared operational flows. Built once for both roles — role only
@@ -215,10 +226,12 @@ export function AppRouter() {
           <Route path={ROUTES.createEnquiry()} element={<CreateEnquiryScreen />} />
           <Route path={ROUTES.enquiries} element={<EnquiriesScreen />} />
           <Route path={ROUTES.enquiryDetails()} element={<EnquiryDetailsScreen />} />
+          <Route path={ROUTES.activity} element={<ConsumerActivityScreen />} />
           <Route path={ROUTES.receive} element={<ReceiveScreen />} />
           <Route path={ROUTES.receiveDelivery()} element={<ReceiveDeliveryScreen />} />
           <Route path={ROUTES.inventory} element={<InventoryScreen />} />
           <Route path={ROUTES.inventoryBalance()} element={<InventoryBalanceScreen />} />
+          <Route path={ROUTES.reports} element={<ConsumerReportsScreen />} />
 
           {/*
             ORGANIZATION ONLY — the rule this guard exists for.

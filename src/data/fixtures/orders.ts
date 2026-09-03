@@ -47,7 +47,7 @@ export const orders: Order[] = [
     updatedAt: daysAgo(0),
   },
 
-  /* --- Normal Consumer order: NO project/package/organization. --- */
+  /* --- Normal Consumer orders: 2 DigiTP created orders --- */
   {
     id: 'ord-003',
     orderNumber: 'ORD/2026/004473',
@@ -57,11 +57,27 @@ export const orders: Order[] = [
     stockPointId: 'sp-006',
     mineralId: 'min-sand',
     orderedQuantity: q(12),
-    digiTpNumber: 'DTP-20481',
-    dispatchStatus: 'DIGITP_CREATED',
+    digiTpNumber: 'DTP-2024-8842',
+    dispatchStatus: 'DISPATCHED',
     receivingStatus: 'AWAITING_RECEIPT',
     deliveryIds: ['del-004'],
     createdAt: daysAgo(4),
+    updatedAt: daysAgo(0),
+  },
+  {
+    id: 'ord-004',
+    orderNumber: 'ORD/2026/004491',
+    enquiryId: 'enq-002',
+    placedByUserId: CONSUMER_USER_ID,
+    placedByUserType: 'NORMAL_CONSUMER',
+    stockPointId: 'sp-001',
+    mineralId: 'min-basalt',
+    orderedQuantity: q(500),
+    digiTpNumber: 'DTP-2024-7931',
+    dispatchStatus: 'DISPATCHED',
+    receivingStatus: 'PARTIALLY_RECEIVED',
+    deliveryIds: ['del-001'],
+    createdAt: daysAgo(2),
     updatedAt: daysAgo(0),
   },
 ];
