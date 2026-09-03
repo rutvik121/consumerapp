@@ -53,6 +53,7 @@ export {
   LiveVehicleTrackingScreen,
 } from './orders';
 export { MoreScreen } from './MoreScreen';
+export { ProfileScreen } from './profile/ProfileScreen';
 export {
   TemporaryExcavationScreen,
   ApplicationDetailsScreen,

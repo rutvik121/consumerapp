@@ -31,6 +31,7 @@ import {
   OrdersScreen,
   OtpScreen,
   PackageDetailsScreen,
+  ProfileScreen,
   ProjectDetailsScreen,
   ProjectsScreen,
   ReceiveDeliveryScreen,
@@ -275,6 +276,7 @@ export function AppRouter() {
           />
 
           <Route path={ROUTES.more} element={<MoreScreen />} />
+          <Route path={ROUTES.profile} element={<ProfileScreen />} />
 
           <Route path="*" element={<NotFoundScreen />} />
         </Route>

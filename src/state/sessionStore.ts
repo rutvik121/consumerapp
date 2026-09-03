@@ -23,6 +23,8 @@ interface SessionState {
 
   signIn: (user: User, organization?: Organization | null) => void;
   signOut: () => void;
+  updateUser: (partial: Partial<User>) => void;
+  updateOrganization: (partial: Partial<Organization>) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -40,6 +42,16 @@ export const useSessionStore = create<SessionState>()(
         }),
 
       signOut: () => set({ status: 'UNAUTHENTICATED', user: null, organization: null }),
+
+      updateUser: (partial) =>
+        set((state) => ({
+          user: state.user ? ({ ...state.user, ...partial } as User) : null,
+        })),
+
+      updateOrganization: (partial) =>
+        set((state) => ({
+          organization: state.organization ? ({ ...state.organization, ...partial } as Organization) : null,
+        })),
     }),
     { name: 'mahakhanij.session' },
   ),

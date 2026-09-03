@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Building2,
+  ChevronRight,
   FileText,
   LogOut,
   Package as PackageIcon,
   RotateCcw,
+  ShieldCheck,
   Shovel,
   UserCheck,
   Warehouse,
@@ -49,25 +51,49 @@ export function MoreScreen() {
 
   return (
     <Screen title={copy.nav.more}>
-      {/* Account identity Header Card */}
-      <div className="bg-surface px-4 py-5 border-b border-line">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h2 className="text-title-lg font-bold text-ink">{user.fullName}</h2>
-          <StatusBadge
-            label={copy.userType[user.userType]}
-            tone={user.userType === 'ORGANIZATION' ? 'info' : 'neutral'}
-          />
-        </div>
-        <p className="mt-0.5 text-body-sm text-ink-secondary tabular">{user.mobileNumber}</p>
-        {organization && (
-          <div className="mt-3 pt-2.5 border-t border-line text-body-sm text-ink-secondary">
-            <p className="font-semibold text-ink">{organization.name}</p>
-            <p className="text-caption text-neutral-500 font-mono">
-              {copy.organizationType[organization.type]} · {organization.registrationNumber}
-            </p>
+      {/* Account identity Header Card - Clickable to open Profile */}
+      <button
+        type="button"
+        onClick={() => navigate(ROUTES.profile)}
+        className="w-full text-left bg-surface px-4 py-4 border-b border-line hover:bg-neutral-50 active:bg-neutral-100 transition-colors flex items-center justify-between gap-3 group cursor-pointer"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-title font-bold text-ink group-hover:text-primary-700 transition-colors">
+              {user.fullName}
+            </h2>
+            <StatusBadge
+              label={copy.userType[user.userType]}
+              tone={user.userType === 'ORGANIZATION' ? 'info' : 'neutral'}
+            />
           </div>
-        )}
-      </div>
+          <p className="mt-0.5 text-body-sm text-ink-secondary tabular">{user.mobileNumber}</p>
+          {organization && (
+            <div className="mt-2 pt-2 border-t border-line text-caption text-ink-secondary">
+              <p className="font-semibold text-ink">{organization.name}</p>
+              <p className="text-neutral-500 font-mono">
+                {copy.organizationType[organization.type]} · {organization.registrationNumber}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0 text-caption font-semibold text-primary-700 bg-primary-50 px-2.5 py-1.5 rounded-xl border border-primary-100">
+          <span>Edit & KYC</span>
+          <ChevronRight size={14} />
+        </div>
+      </button>
+
+      <SectionHeader title="Account & Identity" />
+      <ListGroup className="border-y border-line">
+        <ListRow
+          leading={<ShieldCheck size={18} className="text-emerald-700" />}
+          title="My Profile & KYC Verification"
+          subtitle="Update personal info, address, company registration and KYC"
+          onClick={() => navigate(ROUTES.profile)}
+          trailing={null}
+        />
+      </ListGroup>
 
       {/* ORGANIZATION MANAGEMENT ON TOP (For Organization users) */}
       {(canSeeExcavation || canSeeOrganization) && (

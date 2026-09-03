@@ -69,4 +69,5 @@ export const ROUTES = {
   ) => `/temporary-excavation/${applicationId}/pay/${purpose}`,
 
   more: '/more',
+  profile: '/profile',
 } as const;
