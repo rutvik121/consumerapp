@@ -78,7 +78,7 @@ export function ConsumerReportsScreen() {
   );
 
   return (
-    <Screen title="Reports & Statements">
+    <Screen title="Reports & Statements" onBack>
       {/* DigiTP Modal View */}
       <DigiTpPassModal
         isOpen={isModalOpen}

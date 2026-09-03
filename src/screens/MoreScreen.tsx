@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, FileText, LogOut, Package as PackageIcon, RotateCcw, Shovel, UserCheck, Warehouse } from 'lucide-react';
+import {
+  BarChart3,
+  Building2,
+  FileText,
+  LogOut,
+  Package as PackageIcon,
+  RotateCcw,
+  Shovel,
+  UserCheck,
+  Warehouse,
+} from 'lucide-react';
 import {
   Button,
   ConfirmDialog,
@@ -84,6 +94,13 @@ export function MoreScreen() {
           title="Receive Mineral"
           subtitle="Verify and receive an arriving vehicle"
           onClick={() => navigate(ROUTES.receive)}
+          trailing={null}
+        />
+        <ListRow
+          leading={<BarChart3 size={17} />}
+          title="Reports & Statements"
+          subtitle="DigiTP transit pass logs, tax summaries and material receipts"
+          onClick={() => navigate(ROUTES.reports)}
           trailing={null}
         />
         {user.userType === 'NORMAL_CONSUMER' && (
