@@ -1,52 +1,47 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Download, FileCheck, FileText, Lock, ShieldAlert } from 'lucide-react';
-import type { Payment, PaymentPurpose, TemporaryExcavationApplication } from '@/domain';
-import { formatMoney, statusPresentation } from '@/rules';
+import {
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Download,
+  FileCheck,
+  Lock,
+  Receipt,
+  ShieldAlert,
+  Sparkles,
+} from 'lucide-react';
+import type { Money, Payment, PaymentPurpose, TemporaryExcavationApplication } from '@/domain';
+import {
+  calculateApplicationFeeBreakdown,
+  computeDetailedDemandNoteBreakdown,
+  formatMoney,
+  formatQuantity,
+} from '@/rules';
 import {
   Button,
-  DetailList,
   ErrorState,
   LoadingState,
-  SectionHeader,
-  StatusBadge,
-  Surface,
   cn,
 } from '@/design-system';
 import { ROUTES, Screen } from '@/navigation';
 import { paymentRepository, temporaryExcavationRepository, useAsync } from '@/data';
-import { useCopy } from '@/content';
 
 type Stage = 'SUMMARY' | 'REDIRECTING' | 'SUCCESS' | 'FAILED';
 
 /** How long the simulated gateway hand-off is shown. */
-const REDIRECT_MS = 2200;
+const REDIRECT_MS = 1800;
 
-/**
- * PAYMENT — the two moments that move a Temporary Excavation application.
- *
- *   APPLICATION_FEE  paying it SUBMITS the application, automatically
- *   DEMAND_NOTE      paying it ISSUES the excavation order
- *
- * One screen for both, because the payer's task is identical: see what is
- * owed, hand off to the gateway, learn what happened. Only the consequence
- * differs, and that is stated on the success screen rather than built twice.
- *
- * The gateway is simulated. What is NOT simulated is the shape: a payment is
- * initiated, control leaves the app, and a result is reconciled afterwards.
- * A prototype that flipped a flag would hide the only part of this the
- * production team actually has to build.
- */
 export function PaymentScreen() {
   const { applicationId, purpose } = useParams<{ applicationId: string; purpose: string }>();
   const navigate = useNavigate();
-  const t = useCopy();
 
   const [stage, setStage] = useState<Stage>('SUMMARY');
+  const [currentChannel, setCurrentChannel] = useState<'GRAS' | 'MAHAKHANIJ'>('GRAS');
+  const [grasPaid, setGrasPaid] = useState(false);
+  const [mahakhanijPaid, setMahakhanijPaid] = useState(false);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [failNext, setFailNext] = useState(false);
-  /* The application AFTER the payment settled — its number and status both
-     change on success, and the copy loaded before the payment is now stale. */
   const [settled, setSettled] = useState<TemporaryExcavationApplication | null>(null);
 
   const paymentPurpose: PaymentPurpose =
@@ -60,30 +55,62 @@ export function PaymentScreen() {
   }, [applicationId]);
 
   const application = query.data?.application;
-  const amount =
-    paymentPurpose === 'APPLICATION_FEE'
-      ? application?.applicationFee
-      : application?.demandNote?.totalAmount;
+  const quantityValue = application?.estimatedQuantity?.value || 10;
 
-  /* The hand-off. In production this is a real redirect and a real return. */
+  // Breakdown for Demand Note vs Application Submission Fee
+  const demandNoteSplit = application
+    ? computeDetailedDemandNoteBreakdown(application.estimatedQuantity)
+    : null;
+
+  const appFeeBreakdown = calculateApplicationFeeBreakdown(quantityValue);
+
+  const grasAmount: Money =
+    paymentPurpose === 'APPLICATION_FEE'
+      ? appFeeBreakdown.totalFee
+      : demandNoteSplit?.gras.total || { amount: 2200, currency: 'INR' };
+
+  const mahakhanijAmount: Money =
+    paymentPurpose === 'APPLICATION_FEE'
+      ? { amount: 118, currency: 'INR' } // MahaKhanij Portal & SI Charges
+      : demandNoteSplit?.mahakhanij.total || { amount: 559, currency: 'INR' };
+
+  const totalPayable: Money = {
+    amount: grasAmount.amount + mahakhanijAmount.amount,
+    currency: 'INR',
+  };
+
+  const amount: Money = currentChannel === 'GRAS' ? grasAmount : mahakhanijAmount;
+
+  /* The hand-off simulation */
   useEffect(() => {
     if (stage !== 'REDIRECTING' || !payment) return;
 
     const timer = setTimeout(async () => {
-      const result = await paymentRepository.complete({
-        paymentId: payment.id,
-        outcome: failNext ? 'FAILED' : 'SUCCESS',
-      });
-      setPayment(result.payment);
-      setSettled(result.application);
-      setStage(result.payment.status === 'SUCCESS' ? 'SUCCESS' : 'FAILED');
+      const isSuccess = !failNext;
+      if (isSuccess) {
+        if (currentChannel === 'GRAS') {
+          setGrasPaid(true);
+          setStage('SUMMARY');
+        } else {
+          setMahakhanijPaid(true);
+          const result = await paymentRepository.complete({
+            paymentId: payment.id,
+            outcome: 'SUCCESS',
+          });
+          setSettled(result.application);
+          setStage('SUCCESS');
+        }
+      } else {
+        setStage('FAILED');
+      }
     }, REDIRECT_MS);
 
     return () => clearTimeout(timer);
-  }, [stage, payment, failNext]);
+  }, [stage, payment, failNext, currentChannel]);
 
-  async function startPayment(shouldFail: boolean) {
+  async function startPayment(channel: 'GRAS' | 'MAHAKHANIJ', shouldFail: boolean) {
     if (!applicationId) return;
+    setCurrentChannel(channel);
     setFailNext(shouldFail);
     const initiated = await paymentRepository.initiate({
       applicationId,
@@ -94,259 +121,193 @@ export function PaymentScreen() {
   }
 
   const purposeLabel =
-    paymentPurpose === 'APPLICATION_FEE' ? t.payment.applicationFee : t.payment.demandNote;
+    currentChannel === 'GRAS'
+      ? paymentPurpose === 'APPLICATION_FEE'
+        ? 'GRAS Cyber Treasury (Statutory Application Fee & Stamp Duty)'
+        : 'GRAS Cyber Treasury (State Royalty Head)'
+      : 'MahaKhanij Payment Gateway (DMF & SI Portal Infrastructure)';
 
   /* ---------- Handing off to the gateway ---------- */
   if (stage === 'REDIRECTING' && amount) {
     return (
-      <Screen title={t.payment.title}>
-        <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
-          <span className="mb-5 flex size-16 items-center justify-center rounded-full bg-warning-50 text-warning-600">
+      <Screen title={currentChannel === 'GRAS' ? 'GRAS Cyber Treasury' : 'MahaKhanij Payment'}>
+        <div className="flex flex-1 flex-col items-center justify-center px-8 text-center min-h-[60vh]">
+          <span className="mb-5 flex size-16 items-center justify-center rounded-full bg-primary-50 text-primary-700 ring-8 ring-primary-50/50 animate-pulse">
             <Lock size={28} aria-hidden />
           </span>
-          <h2 className="text-title-lg text-ink">{t.payment.redirectingTitle}</h2>
+          <h2 className="text-title-lg text-ink font-bold">
+            {currentChannel === 'GRAS'
+              ? 'Connecting to Cyber Treasury GRAS...'
+              : 'Connecting to MahaKhanij Gateway...'}
+          </h2>
           <p className="mt-2 max-w-[34ch] text-body text-ink-secondary">
-            {t.payment.redirectingBody}
+            {currentChannel === 'GRAS'
+              ? 'Redirecting to Government Receipt Accounting System (gras.mahakosh.gov.in) for secure treasury settlement.'
+              : 'Processing District Mineral Foundation (DMF) and Supervision Inspection charges.'}
           </p>
 
-          <p className="tabular mt-8 text-display text-ink">{formatMoney(amount)}</p>
-          <p className="mt-1 text-body-sm text-ink-muted">{purposeLabel}</p>
+          <p className="tabular mt-6 text-display text-primary-700 font-bold">
+            {formatMoney(amount)}
+          </p>
+          <p className="mt-1 text-caption text-ink-muted">{purposeLabel}</p>
 
           <div className="mt-8">
-            <LoadingState variant="inline" label={t.payment.doNotClose} />
+            <LoadingState variant="inline" label="Please do not refresh or close this window" />
           </div>
         </div>
       </Screen>
     );
   }
 
-  /* ---------- Result ---------- */
-  if ((stage === 'SUCCESS' || stage === 'FAILED') && payment && application) {
+  /* ---------- Result (Both GRAS and MahaKhanij Settled) ---------- */
+  if ((stage === 'SUCCESS' || stage === 'FAILED') && application) {
     const succeeded = stage === 'SUCCESS';
 
     return (
-      <Screen title={succeeded ? t.payment.successTitle : t.payment.failedTitle}>
-        <div className="px-4 pt-10 pb-8">
+      <Screen title={succeeded ? 'Payment Verified & Settled' : 'Payment Incomplete'}>
+        <div className="px-4 pt-6 pb-8 space-y-5">
           <div className="flex flex-col items-center text-center">
             <span
               className={cn(
                 'mb-4 flex size-14 items-center justify-center rounded-full',
-                succeeded ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600',
+                succeeded ? 'bg-success-50 text-success-600 ring-8 ring-success-50/60' : 'bg-danger-50 text-danger-600',
               )}
             >
-              {succeeded ? <CheckCircle2 size={28} aria-hidden /> : <ShieldAlert size={28} aria-hidden />}
+              {succeeded ? <CheckCircle2 size={32} aria-hidden /> : <ShieldAlert size={32} aria-hidden />}
             </span>
-            <h2 className="text-title-lg text-ink">
-              {succeeded ? t.payment.successTitle : t.payment.failedTitle}
+            <h2 className="text-title-lg text-ink font-bold">
+              {succeeded
+                ? paymentPurpose === 'DEMAND_NOTE'
+                  ? 'All Payments Verified · Permit Granted!'
+                  : 'Application & Charges Verified · Submitted!'
+                : 'Payment Transaction Failed'}
             </h2>
-            <p className="tabular mt-3 text-display text-ink">{formatMoney(payment.amount)}</p>
-            <p className="mt-1 text-body-sm text-ink-muted">{purposeLabel}</p>
+            <p className="tabular mt-2 text-2xl font-bold text-primary-700">
+              {formatMoney(totalPayable)}
+            </p>
+            <p className="mt-0.5 text-caption text-neutral-500">
+              GRAS Treasury & MahaKhanij Portal Fully Reconciled
+            </p>
           </div>
 
           {succeeded ? (
-            <>
-              {/* What was just created, so the applicant leaves with the
-                  reference number rather than having to go and find it. */}
-              <SectionHeader title={t.excavation.applicationInformation} />
-              <Surface variant="outlined" rounded className="overflow-hidden">
-                <DetailList
-                  items={[
-                    {
-                      label: t.excavation.title,
-                      value: (settled ?? application).applicationNumber,
-                      numeric: true,
-                    },
-                    ...((settled ?? application).submittedAt
-                      ? [
-                          {
-                            label: t.excavation.submittedOn,
-                            value: formatDateTime((settled ?? application).submittedAt as string),
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-                <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3">
-                  <span className="text-body-sm text-ink-secondary">{t.fields.status}</span>
-                  <StatusBadge
-                    {...statusPresentation.temporaryExcavation((settled ?? application).status)}
-                  />
+            <div className="space-y-4">
+              {/* Application Summary Card */}
+              <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+                  <span className="text-caption font-medium text-neutral-500">Application Number</span>
+                  <span className="font-mono text-body-sm font-bold text-[#1241a6]">
+                    {(settled ?? application).applicationNumber}
+                  </span>
                 </div>
-              </Surface>
+                <div className="flex items-center justify-between">
+                  <span className="text-caption font-medium text-neutral-500">Status</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-caption font-bold text-emerald-700 border border-emerald-200">
+                    <Check size={13} strokeWidth={3} />
+                    {paymentPurpose === 'DEMAND_NOTE' ? 'Permit Granted' : 'Submitted (Under Review)'}
+                  </span>
+                </div>
+              </div>
 
-              <SectionHeader title={t.payment.receipt} />
-              <Surface variant="outlined" rounded className="overflow-hidden">
-                <DetailList
-                  items={[
-                    { label: t.payment.receipt, value: payment.receiptNumber, numeric: true },
-                    { label: t.payment.reference, value: payment.gatewayReference ?? '—', numeric: true },
-                    { label: t.payment.method, value: payment.method ?? '—' },
-                    {
-                      label: t.payment.paidOn,
-                      value: payment.completedAt ? formatDateTime(payment.completedAt) : '—',
-                    },
-                  ]}
-                />
-              </Surface>
+              {/* Verified Documents & Receipts Download Section */}
+              <div className="rounded-2xl border border-[#d6e5f8] bg-[#f8fafc] p-4 space-y-3">
+                <div className="flex items-center gap-1.5 text-ink font-bold text-caption uppercase tracking-wider">
+                  <FileCheck size={15} className="text-primary-700" />
+                  <span>Official Government Receipts & Passes</span>
+                </div>
 
-              {/* The consequence of this payment, stated plainly. */}
-              <SectionHeader title={t.payment.whatNext} />
-              <Surface variant="outlined" rounded className="px-4 py-3">
-                <p className="text-body text-ink-secondary">
-                  {paymentPurpose === 'APPLICATION_FEE'
-                    ? t.payment.nextAfterFee
-                    : t.payment.nextAfterDemandNote}
-                </p>
-              </Surface>
-            </>
-          ) : (
-            <Surface variant="outlined" rounded className="mt-6 px-4 py-3">
-              {/* The reason AND the reassurance. "Declined by the bank" alone
-                  leaves the payer's first question — was I charged? —
-                  unanswered, which is the worst thing a failed payment screen
-                  can do. */}
-              {payment.failureReason && (
-                <p className="text-body text-ink">{payment.failureReason}</p>
-              )}
-              <p className="mt-1 text-body text-ink-secondary">{t.payment.failedBody}</p>
-            </Surface>
-          )}
-
-          <div className="mt-8 space-y-3">
-            {succeeded && (
-              <div className="space-y-2 rounded-2xl border border-[#d6e5f8] bg-[#f8fafc] p-3 text-left">
-                <p className="text-[11px] font-bold uppercase text-neutral-500">Official Documents</p>
-                <div className="flex flex-col gap-2">
+                <div className="space-y-2">
+                  {/* GRAS e-Challan Receipt */}
                   <button
                     type="button"
                     onClick={() => {
-                      const noteNum = paymentPurpose === 'APPLICATION_FEE' ? 'DM-244' : 'DM-936';
-                      const content = paymentPurpose === 'APPLICATION_FEE' 
-                        ? `=====================================================
-REVENUE DEPARTMENT, GOVERNMENT OF MAHARASHTRA
-DEMAND NOTE (APPLICATION FEE) — MAHAKHANIJ
-=====================================================
-DM No.                 : 244
-Date & Time            : 03-08-2026 09:57:06 AM
-Tahsil Office          : Tahsil Office Akole, Amrut Nagar, Akole 422601
-Jurisdiction           : Maharashtra/ Nashik/ Ahilyanagar/ Sangamner/ Akole
------------------------------------------------------
-APPLICATION & LESSEE DETAILS
-Application No.        : ${(settled ?? application).applicationNumber || 'MK/TPPA/20260803-1'}
-Applicant / Lessee     : ${(settled ?? application).applicant.fullName || 'Kira K Patil'}
-Mobile Number          : ${(settled ?? application).applicant.mobileNumber || '7543534535'}
-PAN Number             : ${(settled ?? application).applicant.idProofNumber || 'LKMJK0987F'}
-Address                : Pune, Maharashtra, India
------------------------------------------------------
-PLOT & EXCAVATION SPECIFICATIONS
-District               : Ahilyanagar
-SubDivision / Taluka   : Ahmednagar
-City / Village         : Avhadwadi
-Survey / Gat No.       : ${(settled ?? application).surveyNumber || '323'}
-Permit Type            : TTP
-Primary Mineral        : Stone
-Quantity               : 122 Brass
------------------------------------------------------
-FEE BREAKDOWN
-Application Fee        : ₹520.00
-Payment Status         : PAID & VERIFIED (Challan: MH091123313123)
-=====================================================
-Note: System generated Demand Note, Tahsildar Akole, Ahilyanagar.`
-                        : `=====================================================
-REVENUE DEPARTMENT, GOVERNMENT OF MAHARASHTRA
-DEMAND NOTE — MAHAKHANIJ
-=====================================================
-DM No.                 : 936
-Date & Time            : 02-09-2026 06:06:43 PM
-Office Address         : Nagar Tahsil Office, Savedi, Ahmednagar 414003
-Jurisdiction           : Maharashtra/ Nashik/ Ahilyanagar/ Ahmednagar
------------------------------------------------------
-LESSEE & PLOT DETAILS
-Lessee Name            : ${(settled ?? application).applicant.fullName || 'Satish Garg'}
-Mobile Number          : ${(settled ?? application).applicant.mobileNumber || '6435435345'}
-PAN Number             : ${(settled ?? application).applicant.idProofNumber || 'ANDPG4491M'}
-Plot Name & Gat No.    : Gat No-323, Ismalpur, Ahmednagar
-Permit Type            : TTP (RTP) · Stone
------------------------------------------------------
-PAYMENT BREAKDOWN
-PART A: GOVERNMENT RECEIPT ACCOUNTING SYSTEM (GRAS)
-1. Fees and Royalties  : ₹10.00
-PART B: MAHAKHANIJ PORTAL
-1. Ahmednagar DMF (10%): ₹1.00
-2. SI Charges          : ₹2.00
-3. SI Tax (18% GST)    : ₹0.36
-4. Ahmednagar TCS      : ₹0.20
-5. SI_ROFF             : ₹0.44
-Total Amount           : ₹14.00
------------------------------------------------------
-GRAND TOTAL PAYABLE    : ${formatMoney(payment.amount)}
-=====================================================
-Issued by: Tahsildar Ahmednagar, Ahmednagar.`;
-
+                      const content = `================================================================================
+GOVERNMENT OF MAHARASHTRA — GRAS e-CHALLAN RECEIPT
+CYBER TREASURY PAYMENT ACKNOWLEDGEMENT (MH-GRAS)
+================================================================================
+Challan Ref (GRN)      : MH000242672202627E
+CIN Number             : 02003942026090389173
+Date & Time            : ${new Date().toLocaleString('en-IN')}
+Major Head / Account   : 0853 - Non-Ferrous Mining & Metallurgical Industries
+Department             : Directorate of Geology and Mining
+--------------------------------------------------------------------------------
+Applicant / Entity     : ${(settled ?? application).applicant.fullName}
+Application Ref No     : ${(settled ?? application).applicationNumber}
+Plot / Survey Location : Gat No-${(settled ?? application).surveyNumber}, ${(settled ?? application).village}
+Mineral Type & Volume  : Stone / Excavation (${formatQuantity((settled ?? application).estimatedQuantity)})
+--------------------------------------------------------------------------------
+GRAS Amount Paid       : ${formatMoney(grasAmount)}
+Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
+================================================================================`;
                       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                       const url = URL.createObjectURL(blob);
                       const link = document.createElement('a');
                       link.href = url;
-                      link.download = `Demand_Note_${noteNum}.txt`;
+                      link.download = `GRAS_eChallan_${(settled ?? application).applicationNumber}.txt`;
                       document.body.appendChild(link);
                       link.click();
                       document.body.removeChild(link);
                       URL.revokeObjectURL(url);
                     }}
-                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-2.5 text-body-sm font-semibold text-[#1241a6] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] cursor-pointer"
+                    className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-white p-3 text-body-sm font-semibold text-[#1241a6] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] transition-all cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
-                      <FileText size={15} />
-                      <span>Download Demand Note ({paymentPurpose === 'APPLICATION_FEE' ? 'DM-244' : 'DM-936'})</span>
+                      <Receipt size={16} className="text-[#1241a6]" />
+                      <span>Download GRAS e-Challan (GRN & CIN)</span>
                     </span>
-                    <Download size={14} />
+                    <Download size={15} />
                   </button>
 
+                  {/* MahaKhanij DMF & SI Receipt */}
                   <button
                     type="button"
                     onClick={() => {
-                      const content = `=====================================================
-GOVERNMENT OF MAHARASHTRA — GRAS e-RECEIPT
-DEPARTMENT OF MINES & GEOLOGY
-PAYMENT ACKNOWLEDGEMENT & CHALLAN
-=====================================================
-Receipt Number         : ${payment.receiptNumber || 'MHA-GRAS-110294'}
-Bank Ref / Gateway UTR : ${payment.gatewayReference || 'MH091123313123'}
+                      const content = `================================================================================
+MAHAKHANIJ PORTAL — TAX INVOICE & CHARGES RECEIPT
+GOVERNMENT OF MAHARASHTRA / DISTRICT COLLECTORATE
+================================================================================
+Transaction Number     : BB5167841AE0492457C9BF1F
+Transaction Date       : ${new Date().toLocaleString('en-IN')}
+Lessee / Payer Entity  : ${(settled ?? application).applicant.fullName}
 Application Ref No     : ${(settled ?? application).applicationNumber}
-Payment Purpose        : ${paymentPurpose === 'APPLICATION_FEE' ? 'Temporary Excavation Application Fee' : 'Mineral Extraction Royalty & DMF'}
-Amount Paid            : ${formatMoney(payment.amount)}
-Date & Time            : ${payment.completedAt ? formatDateTime(payment.completedAt) : new Date().toLocaleString('en-IN')}
-Status                 : SUCCESS / TREASURY CREDITED
------------------------------------------------------
-Payer Signatory        : ${(settled ?? application).applicant.fullName}
-Entity / Jurisdiction  : Maharashtra Infrastructure Corporation Ltd. · Ahilyanagar
-=====================================================`;
-
+--------------------------------------------------------------------------------
+Total Portal Amount    : ${formatMoney(mahakhanijAmount)}
+Payment Status         : VERIFIED & SETTLED
+================================================================================`;
                       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                       const url = URL.createObjectURL(blob);
                       const link = document.createElement('a');
                       link.href = url;
-                      link.download = `Receipt_${payment.receiptNumber || 'Payment'}.txt`;
+                      link.download = `MahaKhanij_Charges_Receipt_${(settled ?? application).applicationNumber}.txt`;
                       document.body.appendChild(link);
                       link.click();
                       document.body.removeChild(link);
                       URL.revokeObjectURL(url);
                     }}
-                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-2.5 text-body-sm font-semibold text-[#15803d] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] cursor-pointer"
+                    className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-white p-3 text-body-sm font-semibold text-[#15803d] shadow-2xs hover:bg-neutral-50 active:scale-[0.99] transition-all cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
-                      <FileCheck size={15} />
-                      <span>Download Fee Payment Receipt</span>
+                      <FileCheck size={16} className="text-[#15803d]" />
+                      <span>Download MahaKhanij Portal & Tax Invoice</span>
                     </span>
-                    <Download size={14} />
+                    <Download size={15} />
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs">
+              <p className="text-body text-ink font-semibold">Payment was cancelled or declined.</p>
+              <p className="mt-1 text-caption text-ink-secondary">
+                No amount was deducted from your account. You can retry the transaction safely.
+              </p>
+            </div>
+          )}
 
+          <div className="pt-2 space-y-2">
             {!succeeded && (
-              <Button size="lg" fullWidth onClick={() => startPayment(false)}>
-                {t.payment.tryAgain}
+              <Button size="lg" fullWidth onClick={() => setStage('SUMMARY')}>
+                Try Again
               </Button>
             )}
             <Button
@@ -357,7 +318,7 @@ Entity / Jurisdiction  : Maharashtra Infrastructure Corporation Ltd. · Ahilyana
                 navigate(ROUTES.excavationApplication(application.id), { replace: true })
               }
             >
-              {t.payment.viewApplication}
+              {succeeded ? 'Return to Application Overview →' : 'Back to Application'}
             </Button>
           </div>
         </div>
@@ -365,75 +326,363 @@ Entity / Jurisdiction  : Maharashtra Infrastructure Corporation Ltd. · Ahilyana
     );
   }
 
-  /* ---------- What is owed ---------- */
-  return (
-    <Screen
-      title={t.payment.title}
-      {...(application ? { subtitle: application.applicationNumber } : {})}
-      onBack
-      footer={
-        amount ? (
-          <Button size="lg" fullWidth leftIcon={<Lock size={15} />} onClick={() => startPayment(false)}>
-            {t.payment.proceed} · {formatMoney(amount)}
-          </Button>
-        ) : undefined
-      }
-    >
-      {query.loading && <LoadingState variant="list" rows={3} />}
-      {query.error && <ErrorState onRetry={query.reload} />}
+  /* ---------- GUIDED 2-STEP SEQUENTIAL WIZARD (FOR ALL PAYMENTS) ---------- */
+  if (application) {
+    const isStep1Done = grasPaid;
+    const isStep2Done = mahakhanijPaid;
 
-      {query.data && application && amount && (
-        <div className="pb-6">
-          <SectionHeader title={t.payment.summary} />
-          <Surface className="border-y border-line">
-            <DetailList
-              items={
-                paymentPurpose === 'DEMAND_NOTE' && application.demandNote
-                  ? [
-                      ...application.demandNote.breakdown.map((line) => ({
-                        label: line.label,
-                        value: formatMoney(line.amount),
-                        numeric: true,
-                      })),
-                    ]
-                  : [{ label: t.payment.applicationFee, value: formatMoney(amount), numeric: true }]
-              }
-            />
-          </Surface>
-
-          <Surface className="mt-4 border-y border-line px-4 py-4">
-            <div className="flex items-baseline justify-between gap-4">
-              <span className="text-title text-ink">{t.payment.payableNow}</span>
-              <span className="tabular text-title-lg text-ink">{formatMoney(amount)}</span>
-            </div>
-            {paymentPurpose === 'APPLICATION_FEE' && (
-              <p className="mt-2 text-body-sm text-ink-secondary">{t.excavation.feeNote}</p>
-            )}
-          </Surface>
-
-          {/* ==== PROTOTYPE ONLY — a real gateway decides the outcome ==== */}
-          <div className="px-4 pt-6">
-            <button
-              type="button"
-              onClick={() => startPayment(true)}
-              className="w-full rounded-md border border-dashed border-line-strong bg-surface px-3 py-2 text-caption text-ink-muted"
+    return (
+      <Screen
+        title="Payment & Settlement Hub"
+        subtitle={application.applicationNumber || 'Application Settlement'}
+        onBack
+        footer={
+          !isStep1Done ? (
+            <Button
+              size="lg"
+              fullWidth
+              leftIcon={<Lock size={15} />}
+              onClick={() => startPayment('GRAS', false)}
             >
-              {t.payment.simulateFailure}
-            </button>
-          </div>
-          {/* ==== end prototype block ==== */}
-        </div>
-      )}
-    </Screen>
-  );
-}
+              Step 1: Pay {formatMoney(grasAmount)} via GRAS
+            </Button>
+          ) : !isStep2Done ? (
+            <Button
+              size="lg"
+              fullWidth
+              leftIcon={<Sparkles size={15} />}
+              onClick={() => startPayment('MAHAKHANIJ', false)}
+            >
+              Step 2: Pay {formatMoney(mahakhanijAmount)} via MahaKhanij →
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              variant="primary"
+              fullWidth
+              onClick={() =>
+                navigate(ROUTES.excavationApplication(application.id), { replace: true })
+              }
+            >
+              Payments Settled · View Application →
+            </Button>
+          )
+        }
+      >
+        {query.loading && <LoadingState variant="list" rows={3} />}
+        {query.error && <ErrorState onRetry={query.reload} />}
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+        <div className="px-4 py-4 pb-12 space-y-4 bg-[#f8fafc]">
+          {/* Step 1 Completion Success Banner */}
+          {isStep1Done && !isStep2Done && (
+            <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-3.5 flex items-center justify-between animate-fadeIn shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white shrink-0">
+                  <Check size={14} strokeWidth={3} />
+                </span>
+                <div>
+                  <p className="text-body-sm font-bold text-emerald-950">Step 1 (GRAS Payment) Verified!</p>
+                  <p className="text-[11px] text-emerald-800">Challan GRN: MH000242672202627E. Now complete Step 2 below.</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => startPayment('MAHAKHANIJ', false)}
+              >
+                Pay Step 2 →
+              </Button>
+            </div>
+          )}
+
+          {/* Top Plot & Sanction Banner */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-caption font-bold text-[#1241a6]">
+                {paymentPurpose === 'DEMAND_NOTE'
+                  ? `DM Note: ${application.demandNote?.demandNoteNumber || '936'}`
+                  : `Proposal: ${application.applicationNumber}`}
+              </span>
+              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#1241a6] border border-blue-200">
+                2-Step Settlement
+              </span>
+            </div>
+            <h2 className="mt-1.5 text-body font-bold text-ink">
+              {application.applicant.fullName}, Gat No-{application.surveyNumber}, {application.village}
+            </h2>
+            <div className="mt-2 flex items-center gap-4 text-caption text-neutral-500">
+              <div>
+                <span>Quantity: </span>
+                <strong className="text-ink">{formatQuantity(application.estimatedQuantity)}</strong>
+              </div>
+              <div>
+                <span>Total Amount: </span>
+                <strong className="text-primary-700">{formatMoney(totalPayable)}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Stepper Progress Bar */}
+          <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-neutral-200 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'flex size-6 items-center justify-center rounded-full text-caption font-bold transition-all',
+                  isStep1Done ? 'bg-emerald-600 text-white' : 'bg-[#1241a6] text-white ring-2 ring-blue-100'
+                )}
+              >
+                {isStep1Done ? <Check size={13} strokeWidth={3} /> : '1'}
+              </span>
+              <span className={cn('text-caption font-semibold', isStep1Done ? 'text-emerald-700' : 'text-ink')}>
+                1. GRAS Payment
+              </span>
+            </div>
+
+            <ChevronRight size={16} className="text-neutral-300" />
+
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'flex size-6 items-center justify-center rounded-full text-caption font-bold transition-all',
+                  isStep2Done
+                    ? 'bg-emerald-600 text-white'
+                    : isStep1Done
+                    ? 'bg-[#1241a6] text-white ring-2 ring-blue-100'
+                    : 'bg-neutral-100 text-neutral-400'
+                )}
+              >
+                {isStep2Done ? <Check size={13} strokeWidth={3} /> : '2'}
+              </span>
+              <span
+                className={cn(
+                  'text-caption font-semibold',
+                  isStep2Done ? 'text-emerald-700' : isStep1Done ? 'text-ink' : 'text-neutral-400'
+                )}
+              >
+                2. MahaKhanij Payment
+              </span>
+            </div>
+          </div>
+
+          {/* ========================================================
+              STEP 1 CARD: GRAS CYBER TREASURY PAYMENT
+             ======================================================== */}
+          <div
+            className={cn(
+              'rounded-2xl border p-4 shadow-xs transition-all',
+              isStep1Done ? 'border-emerald-200 bg-emerald-50/40' : 'border-[#bfd5fb] bg-white ring-2 ring-[#eef4fe]'
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'flex size-7 items-center justify-center rounded-lg text-body-sm font-bold',
+                    isStep1Done ? 'bg-emerald-100 text-emerald-800' : 'bg-[#eef4fe] text-[#1241a6]'
+                  )}
+                >
+                  🏛️
+                </span>
+                <div>
+                  <h3 className="text-body-sm font-bold text-ink">Step 1: GRAS Payment (Government Treasury)</h3>
+                  <p className="text-[11px] text-neutral-500">Government Receipt Accounting System</p>
+                </div>
+              </div>
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-[11px] font-bold border',
+                  isStep1Done
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : 'bg-blue-50 text-[#1241a6] border-blue-200'
+                )}
+              >
+                {isStep1Done ? 'Settled' : 'Payment Due'}
+              </span>
+            </div>
+
+            {/* GRAS Table Breakdown */}
+            <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 space-y-2 text-caption">
+              {paymentPurpose === 'APPLICATION_FEE' ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 font-medium">Application Fee:</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(appFeeBreakdown.baseFee)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 font-medium">Stamp Duty:</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(appFeeBreakdown.stampDuty)}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 font-medium">Head:</span>
+                    <span className="font-semibold text-ink">{demandNoteSplit?.gras.head}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 font-medium">Assessed Royalty:</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.gras.amount || { amount: 2200, currency: 'INR' })}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between items-center border-t border-dashed border-neutral-200 pt-2 font-bold text-ink">
+                <span>Net Payable (GRAS Part A):</span>
+                <span className="tabular text-primary-700 font-bold">{formatMoney(grasAmount)}</span>
+              </div>
+            </div>
+
+            {/* If Paid: Show GRAS Audit History */}
+            {isStep1Done ? (
+              <div className="mt-3 rounded-xl bg-emerald-100/60 p-2.5 text-[11px] text-emerald-900 space-y-1">
+                <div className="flex justify-between">
+                  <span>Challan GRN:</span>
+                  <strong className="font-mono">MH000242672202627E</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>CIN Ref:</span>
+                  <strong className="font-mono">02003942026090389173</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className="font-bold text-emerald-700">Challan Generated & Verified</span>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <Button
+                  size="md"
+                  fullWidth
+                  leftIcon={<Lock size={14} />}
+                  onClick={() => startPayment('GRAS', false)}
+                >
+                  Pay {formatMoney(grasAmount)} via GRAS →
+                </Button>
+                <p className="mt-1.5 text-center text-[10px] text-neutral-400">
+                  Disclaimer: GRAS Payment Amount Non-Refundable (Direct Treasury Credit).
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ========================================================
+              STEP 2 CARD: MAHAKHANIJ PORTAL PAYMENT (DMF & SI)
+             ======================================================== */}
+          <div
+            className={cn(
+              'rounded-2xl border p-4 shadow-xs transition-all',
+              isStep2Done
+                ? 'border-emerald-200 bg-emerald-50/40'
+                : isStep1Done
+                ? 'border-[#bfd5fb] bg-white ring-2 ring-[#eef4fe]'
+                : 'border-neutral-200 bg-neutral-50 opacity-75'
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'flex size-7 items-center justify-center rounded-lg text-body-sm font-bold',
+                    isStep2Done
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : isStep1Done
+                      ? 'bg-[#eef4fe] text-[#1241a6]'
+                      : 'bg-neutral-200 text-neutral-500'
+                  )}
+                >
+                  ⛏️
+                </span>
+                <div>
+                  <h3 className="text-body-sm font-bold text-ink">Step 2: MahaKhanij Payment (DMF & Charges)</h3>
+                  <p className="text-[11px] text-neutral-500">District Mineral Foundation & Portal Services</p>
+                </div>
+              </div>
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-[11px] font-bold border',
+                  isStep2Done
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : isStep1Done
+                    ? 'bg-amber-100 text-amber-800 border-amber-200'
+                    : 'bg-neutral-200 text-neutral-600 border-neutral-300'
+                )}
+              >
+                {isStep2Done ? 'Settled' : isStep1Done ? 'Ready to Pay' : 'Locked'}
+              </span>
+            </div>
+
+            {/* MahaKhanij Table Breakdown */}
+            <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3 space-y-1.5 text-caption">
+              {paymentPurpose === 'APPLICATION_FEE' ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">SI Inspection Charges:</span>
+                    <span className="tabular font-medium text-ink">₹100</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">SI Tax (18% GST):</span>
+                    <span className="tabular font-medium text-ink">₹18</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">District DMF (10% of Royalty):</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.dmf || { amount: 220, currency: 'INR' })}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">SI Charges (Transit monitoring):</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.siCharges || { amount: 250, currency: 'INR' })}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">SI Tax (18% GST on SI):</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.siTax || { amount: 45, currency: 'INR' })}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500">District TCS (2%):</span>
+                    <span className="tabular font-medium text-ink">{formatMoney(demandNoteSplit?.mahakhanij.tcs || { amount: 44, currency: 'INR' })}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between items-center border-t border-dashed border-neutral-200 pt-2 font-bold text-ink">
+                <span>Net Payable (Part B):</span>
+                <span className="tabular text-primary-700 font-bold">{formatMoney(mahakhanijAmount)}</span>
+              </div>
+            </div>
+
+            {/* If Paid: Show MahaKhanij Transaction History */}
+            {isStep2Done ? (
+              <div className="mt-3 rounded-xl bg-emerald-100/60 p-2.5 text-[11px] text-emerald-900 space-y-1">
+                <div className="flex justify-between">
+                  <span>Transaction Ref:</span>
+                  <strong className="font-mono">BB5167841AE0492457C9BF1F</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className="font-bold text-emerald-700">Reconciled & Cleared</span>
+                </div>
+              </div>
+            ) : isStep1Done ? (
+              <div className="mt-3">
+                <Button
+                  size="md"
+                  fullWidth
+                  leftIcon={<Sparkles size={14} />}
+                  onClick={() => startPayment('MAHAKHANIJ', false)}
+                >
+                  Pay {formatMoney(mahakhanijAmount)} via MahaKhanij →
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl bg-neutral-100 p-2.5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
+                <Lock size={12} />
+                <span>Complete Step 1 (GRAS Payment) to unlock Step 2.</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  return null;
 }

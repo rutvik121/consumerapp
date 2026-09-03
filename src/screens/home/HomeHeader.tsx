@@ -17,11 +17,8 @@ export interface HomeHeaderProps {
  */
 export function HomeHeader({
   userName,
-  userRole = 'Individual',
-  regNumber = 'CON-2024-10425',
   notificationCount = 3,
   onNotificationClick,
-  isKycVerified = true,
   className,
 }: HomeHeaderProps) {
   function getGreeting(): string {
@@ -61,27 +58,6 @@ export function HomeHeader({
             </span>
           )}
         </button>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center rounded-full border border-amber-400/40 bg-amber-400/15 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300 capitalize">
-            {userRole}
-          </span>
-
-          {isKycVerified && (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
-              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              KYC Verified
-            </span>
-          )}
-        </div>
-
-        {regNumber && (
-          <span className="text-[11px] font-medium text-neutral-300/90 tabular tracking-wide">
-            {regNumber}
-          </span>
-        )}
       </div>
     </div>
   );

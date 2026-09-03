@@ -42,24 +42,13 @@ export function OrganizationHomeScreen() {
 
   const alertCount = overview.data?.attention.length ?? 3;
 
-  const regNumber = organization?.registrationNumber || 'CON-2024-10425';
-  const roleName = organization?.type
-    ? organization.type.charAt(0) + organization.type.slice(1).toLowerCase()
-    : 'Contractor';
-
   return (
-    <Screen
-      header={
-        <HomeHeader
-          userName={user?.fullName || 'Ramesh Kumar Sharma'}
-          userRole={roleName}
-          regNumber={regNumber}
-          notificationCount={alertCount}
-          onNotificationClick={() => setAlertsOpen(true)}
-          isKycVerified={true}
-        />
-      }
-    >
+    <Screen hideAppBar>
+      <HomeHeader
+        userName={user?.fullName || 'Ramesh Kumar Sharma'}
+        notificationCount={alertCount}
+        onNotificationClick={() => setAlertsOpen(true)}
+      />
       {overview.loading && <LoadingState variant="list" rows={5} />}
       {overview.error && <ErrorState onRetry={overview.reload} />}
       {overview.data && (

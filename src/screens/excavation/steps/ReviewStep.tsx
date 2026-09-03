@@ -168,14 +168,9 @@ export function ReviewStep({
 
       {/* Calculated Statutory Fee Card with Collapsible Breakdown */}
       <div className="rounded-xl border border-line bg-surface p-4 shadow-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Receipt size={16} className="text-primary-700" />
-            <h3 className="text-label font-bold text-ink">Application Fee Summary</h3>
-          </div>
-          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 border border-primary-100">
-            Slab: {feeBreakdown.slabRange}
-          </span>
+        <div className="flex items-center gap-1.5">
+          <Receipt size={16} className="text-primary-700" />
+          <h3 className="text-label font-bold text-ink">Application Fee Summary</h3>
         </div>
 
         <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-3">

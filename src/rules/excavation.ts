@@ -397,29 +397,65 @@ export function computeApplicationFee(quantityBrass: number = 100): Money {
   return calculateApplicationFeeBreakdown(quantityBrass).totalFee;
 }
 
-/** Per-tonne royalty used to compute a demand note. */
-const ROYALTY_PER_TONNE = 400;
-/** District Mineral Foundation contribution, as a share of royalty. */
-const DMF_RATE = 0.1;
-/** District cess, as a share of royalty. */
-const DISTRICT_CESS_RATE = 0.02;
+export interface DemandNoteChannelBreakdown {
+  gras: {
+    head: string;
+    amount: Money;
+    total: Money;
+  };
+  mahakhanij: {
+    dmf: Money;
+    siCharges: Money;
+    siTax: Money;
+    tcs: Money;
+    total: Money;
+  };
+  grandTotal: Money;
+}
+
+export function computeDetailedDemandNoteBreakdown(quantity: Quantity): DemandNoteChannelBreakdown {
+  const qty = quantity?.value || 10;
+  const royaltyAmount = Math.max(2200, Math.round(qty * 400));
+  const dmfAmount = Math.round(royaltyAmount * 0.10);
+  const siChargesAmount = Math.max(100, Math.round(qty * 25));
+  const siTaxAmount = Math.round(siChargesAmount * 0.18);
+  const tcsAmount = Math.round(royaltyAmount * 0.02);
+
+  const grasTotal = royaltyAmount;
+  const mahakhanijTotal = dmfAmount + siChargesAmount + siTaxAmount + tcsAmount;
+
+  return {
+    gras: {
+      head: 'Fees and Royalties',
+      amount: { amount: royaltyAmount, currency: 'INR' },
+      total: { amount: grasTotal, currency: 'INR' },
+    },
+    mahakhanij: {
+      dmf: { amount: dmfAmount, currency: 'INR' },
+      siCharges: { amount: siChargesAmount, currency: 'INR' },
+      siTax: { amount: siTaxAmount, currency: 'INR' },
+      tcs: { amount: tcsAmount, currency: 'INR' },
+      total: { amount: mahakhanijTotal, currency: 'INR' },
+    },
+    grandTotal: { amount: grasTotal + mahakhanijTotal, currency: 'INR' },
+  };
+}
 
 /**
  * Builds the demand note the department would raise for a given quantity.
  *
  * Modelled rather than invented wholesale: royalty plus DMF plus a district
- * cess is the common structure of a Maharashtra minor-mineral demand note. The
- * RATES are the placeholder part.
+ * cess is the common structure of a Maharashtra minor-mineral demand note.
  */
 export function computeDemandNoteBreakdown(quantity: Quantity): DemandNote['breakdown'] {
-  const royalty = Math.round(quantity.value * ROYALTY_PER_TONNE);
-  const dmf = Math.round(royalty * DMF_RATE);
-  const cess = Math.round(royalty * DISTRICT_CESS_RATE);
+  const detailed = computeDetailedDemandNoteBreakdown(quantity);
 
   return [
-    { label: 'Royalty', amount: { amount: royalty, currency: 'INR' } },
-    { label: 'District Mineral Foundation', amount: { amount: dmf, currency: 'INR' } },
-    { label: 'District cess', amount: { amount: cess, currency: 'INR' } },
+    { label: 'Fees & Royalty (GRAS Part A)', amount: detailed.gras.amount },
+    { label: 'District Mineral Foundation (DMF)', amount: detailed.mahakhanij.dmf },
+    { label: 'Supervision & Inspection (SI Charges)', amount: detailed.mahakhanij.siCharges },
+    { label: 'SI Tax (18% GST)', amount: detailed.mahakhanij.siTax },
+    { label: 'District TCS', amount: detailed.mahakhanij.tcs },
   ];
 }
 

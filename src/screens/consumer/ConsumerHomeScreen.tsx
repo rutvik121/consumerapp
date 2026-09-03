@@ -66,22 +66,12 @@ export function ConsumerHomeScreen() {
     } satisfies ConsumerHomeData;
   }, [user?.id]);
 
-  const regNumber = user?.id
-    ? `CON-${user.id.replace('user-con-', '2024-')}`
-    : 'CON-2024-10425';
-
   return (
-    <Screen
-      header={
-        <HomeHeader
-          userName={user?.fullName || 'Ramesh Kumar Sharma'}
-          userRole="Contractor"
-          regNumber={regNumber}
-          notificationCount={3}
-          isKycVerified={true}
-        />
-      }
-    >
+    <Screen hideAppBar>
+      <HomeHeader
+        userName={user?.fullName || 'Ramesh Kumar Sharma'}
+        notificationCount={3}
+      />
       {query.loading && <LoadingState variant="list" rows={4} />}
       {query.error && <ErrorState onRetry={query.reload} />}
       {query.data && <ConsumerHomeContent data={query.data} />}
