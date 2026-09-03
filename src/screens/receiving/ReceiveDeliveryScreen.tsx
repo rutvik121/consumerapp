@@ -63,7 +63,7 @@ export function ReceiveDeliveryScreen() {
     (candidate) => candidate.id === delivery?.permit.mineralId,
   );
 
-  const unit = delivery?.dispatchedQuantity.unit ?? 'MT';
+  const unit = delivery?.dispatchedQuantity.unit ?? 'Brass';
   const effectiveReceivedVal = receivedValue ?? delivery?.dispatchedQuantity.value ?? 0;
   const received: Quantity = { value: effectiveReceivedVal, unit };
   const discrepancy = delivery
@@ -335,7 +335,7 @@ Official electronic goods inward verification record.`;
               ) : (
                 <div className="rounded-xl bg-neutral-50 p-3 border border-neutral-200 space-y-2">
                   <QuantityInput
-                    label="Actual Weighed Quantity (MT)"
+                    label={`Actual Weighed Quantity (${unit})`}
                     value={receivedValue}
                     unit={unit}
                     onChange={setReceivedValue}

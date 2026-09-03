@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Clock,
   Download,
+  Edit3,
   FileCheck,
   FileText,
   IndianRupee,
@@ -306,7 +307,13 @@ export function TemporaryExcavationScreen() {
                   key={app.id}
                   application={app}
                   mineralTitle={mineralName(app.mineralId)}
-                  onClick={() => navigate(ROUTES.excavationApplication(app.id))}
+                  onClick={() =>
+                    navigate(
+                      app.status === 'DRAFT'
+                        ? `${ROUTES.newExcavationApplication}?draftId=${app.id}`
+                        : ROUTES.excavationApplication(app.id)
+                    )
+                  }
                 />
               ))}
             </div>
@@ -335,13 +342,13 @@ function ApplicationCard({
   // Derive stage brief for clean concise preview on card
   let stageBrief = {
     title: 'Stage 1: Application Submitted',
-    description: 'Application fee of ₹1,000 paid. Ready for departmental review.',
+    description: 'Application fee of ₹520 paid. Ready for departmental review.',
   };
 
   if (application.status === 'DRAFT') {
     stageBrief = {
-      title: 'Stage 1: Draft Application',
-      description: 'Application fee of ₹1,000 pending payment to submit.',
+      title: 'Draft Saved · In Progress',
+      description: 'Application saved. Tap to resume from where you left off and submit.',
     };
   } else if (application.status === 'UNDER_REVIEW') {
     stageBrief = {
@@ -408,7 +415,12 @@ function ApplicationCard({
       </div>
 
       {/* Concise Stage Brief Box */}
-      <div className="mt-3 rounded-xl border border-neutral-100 bg-[#f8fafc] p-2.5">
+      <div className={cn(
+        'mt-3 rounded-xl border p-2.5',
+        application.status === 'DRAFT'
+          ? 'border-amber-200 bg-amber-50/60'
+          : 'border-neutral-100 bg-[#f8fafc]'
+      )}>
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
             Current Stage
@@ -422,6 +434,8 @@ function ApplicationCard({
                 ? 'text-emerald-700'
                 : application.status === 'QUERY_RAISED'
                 ? 'text-amber-700'
+                : application.status === 'DRAFT'
+                ? 'text-amber-800'
                 : 'text-[#1241a6]'
             )}
           >
@@ -440,7 +454,20 @@ function ApplicationCard({
         </span>
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          {hasExcavationOrder(application) ? (
+          {application.status === 'DRAFT' ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#1241a6] hover:bg-[#0f3484] text-white px-3 py-1.5 text-[11px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`${ROUTES.newExcavationApplication}?draftId=${application.id}`);
+              }}
+            >
+              <Edit3 size={12} className="text-white" />
+              <span className="text-white">Resume Application</span>
+              <ArrowRight size={12} className="text-white" />
+            </button>
+          ) : hasExcavationOrder(application) ? (
             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#15803d] bg-[#dcfce7] px-2.5 py-1 rounded-lg border border-[#86efac]">
               <Download size={12} />
               <span>Permit Ready (Ordnrno-04/08/2026-1)</span>
@@ -462,11 +489,6 @@ function ApplicationCard({
             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
               <AlertTriangle size={12} />
               <span>Respond to Query</span>
-            </span>
-          ) : application.status !== 'DRAFT' ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1241a6] bg-[#eef4fe] px-2 py-0.5 rounded-lg border border-[#bfd5fb]">
-              <FileText size={11} />
-              <span>DM-244 Paid</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-primary-700 hover:text-primary-900">

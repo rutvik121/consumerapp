@@ -102,15 +102,15 @@ export interface DocumentDefinition {
   kind: ApplicationDocumentKind;
   category: DocumentCategory;
   label: string;
-  importance: 'IMPORTANT' | 'OPTIONAL';
+  importance: 'MANDATORY' | 'OPTIONAL';
   requiresDocumentNumber?: boolean;
 }
 
 export const APPLICATION_DOCUMENT_DEFINITIONS: DocumentDefinition[] = [
   /* Core Land & Identity */
-  { kind: 'PAN_CARD', category: 'IDENTITY_LAND', label: 'PAN Card Document', importance: 'IMPORTANT' },
-  { kind: 'SEVEN_TWELVE', category: 'IDENTITY_LAND', label: '7/12 Extract (Satbara)', importance: 'IMPORTANT' },
-  { kind: 'OWNER_APPROVAL', category: 'IDENTITY_LAND', label: 'Owner Approval / Affidavit', importance: 'IMPORTANT' },
+  { kind: 'PAN_CARD', category: 'IDENTITY_LAND', label: 'PAN Card Document', importance: 'MANDATORY' },
+  { kind: 'SEVEN_TWELVE', category: 'IDENTITY_LAND', label: '7/12 Extract (Satbara)', importance: 'MANDATORY' },
+  { kind: 'OWNER_APPROVAL', category: 'IDENTITY_LAND', label: 'Owner Approval / Affidavit', importance: 'MANDATORY' },
   { kind: 'AADHAAR_CARD', category: 'IDENTITY_LAND', label: 'Aadhaar Card Document', importance: 'OPTIONAL' },
   { kind: 'GST_CERTIFICATE', category: 'IDENTITY_LAND', label: 'GST Registration Certificate', importance: 'OPTIONAL' },
 
@@ -134,6 +134,12 @@ export const APPLICATION_DOCUMENT_DEFINITIONS: DocumentDefinition[] = [
   { kind: 'OTHER', category: 'OTHER', label: 'Other Supporting Documents', importance: 'OPTIONAL' },
 ];
 
+export const MANDATORY_DOCUMENTS: ApplicationDocumentKind[] = [
+  'PAN_CARD',
+  'SEVEN_TWELVE',
+  'OWNER_APPROVAL',
+];
+
 export interface RequiredDocument {
   kind: ApplicationDocumentKind;
   required: boolean;
@@ -142,15 +148,14 @@ export interface RequiredDocument {
 export const APPLICATION_DOCUMENTS: RequiredDocument[] = APPLICATION_DOCUMENT_DEFINITIONS.map(
   (doc) => ({
     kind: doc.kind,
-    required: false, // Per user instruction: all non-mandatory at initial filing!
+    required: doc.importance === 'MANDATORY',
   }),
 );
 
 export function missingRequiredDocuments(
-  _attached: readonly ApplicationDocumentKind[],
+  attached: readonly ApplicationDocumentKind[],
 ): ApplicationDocumentKind[] {
-  // All documents non-mandatory at filing; user has freedom to proceed
-  return [];
+  return MANDATORY_DOCUMENTS.filter((kind) => !attached.includes(kind));
 }
 
 /* ---------------------------------------------------------------------------
@@ -234,7 +239,7 @@ const PINCODE_PATTERN = /^[1-9]\d{5}$/;
 export function validateApplicationStep(
   step: ApplicationStep,
   draft: ApplicationDraft,
-  _attachedDocuments: readonly ApplicationDocumentKind[] = [],
+  attachedDocuments: readonly ApplicationDocumentKind[] = [],
 ): Record<string, string> {
   const errors: Record<string, string> = {};
 
@@ -313,10 +318,21 @@ export function validateApplicationStep(
   }
 
   if (step === 'DOCUMENTS') {
-    // Non-mandatory per user instruction: documents are optional at filing!
+    const missing = missingRequiredDocuments(attachedDocuments);
+    if (missing.length > 0) {
+      const missingLabels = APPLICATION_DOCUMENT_DEFINITIONS
+        .filter((d) => missing.includes(d.kind))
+        .map((d) => d.label)
+        .join(', ');
+      errors.documents = `Please upload all mandatory documents (*): ${missingLabels}`;
+    }
   }
 
   if (step === 'REVIEW') {
+    const missing = missingRequiredDocuments(attachedDocuments);
+    if (missing.length > 0) {
+      errors.documents = 'Upload all mandatory documents (*) before submitting.';
+    }
     if (!draft.declarationAccepted) {
       errors.declarationAccepted = 'Accept the declaration to continue.';
     }
@@ -328,14 +344,58 @@ export function validateApplicationStep(
 /* ---------------------------------------------------------------------------
  * FEES
  *
- * PROVISIONAL: every figure below is a placeholder. The real fee schedule and
- * royalty rates are set by the Revenue Department and must replace these
- * before production. They are isolated here so that replacing them is a
- * single-file change with no screen to touch.
+ * Tiered Application Fee Formula:
+ * - 1 – 500 Brass: Application Fee ₹500 + Stamp Duty ₹20 (Total ₹520)
+ * - 501 – 2,000 Brass: Application Fee ₹2,000 + Stamp Duty ₹20 (Total ₹2,020)
+ * - 2,000+ Brass: Application Fee ₹5,000 + Stamp Duty ₹20 (Total ₹5,020)
  * ------------------------------------------------------------------------ */
 
-/** Flat statutory fee payable before an application can be submitted. */
-export const APPLICATION_FEE: Money = { amount: 1000, currency: 'INR' };
+export interface ApplicationFeeBreakdown {
+  quantityBrass: number;
+  slabLabel: string;
+  slabRange: string;
+  baseFee: Money;
+  stampDuty: Money;
+  totalFee: Money;
+}
+
+export const STAMP_DUTY_FEE: Money = { amount: 20, currency: 'INR' };
+
+export function calculateApplicationFeeBreakdown(quantityBrass: number = 0): ApplicationFeeBreakdown {
+  const qty = Math.max(0, Number(quantityBrass) || 0);
+  let baseAmount = 500;
+  let slabLabel = '1 – 500 Brass';
+  let slabRange = '1 – 500 Brass';
+
+  if (qty > 2000) {
+    baseAmount = 5000;
+    slabLabel = '2,001+ Brass';
+    slabRange = '2,001+ Brass';
+  } else if (qty > 500) {
+    baseAmount = 2000;
+    slabLabel = '501 – 2,000 Brass';
+    slabRange = '501 – 2,000 Brass';
+  } else {
+    baseAmount = 500;
+    slabLabel = '1 – 500 Brass';
+    slabRange = '1 – 500 Brass';
+  }
+
+  const stampDutyAmount = 20;
+
+  return {
+    quantityBrass: qty,
+    slabLabel,
+    slabRange,
+    baseFee: { amount: baseAmount, currency: 'INR' },
+    stampDuty: { amount: stampDutyAmount, currency: 'INR' },
+    totalFee: { amount: baseAmount + stampDutyAmount, currency: 'INR' },
+  };
+}
+
+export function computeApplicationFee(quantityBrass: number = 100): Money {
+  return calculateApplicationFeeBreakdown(quantityBrass).totalFee;
+}
 
 /** Per-tonne royalty used to compute a demand note. */
 const ROYALTY_PER_TONNE = 400;
@@ -343,10 +403,6 @@ const ROYALTY_PER_TONNE = 400;
 const DMF_RATE = 0.1;
 /** District cess, as a share of royalty. */
 const DISTRICT_CESS_RATE = 0.02;
-
-export function computeApplicationFee(): Money {
-  return APPLICATION_FEE;
-}
 
 /**
  * Builds the demand note the department would raise for a given quantity.

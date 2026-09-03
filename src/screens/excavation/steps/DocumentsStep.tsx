@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import type { ApplicationDocumentKind } from '@/domain';
 import { DocumentChecklist, type AttachedDocument } from '../DocumentChecklist';
 
@@ -11,29 +11,40 @@ export interface DocumentsStepProps {
 }
 
 /**
- * STEP 4 · DOCUMENTS & CLEARANCES (Positioned at the end before payment)
+ * STEP 4 · DOCUMENTS & CLEARANCES
  *
- * Freedom of uploading:
- * Clear banner explains that documents are not strictly mandatory to submit
- * the application draft. Applicants can attach available clearances now or
- * provide them later during departmental query resolution.
+ * Mandatory documents marked with (*) must be attached before proceeding.
+ * Optional clearances or NOCs can be uploaded now or provided later if requested.
  */
 export function DocumentsStep({
   documents,
+  errors,
   onAttach,
   onRemove,
 }: DocumentsStepProps) {
   return (
     <div className="space-y-4">
-      {/* Informational banner about non-mandatory uploads */}
+      {/* Validation error banner */}
+      {errors.documents && (
+        <div className="rounded-xl border border-danger-200 bg-danger-50/80 p-3.5 text-body-sm text-danger-900 shadow-xs flex items-start gap-2.5">
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-danger-600" />
+          <div>
+            <p className="font-semibold text-danger-800">Mandatory Uploads Required</p>
+            <p className="mt-0.5 text-caption text-danger-700 leading-relaxed">
+              {errors.documents}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Informational banner about mandatory uploads */}
       <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-3.5 text-body-sm text-primary-900 shadow-xs">
         <div className="flex items-start gap-2.5">
           <Info size={18} className="mt-0.5 shrink-0 text-primary-600" />
           <div>
-            <p className="font-semibold">Documents are Optional at Filing</p>
+            <p className="font-semibold">Mandatory Documents Required (*)</p>
             <p className="mt-0.5 text-caption text-primary-800 leading-relaxed">
-              Upload any documents you have ready. Pending clearances or NOCs can also be uploaded
-              later if requested during departmental scrutiny.
+              Documents marked with an asterisk (<span className="text-danger-500 font-bold">*</span>) are mandatory to submit the application. Optional documents can be uploaded now or provided later during scrutiny.
             </p>
           </div>
         </div>

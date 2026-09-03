@@ -28,16 +28,6 @@ export function SupervisorsScreen() {
     <Screen
       title="Supervisors"
       onBack
-      actions={
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.registerSupervisor)}
-          className="flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1.5 text-caption font-semibold text-primary-700 hover:bg-primary-100 transition-colors"
-        >
-          <Plus size={15} />
-          Register
-        </button>
-      }
     >
       <div className="space-y-4 pb-12">
         {/* Top Summary Banner */}

@@ -86,7 +86,7 @@ export function DigiTpPassModal({
   const mineralType = customData?.mineralType || 'Stone';
   const quantity =
     customData?.quantity ||
-    (delivery ? formatQuantity(delivery.dispatchedQuantity) : '12 MT');
+    (delivery ? formatQuantity(delivery.dispatchedQuantity) : '12 Brass');
 
   const handleDownload = () => {
     setDownloading(true);
@@ -110,7 +110,7 @@ Distance (Km)          : ${distance}
 Created Date & Time    : ${createdAt}
 Validity Date & Time   : ${validUntil}
 Minor-Mineral Type     : ${mineralType}
-Quantity (Brass / MT)  : ${quantity}
+Quantity (Brass)       : ${quantity}
 -----------------------------------------------------
 Department of Mines & Geology Verified Transit Pass
 Authorized for transport within specified route & time.

@@ -29,7 +29,7 @@ const REPORT_ITEMS: DigiTpReportItem[] = [
     supplier: 'Shree Ganesh Stone Quarry',
     projectName: 'NH-48 Road Widening Site',
     mineralName: 'Basalt Stone',
-    quantity: '500 MT',
+    quantity: '500 Brass',
     status: 'IN_TRANSIT',
   },
   {
@@ -39,7 +39,7 @@ const REPORT_ITEMS: DigiTpReportItem[] = [
     supplier: 'Krishna River Sand Depo',
     projectName: 'Coastal Highway Bridge Site',
     mineralName: 'River Sand',
-    quantity: '200 MT',
+    quantity: '200 Brass',
     status: 'DELIVERED',
   },
   {
@@ -49,7 +49,7 @@ const REPORT_ITEMS: DigiTpReportItem[] = [
     supplier: 'Sahyadri Aggregate Hub',
     projectName: 'NH-48 Road Widening Site',
     mineralName: 'Stone Aggregate',
-    quantity: '150 MT',
+    quantity: '150 Brass',
     status: 'DELIVERED',
   },
   {
@@ -59,7 +59,7 @@ const REPORT_ITEMS: DigiTpReportItem[] = [
     supplier: 'Pragati Mines & Minerals',
     projectName: 'Metro Pillar Section 4',
     mineralName: 'Murum / Earth',
-    quantity: '350 MT',
+    quantity: '350 Brass',
     status: 'COMPLETED',
   },
 ];
@@ -166,7 +166,7 @@ export function ConsumerReportsScreen() {
               <TrendingUp size={16} />
             </div>
             <p className="mt-2 text-2xl font-bold tracking-tight text-[#134280]">
-              1,200 <span className="text-body-sm font-semibold">MT</span>
+              1,200 <span className="text-body-sm font-semibold">Brass</span>
             </p>
             <p className="mt-0.5 text-[11px] text-neutral-500">Across 4 registered projects</p>
           </div>
@@ -189,14 +189,14 @@ export function ConsumerReportsScreen() {
             <h3 className="text-caption font-bold tracking-wider text-neutral-500 uppercase">
               Mineral Procurement Breakdown
             </h3>
-            <span className="text-[11px] text-neutral-400">By weight (MT)</span>
+            <span className="text-[11px] text-neutral-400">By volume (Brass)</span>
           </div>
 
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-body-sm font-medium">
                 <span className="text-ink">Basalt Stone</span>
-                <span className="tabular font-bold text-ink">500 MT (41.6%)</span>
+                <span className="tabular font-bold text-ink">500 Brass (41.6%)</span>
               </div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                 <div className="h-full rounded-full bg-[#1241a6]" style={{ width: '41.6%' }} />
@@ -206,7 +206,7 @@ export function ConsumerReportsScreen() {
             <div>
               <div className="flex justify-between text-body-sm font-medium">
                 <span className="text-ink">Murum / Earth</span>
-                <span className="tabular font-bold text-ink">350 MT (29.2%)</span>
+                <span className="tabular font-bold text-ink">350 Brass (29.2%)</span>
               </div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                 <div className="h-full rounded-full bg-[#0284c7]" style={{ width: '29.2%' }} />
@@ -216,7 +216,7 @@ export function ConsumerReportsScreen() {
             <div>
               <div className="flex justify-between text-body-sm font-medium">
                 <span className="text-ink">River Sand</span>
-                <span className="tabular font-bold text-ink">200 MT (16.7%)</span>
+                <span className="tabular font-bold text-ink">200 Brass (16.7%)</span>
               </div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                 <div className="h-full rounded-full bg-[#f59e0b]" style={{ width: '16.7%' }} />
@@ -226,7 +226,7 @@ export function ConsumerReportsScreen() {
             <div>
               <div className="flex justify-between text-body-sm font-medium">
                 <span className="text-ink">Stone Aggregate</span>
-                <span className="tabular font-bold text-ink">150 MT (12.5%)</span>
+                <span className="tabular font-bold text-ink">150 Brass (12.5%)</span>
               </div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                 <div className="h-full rounded-full bg-[#8b5cf6]" style={{ width: '12.5%' }} />

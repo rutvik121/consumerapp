@@ -271,7 +271,7 @@ export function ConsumerActivityScreen() {
                     </div>
                     <div>
                       <span className="text-neutral-500 font-medium">Qty: </span>
-                      <span className="tabular font-bold text-ink">12 MT</span>
+                      <span className="tabular font-bold text-ink">12 Brass</span>
                     </div>
                   </div>
 
@@ -343,7 +343,7 @@ export function ConsumerActivityScreen() {
                     </div>
                     <div>
                       <span className="text-neutral-500 font-medium">Qty: </span>
-                      <span className="tabular font-bold text-ink">500 MT</span>
+                      <span className="tabular font-bold text-ink">500 Brass</span>
                     </div>
                   </div>
 
@@ -392,7 +392,7 @@ export function ConsumerActivityScreen() {
                   </div>
 
                   <div className="mt-2.5">
-                    <p className="text-body font-bold text-ink">Stone Aggregate · 150 MT</p>
+                    <p className="text-body font-bold text-ink">Stone Aggregate · 150 Brass</p>
                     <p className="mt-0.5 text-caption text-neutral-500">
                       Delivered at NH-48 Road Widening Site
                     </p>
@@ -421,7 +421,7 @@ export function ConsumerActivityScreen() {
                   </div>
 
                   <div className="mt-2.5">
-                    <p className="text-body font-bold text-ink">Murum / Earth · 350 MT</p>
+                    <p className="text-body font-bold text-ink">Murum / Earth · 350 Brass</p>
                     <p className="mt-0.5 text-caption text-neutral-500">
                       Delivered at NH-48 Road Widening Site
                     </p>

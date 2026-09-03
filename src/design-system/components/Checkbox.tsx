@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -33,40 +33,43 @@ export function Checkbox({
   disabled = false,
   className,
 }: CheckboxProps) {
-  const id = useId();
+  const isChecked = Boolean(checked);
 
   return (
     <div className={className}>
-      <label
-        htmlFor={id}
+      <div
+        role="checkbox"
+        aria-checked={isChecked}
+        tabIndex={disabled ? -1 : 0}
+        onClick={() => {
+          if (!disabled) {
+            onChange(!isChecked);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (!disabled && (e.key === ' ' || e.key === 'Enter')) {
+            e.preventDefault();
+            onChange(!isChecked);
+          }
+        }}
         className={cn(
-          'flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-colors',
-          checked ? 'border-primary-500 bg-primary-50/60' : 'border-line-strong bg-surface',
-          error && !checked && 'border-danger-500',
+          'flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-colors select-none outline-none',
+          'focus-visible:ring-2 focus-visible:ring-primary-400',
+          isChecked ? 'border-primary-500 bg-primary-50/60' : 'border-line-strong bg-surface',
+          error && !isChecked && 'border-danger-500',
           disabled && 'cursor-not-allowed opacity-55',
         )}
       >
-        <input
-          id={id}
-          type="checkbox"
-          checked={checked}
-          disabled={disabled}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
-          onChange={(event) => onChange(event.target.checked)}
-          className="peer sr-only"
-        />
         <span
           aria-hidden
           className={cn(
             'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border transition-colors',
-            'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-100',
-            checked
+            isChecked
               ? 'border-primary-600 bg-primary-600 text-white'
               : 'border-line-strong bg-surface',
           )}
         >
-          {checked && <Check size={13} strokeWidth={3} />}
+          {isChecked && <Check size={13} strokeWidth={3} />}
         </span>
 
         <span className="min-w-0 flex-1">
@@ -75,10 +78,10 @@ export function Checkbox({
             <span className="mt-1 block text-caption text-ink-muted">{description}</span>
           )}
         </span>
-      </label>
+      </div>
 
       {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-caption text-danger-600">
+        <p className="mt-1.5 text-caption text-danger-600">
           {error}
         </p>
       )}

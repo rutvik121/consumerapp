@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, ErrorState, LoadingState, StepProgress, Surface } from '@/design-system';
 import { OrganizationContextBar, Screen } from '@/navigation';
 import { mineralRepository, useAsync } from '@/data';
@@ -11,38 +11,16 @@ import { LocationStep } from './steps/LocationStep';
 import { DocumentsStep } from './steps/DocumentsStep';
 import { ReviewStep } from './steps/ReviewStep';
 
-/**
- * NEW TEMPORARY EXCAVATION APPLICATION — ORGANIZATION ONLY.
- *
- * The same application the Mahakhanij web portal takes, asked in the same
- * order, split into the five steps a phone can hold:
- *
- *   1 APPLICANT   who is applying          (pre-filled from the account)
- *   2 EXCAVATION  what, how much, how, when
- *   3 LOCATION    which quarry, and the pin on the map
- *   4 DOCUMENTS   the department's checklist
- *   5 REVIEW      read it back, declare, pay
- *
- * This component composes; it does not decide. Form state and step rules live
- * in `useApplicationForm`, field validation in @/rules/excavation, and each
- * step renders itself. That separation is deliberate — a five-step statutory
- * form is exactly the thing that turns into an unreadable thousand-line
- * screen if the state and the markup share a file.
- *
- * CONTEXT: project and package are attached from the operating context and
- * never asked for. An organization that reached this from a package is
- * applying for that package; one that did not is applying at organization
- * level. Adding a selector would ask for something already known in the first
- * case and invent a requirement in the second.
- */
 export function NewApplicationScreen() {
   const organization = useCurrentOrganization();
   const user = useCurrentUser();
   const context = useOperatingContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get('draftId');
   const t = useCopy();
 
-  const form = useApplicationForm({ user, organization, context });
+  const form = useApplicationForm({ user, organization, context, draftId });
   const minerals = useAsync(() => mineralRepository.listAll(), []);
 
   const isReview = form.step === 'REVIEW';
@@ -50,7 +28,7 @@ export function NewApplicationScreen() {
 
   return (
     <Screen
-      title={t.excavation.newApplication}
+      title={draftId ? 'Resume Application' : t.excavation.newApplication}
       onBack={() => {
         if (!form.back()) navigate(-1);
       }}

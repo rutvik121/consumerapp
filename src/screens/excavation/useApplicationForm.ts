@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
   ApplicationDocumentKind,
@@ -11,6 +11,7 @@ import type {
 } from '@/domain';
 import {
   APPLICATION_STEPS,
+  missingRequiredDocuments,
   type ApplicationDraft,
   type ApplicationStep,
   validateApplicationStep,
@@ -24,23 +25,15 @@ export interface UseApplicationFormOptions {
   user: User | null;
   organization: Organization | null;
   context: OperatingContext | null;
+  draftId?: string | null;
 }
 
 /**
  * ALL OF THE FORM'S STATE, IN ONE PLACE AND OUT OF THE SCREEN.
  *
- * The screen renders steps; this decides what a step is, when it may be left,
- * and what the finished draft becomes. Keeping them apart is what stops a
- * five-step form from turning into a thousand-line component, and it is what
- * lets the Flutter team read the flow without reading any JSX.
- *
- * PRE-FILL, NOT RE-ASK. The applicant fields open populated from the signed-in
- * account and the organization's registered address, and stay editable. The
- * web form asks for them, so the mobile form shows them — but showing a known
- * answer for confirmation is not the same as asking a user for something the
- * app already knows.
+ * Supports creating new applications and resuming saved drafts seamlessly.
  */
-export function useApplicationForm({ user, organization, context }: UseApplicationFormOptions) {
+export function useApplicationForm({ user, organization, context, draftId }: UseApplicationFormOptions) {
   const navigate = useNavigate();
 
   const [stepIndex, setStepIndex] = useState(0);
@@ -49,6 +42,87 @@ export function useApplicationForm({ user, organization, context }: UseApplicati
   const [submitting, setSubmitting] = useState(false);
 
   const [draft, setDraft] = useState<ApplicationDraft>(() => initialDraft(user, organization));
+
+  useEffect(() => {
+    if (!draftId) return;
+    let cancelled = false;
+    void temporaryExcavationRepository.getById(draftId).then((existing) => {
+      if (cancelled || !existing) return;
+
+      setDraft((prev) => ({
+        ...prev,
+        fullName: existing.applicant.fullName || prev.fullName,
+        mobileNumber: existing.applicant.mobileNumber || prev.mobileNumber,
+        email: existing.applicant.email || prev.email,
+        panNumber: existing.applicant.panNumber || prev.panNumber,
+        aadhaarNumber: existing.applicant.aadhaarNumber || prev.aadhaarNumber,
+        gstNumber: existing.applicant.gstNumber || prev.gstNumber,
+        idProofType: existing.applicant.idProofType || prev.idProofType,
+        idProofNumber: existing.applicant.idProofNumber || prev.idProofNumber,
+        alternatePhone: existing.applicant.alternatePhone || prev.alternatePhone,
+        registeredAddressLine: existing.applicant.registeredAddress?.line1 || prev.registeredAddressLine,
+        registeredTaluka: existing.applicant.registeredAddress?.taluka || prev.registeredTaluka,
+        registeredDistrict: existing.applicant.registeredAddress?.district || prev.registeredDistrict,
+        registeredPincode: existing.applicant.registeredAddress?.pincode || prev.registeredPincode,
+
+        /* Proposal */
+        mineralId: existing.mineralId || prev.mineralId,
+        estimatedQuantity: existing.estimatedQuantity.value || prev.estimatedQuantity,
+        excavationQuantityBrass: Math.round(existing.estimatedQuantity.value / 4.5) || prev.excavationQuantityBrass,
+        excavationMethod: existing.excavationMethod || prev.excavationMethod,
+        depthInMetres: existing.depthInMetres ?? prev.depthInMetres,
+        fromDate: existing.fromDate || prev.fromDate,
+        toDate: existing.toDate || prev.toDate,
+        purpose: existing.purpose || prev.purpose,
+        reasonForApplying: existing.purpose || prev.reasonForApplying,
+
+        /* Location */
+        districtCode: existing.siteAddress.district || prev.districtCode,
+        districtName: existing.siteAddress.district || prev.districtName,
+        talukaCode: existing.siteAddress.taluka || prev.talukaCode,
+        talukaName: existing.siteAddress.taluka || prev.talukaName,
+        villageCode: existing.village || prev.villageCode,
+        villageName: existing.village || prev.villageName,
+        surveyNumber: existing.surveyNumber || prev.surveyNumber,
+        landType: existing.landType || prev.landType,
+        totalPlotAreaHectare: existing.areaInSqm ? existing.areaInSqm / 10000 : prev.totalPlotAreaHectare,
+        siteGeo: existing.siteGeo || prev.siteGeo,
+        surveyEntries: [
+          {
+            id: 'survey-1',
+            surveyNumber: existing.surveyNumber || '142/1',
+            areaInHectares: existing.areaInSqm ? existing.areaInSqm / 10000 : 0.75,
+            sevenTwelveAttached: true,
+            ownerApprovalAttached: true,
+          },
+        ],
+      }));
+
+      if (existing.documents && existing.documents.length > 0) {
+        setDocuments(
+          existing.documents.map((d) => ({
+            kind: d.kind,
+            documentType: d.documentType,
+            fileName: d.fileName,
+            ...(d.documentNumber ? { documentNumber: d.documentNumber } : {}),
+          })),
+        );
+      }
+
+      // Resume from the exact step:
+      // If missing mandatory documents -> jump to Step 3 (DOCUMENTS)
+      // If all mandatory docs attached -> jump to Step 4 (REVIEW)
+      const missingMandatory = missingRequiredDocuments(existing.documents.map((d) => d.kind));
+      if (missingMandatory.length === 0 && existing.documents.length > 0) {
+        setStepIndex(4); // REVIEW
+      } else {
+        setStepIndex(3); // DOCUMENTS
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [draftId]);
 
   const step: ApplicationStep = APPLICATION_STEPS[stepIndex] ?? 'APPLICANT';
   const attachedKinds = useMemo(
@@ -243,9 +317,7 @@ function initialDraft(user: User | null, organization: Organization | null): App
  */
 function toCreateInput(draft: ApplicationDraft, declarationAccepted: boolean) {
   const siteGeo: GeoPoint = draft.siteGeo ?? { latitude: 18.5204, longitude: 73.8567 };
-  const quantityValue = draft.excavationQuantityBrass
-    ? Math.round(draft.excavationQuantityBrass * 4.5)
-    : (draft.estimatedQuantity ?? 100);
+  const quantityValue = draft.excavationQuantityBrass ?? draft.estimatedQuantity ?? 100;
 
   return {
     applicant: {
@@ -275,7 +347,7 @@ function toCreateInput(draft: ApplicationDraft, declarationAccepted: boolean) {
     reasonForApplying: draft.reasonForApplying.trim(),
 
     mineralId: draft.mineralId || 'mineral-sand-01',
-    estimatedQuantity: { value: quantityValue, unit: 'MT' as const },
+    estimatedQuantity: { value: quantityValue, unit: 'Brass' as const },
     excavationMethod: (draft.excavationMethod || 'SEMI_MECHANISED') as ExcavationMethod,
     purpose: draft.purpose.trim() || draft.reasonForApplying.trim(),
     ...(draft.remarks.trim() ? { remarks: draft.remarks.trim() } : {}),

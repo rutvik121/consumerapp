@@ -628,7 +628,7 @@ export const temporaryExcavationRepository = {
         fromDate: input.fromDate ?? '',
         toDate: input.toDate ?? '',
         ...(input.declarationAccepted ? { declarationAcceptedAt: now } : {}),
-        applicationFee: computeApplicationFee(),
+        applicationFee: computeApplicationFee(input.estimatedQuantity?.value ?? 100),
         status: 'DRAFT',
         statusUpdatedAt: now,
         documents: input.documents.map((document, index) => ({

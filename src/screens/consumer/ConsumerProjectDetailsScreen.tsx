@@ -76,7 +76,7 @@ export function ConsumerProjectDetailsScreen() {
   const handleDownloadCertificate = () => {
     setIsDownloadingCert(true);
     setTimeout(() => {
-      const content = `=======================================================\nGOVERNMENT OF MAHARASHTRA - DIRECTORATE OF GEOLOGY & MINING\nSITE MINERAL PROCUREMENT & TRANSIT VERIFICATION CERTIFICATE\n=======================================================\nProject / Site: ${project?.name || 'NH-48 Road Widening Site'}\nRegistration Code: ${project?.code || 'CON-2024-10425'}\nLocation: ${project?.location.line1}, ${project?.location.taluka}, ${project?.location.district} - ${project?.location.pincode}\nOwner / Consumer: ${user?.fullName || 'Aniket Deshmukh'}\nMobile: ${user?.mobileNumber || '+91 98220 12345'}\n\nVERIFIED DELIVERIES & DIGITP SUMMARY:\n1. DigiTP No: DTP-2024-8842 | Mineral: River Sand (12 MT) | Status: In Transit\n2. DigiTP No: DTP-2024-7931 | Mineral: Basalt Stone (500 MT) | Status: Pass Issued\n3. DigiTP No: DTP-2024-6420 | Mineral: Stone Aggregate (150 MT) | Status: Delivered\n\nTotal Legal Minerals Accounted: 662 MT\nVerified By: Mahakhanij Smart Transit System\nTimestamp: ${new Date().toISOString()}\n=======================================================`;
+      const content = `=======================================================\nGOVERNMENT OF MAHARASHTRA - DIRECTORATE OF GEOLOGY & MINING\nSITE MINERAL PROCUREMENT & TRANSIT VERIFICATION CERTIFICATE\n=======================================================\nProject / Site: ${project?.name || 'NH-48 Road Widening Site'}\nRegistration Code: ${project?.code || 'CON-2024-10425'}\nLocation: ${project?.location.line1}, ${project?.location.taluka}, ${project?.location.district} - ${project?.location.pincode}\nOwner / Consumer: ${user?.fullName || 'Aniket Deshmukh'}\nMobile: ${user?.mobileNumber || '+91 98220 12345'}\n\nVERIFIED DELIVERIES & DIGITP SUMMARY:\n1. DigiTP No: DTP-2024-8842 | Mineral: River Sand (12 Brass) | Status: In Transit\n2. DigiTP No: DTP-2024-7931 | Mineral: Basalt Stone (500 Brass) | Status: Pass Issued\n3. DigiTP No: DTP-2024-6420 | Mineral: Stone Aggregate (150 Brass) | Status: Delivered\n\nTotal Legal Minerals Accounted: 662 Brass\nVerified By: Mahakhanij Smart Transit System\nTimestamp: ${new Date().toISOString()}\n=======================================================`;
 
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -174,7 +174,7 @@ export function ConsumerProjectDetailsScreen() {
                 <div className="flex items-center justify-between text-body-sm">
                   <span className="font-semibold text-ink">River Sand</span>
                   <span className="text-caption font-bold text-neutral-700">
-                    12 MT <span className="font-normal text-neutral-500">/ 20 MT (60%)</span>
+                    12 Brass <span className="font-normal text-neutral-500">/ 20 Brass (60%)</span>
                   </span>
                 </div>
                 <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -187,7 +187,7 @@ export function ConsumerProjectDetailsScreen() {
                 <div className="flex items-center justify-between text-body-sm">
                   <span className="font-semibold text-ink">Basalt Stone / Aggregate</span>
                   <span className="text-caption font-bold text-neutral-700">
-                    500 MT <span className="font-normal text-neutral-500">/ 600 MT (83%)</span>
+                    500 Brass <span className="font-normal text-neutral-500">/ 600 Brass (83%)</span>
                   </span>
                 </div>
                 <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -200,7 +200,7 @@ export function ConsumerProjectDetailsScreen() {
                 <div className="flex items-center justify-between text-body-sm">
                   <span className="font-semibold text-ink">Murum / Soil</span>
                   <span className="text-caption font-bold text-neutral-700">
-                    350 MT <span className="font-normal text-neutral-500">/ 400 MT (87%)</span>
+                    350 Brass <span className="font-normal text-neutral-500">/ 400 Brass (87%)</span>
                   </span>
                 </div>
                 <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -242,7 +242,7 @@ export function ConsumerProjectDetailsScreen() {
 
                 <div className="mt-2.5 flex items-baseline justify-between text-caption">
                   <span className="font-semibold text-ink">River Sand</span>
-                  <span className="tabular font-bold text-ink">12 MT</span>
+                  <span className="tabular font-bold text-ink">12 Brass</span>
                 </div>
 
                 <p className="mt-1 text-caption text-neutral-500">
@@ -292,7 +292,7 @@ export function ConsumerProjectDetailsScreen() {
 
                 <div className="mt-2.5 flex items-baseline justify-between text-caption">
                   <span className="font-semibold text-ink">Basalt Stone</span>
-                  <span className="tabular font-bold text-ink">500 MT</span>
+                  <span className="tabular font-bold text-ink">500 Brass</span>
                 </div>
 
                 <p className="mt-1 text-caption text-neutral-500">
@@ -324,7 +324,7 @@ export function ConsumerProjectDetailsScreen() {
 
                 <div className="mt-2.5 flex items-baseline justify-between text-caption">
                   <span className="font-semibold text-ink">Stone Aggregate</span>
-                  <span className="tabular font-bold text-ink">150 MT</span>
+                  <span className="tabular font-bold text-ink">150 Brass</span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-2 text-caption">

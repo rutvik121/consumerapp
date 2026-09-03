@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
+  ArrowRight,
   CheckCircle2,
   Clock,
   Download,
+  Edit3,
   FileCheck,
   FileText,
   IndianRupee,
@@ -431,172 +433,208 @@ Status                 : Digitally Archived
           {/* TAB 1: STATUS & ACTIONS */}
           {activeTab === 'STATUS' && (
             <div className="space-y-4">
-              {/* Visually Rich 4-Stage Milestone Journey Stepper */}
-              <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
-                  <div>
-                    <h3 className="text-body-sm font-bold text-ink">Application Journey</h3>
-                    <p className="text-[11px] text-neutral-500">Government Review & Grant Lifecycle</p>
-                  </div>
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-xs',
-                      application.status === 'ORDER_ISSUED'
-                        ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
-                        : application.status === 'DEMAND_NOTE_ISSUED'
-                        ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
-                        : application.status === 'QUERY_RAISED'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                        : 'bg-[#eef4fe] text-[#1241a6] border border-[#bfd5fb]'
-                    )}
-                  >
-                    Stage {currentStageIndex} of 4: {
-                      currentStageIndex === 1
-                        ? 'Submission'
-                        : currentStageIndex === 2
-                        ? 'Officer Review'
-                        : currentStageIndex === 3
-                        ? 'Demand Note'
-                        : 'Permit Granted'
-                    }
-                  </span>
-                </div>
-
-                <div className="relative pl-1 space-y-6">
-                  {/* Vertical Track Line */}
-                  <div className="absolute left-[19px] top-3 bottom-3 w-0.5 bg-neutral-200 -z-0" />
-
-                  {/* Stage 1: Application Submission */}
-                  <div className="relative flex items-start gap-3.5 z-10">
-                    <span
-                      className={cn(
-                        'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
-                        currentStageIndex > 1 || application.status !== 'DRAFT'
-                          ? 'bg-[#1241a6] text-white ring-4 ring-[#eef4fe]'
-                          : currentStageIndex === 1
-                          ? 'bg-[#1241a6] text-white ring-4 ring-[#eef4fe]'
-                          : 'bg-neutral-100 text-neutral-400'
-                      )}
-                    >
-                      {currentStageIndex > 1 || application.status !== 'DRAFT' ? (
-                        <CheckCircle2 size={16} />
-                      ) : (
-                        '1'
-                      )}
+              {application.status === 'DRAFT' ? (
+                /* Dedicated Draft Resume Card */
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-xs space-y-4">
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800 shrink-0">
+                      <Edit3 size={20} />
                     </span>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-body-sm font-bold text-ink">1. Application & Processing Fee</p>
-                        <span className="text-[11px] font-semibold text-neutral-400">
-                          {application.submittedAt ? formatDate(application.submittedAt) : 'Draft'}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-body font-bold text-ink">Draft Application</h3>
+                        <span className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300/70 px-2 py-0.5 rounded-full">
+                          In Progress
                         </span>
                       </div>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
-                        {application.status === 'DRAFT'
-                          ? 'Application fee of ₹520 pending payment to submit for review.'
-                          : 'Application fee of ₹520 paid & verified via GRAS (Receipt: MH091123313123).'}
+                      <p className="mt-1 text-body-sm text-neutral-600 leading-relaxed">
+                        This application is saved as a draft. You can resume editing where you left off, verify proposal and plot details, upload mandatory compliance documents, and submit whenever you are ready.
                       </p>
                     </div>
                   </div>
 
-                  {/* Stage 2: Department Review & Site Inspection */}
-                  <div className="relative flex items-start gap-3.5 z-10">
+                  <div className="rounded-xl border border-amber-200/80 bg-white p-3.5 space-y-2 text-caption">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Draft Number:</span>
+                      <span className="font-mono font-bold text-ink">{application.applicationNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Mineral & Volume:</span>
+                      <span className="font-semibold text-ink">{mineral?.name} · {formatQuantity(application.estimatedQuantity)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Plot Location:</span>
+                      <span className="font-medium text-ink">Survey No. {application.surveyNumber}, {application.village}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">Uploaded Documents:</span>
+                      <span className="font-semibold text-ink">{application.documents.length} attached</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${ROUTES.newExcavationApplication}?draftId=${application.id}`)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1241a6] hover:bg-[#0f3484] text-white py-3 px-4 text-body-sm font-bold shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+                  >
+                    <Edit3 size={16} />
+                    <span>Resume & Complete Application</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              ) : (
+                /* Visually Rich 4-Stage Milestone Journey Stepper for submitted applications */
+                <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-xs">
+                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
+                    <div>
+                      <h3 className="text-body-sm font-bold text-ink">Application Journey</h3>
+                      <p className="text-[11px] text-neutral-500">Government Review & Grant Lifecycle</p>
+                    </div>
                     <span
                       className={cn(
-                        'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
-                        currentStageIndex > 2
-                          ? 'bg-[#1241a6] text-white ring-4 ring-[#eef4fe]'
+                        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-xs',
+                        application.status === 'ORDER_ISSUED'
+                          ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
+                          : application.status === 'DEMAND_NOTE_ISSUED'
+                          ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
+                          : application.status === 'QUERY_RAISED'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-[#eef4fe] text-[#1241a6] border border-[#bfd5fb]'
+                      )}
+                    >
+                      Stage {currentStageIndex} of 4: {
+                        currentStageIndex === 1
+                          ? 'Submission'
                           : currentStageIndex === 2
-                          ? application.status === 'QUERY_RAISED'
-                            ? 'bg-amber-500 text-white ring-4 ring-amber-100'
-                            : 'bg-[#1241a6] text-white ring-4 ring-[#eef4fe]'
-                          : 'bg-neutral-100 text-neutral-400 ring-2 ring-white'
-                      )}
-                    >
-                      {currentStageIndex > 2 ? <CheckCircle2 size={16} /> : '2'}
-                    </span>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-body-sm font-bold text-ink">2. Mining Officer Review & Inspection</p>
-                        {currentStageIndex === 2 && (
-                          <span className={cn(
-                            'text-[11px] font-bold px-2 py-0.5 rounded-full',
-                            application.status === 'QUERY_RAISED' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                          )}>
-                            {application.status === 'QUERY_RAISED' ? 'Query Raised' : 'In Progress'}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
-                        Collectorate & Mining Officer boundary demarcation, 7/12 extract and environmental compliance check.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Stage 3: Demand Note & Royalty Assessment */}
-                  <div className="relative flex items-start gap-3.5 z-10">
-                    <span
-                      className={cn(
-                        'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
-                        currentStageIndex > 3
-                          ? 'bg-[#15803d] text-white ring-4 ring-[#dcfce7]'
+                          ? 'Officer Review'
                           : currentStageIndex === 3
-                          ? 'bg-[#15803d] text-white ring-4 ring-[#dcfce7]'
-                          : 'bg-neutral-100 text-neutral-400 ring-2 ring-white'
-                      )}
-                    >
-                      {currentStageIndex > 3 ? <CheckCircle2 size={16} /> : '3'}
+                          ? 'Demand Note'
+                          : 'Permit Granted'
+                      }
                     </span>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-body-sm font-bold text-ink">3. Demand Note & Royalty Assessment</p>
-                        {currentStageIndex === 3 && (
-                          <span className="text-[11px] font-bold bg-[#dcfce7] text-[#166534] px-2 py-0.5 rounded-full">
-                            Payment Due
-                          </span>
-                        )}
-                        {currentStageIndex > 3 && (
-                          <span className="text-[11px] font-bold text-[#15803d]">Settled</span>
-                        )}
-                      </div>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
-                        {application.demandNote
-                          ? `Royalty assessment completed (${formatMoney(application.demandNote.totalAmount)}). Notice: ${application.demandNote.demandNoteNumber || 'DM No. 936'}.`
-                          : 'Official assessment of mineral extraction royalty, DMF, and district cess.'}
-                      </p>
-                    </div>
                   </div>
 
-                  {/* Stage 4: Excavation Order & Permit Issued */}
-                  <div className="relative flex items-start gap-3.5 z-10">
-                    <span
-                      className={cn(
-                        'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
-                        currentStageIndex === 4
-                          ? 'bg-[#15803d] text-white ring-4 ring-[#dcfce7]'
-                          : 'bg-neutral-100 text-neutral-400 ring-2 ring-white'
-                      )}
-                    >
-                      {currentStageIndex === 4 ? <CheckCircle2 size={16} /> : '4'}
-                    </span>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-body-sm font-bold text-ink">4. Extraction Order & Permit Issued</p>
-                        {currentStageIndex === 4 && (
-                          <span className="text-[11px] font-bold bg-[#dcfce7] text-[#166534] px-2 py-0.5 rounded-full">
-                            Permit Granted
+                  <div className="relative pl-1 space-y-6">
+                    {/* Vertical Track Line */}
+                    <div className="absolute left-[19px] top-3 bottom-3 w-0.5 bg-neutral-200 -z-0" />
+
+                    {/* Stage 1: Application Submission */}
+                    <div className="relative flex items-start gap-3.5 z-10">
+                      <span className="flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all bg-[#1241a6] text-white ring-4 ring-[#eef4fe]">
+                        <CheckCircle2 size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-body-sm font-bold text-ink">1. Application & Processing Fee</p>
+                          <span className="text-[11px] font-semibold text-neutral-400">
+                            {application.submittedAt ? formatDate(application.submittedAt) : 'Submitted'}
                           </span>
-                        )}
+                        </div>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">
+                          Application fee of ₹520 paid & verified via GRAS (Receipt: MH091123313123).
+                        </p>
                       </div>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
-                        {application.excavationOrder
-                          ? `Official Order: ${application.excavationOrder.orderNumber} issued. Movement passes (DigiTP) authorized.`
-                          : 'Official Government e-permit issued for extraction and electronic transit passes.'}
-                      </p>
+                    </div>
+
+                    {/* Stage 2: Department Review & Site Inspection */}
+                    <div className="relative flex items-start gap-3.5 z-10">
+                      <span
+                        className={cn(
+                          'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
+                          currentStageIndex > 2
+                            ? 'bg-[#1241a6] text-white ring-4 ring-[#eef4fe]'
+                            : currentStageIndex === 2
+                            ? application.status === 'QUERY_RAISED'
+                              ? 'bg-amber-500 text-white ring-4 ring-amber-100'
+                              : 'bg-[#1241a6] text-white ring-4 ring-[#eef4fe]'
+                            : 'bg-neutral-100 text-neutral-400 ring-2 ring-white'
+                        )}
+                      >
+                        {currentStageIndex > 2 ? <CheckCircle2 size={16} /> : '2'}
+                      </span>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-body-sm font-bold text-ink">2. Mining Officer Review & Inspection</p>
+                          {currentStageIndex === 2 && (
+                            <span className={cn(
+                              'text-[11px] font-bold px-2 py-0.5 rounded-full',
+                              application.status === 'QUERY_RAISED' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                            )}>
+                              {application.status === 'QUERY_RAISED' ? 'Query Raised' : 'In Progress'}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">
+                          Collectorate & Mining Officer boundary demarcation, 7/12 extract and environmental compliance check.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Stage 3: Demand Note & Royalty Assessment */}
+                    <div className="relative flex items-start gap-3.5 z-10">
+                      <span
+                        className={cn(
+                          'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
+                          currentStageIndex > 3
+                            ? 'bg-[#15803d] text-white ring-4 ring-[#dcfce7]'
+                            : currentStageIndex === 3
+                            ? 'bg-[#15803d] text-white ring-4 ring-[#dcfce7]'
+                            : 'bg-neutral-100 text-neutral-400 ring-2 ring-white'
+                        )}
+                      >
+                        {currentStageIndex > 3 ? <CheckCircle2 size={16} /> : '3'}
+                      </span>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-body-sm font-bold text-ink">3. Demand Note & Royalty Assessment</p>
+                          {currentStageIndex === 3 && (
+                            <span className="text-[11px] font-bold bg-[#dcfce7] text-[#166534] px-2 py-0.5 rounded-full">
+                              Payment Due
+                            </span>
+                          )}
+                          {currentStageIndex > 3 && (
+                            <span className="text-[11px] font-bold text-[#15803d]">Settled</span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">
+                          {application.demandNote
+                            ? `Royalty assessment completed (${formatMoney(application.demandNote.totalAmount)}). Notice: ${application.demandNote.demandNoteNumber || 'DM No. 936'}.`
+                            : 'Official assessment of mineral extraction royalty, DMF, and district cess.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Stage 4: Excavation Order & Permit Issued */}
+                    <div className="relative flex items-start gap-3.5 z-10">
+                      <span
+                        className={cn(
+                          'flex size-8 items-center justify-center rounded-full text-caption font-bold shrink-0 transition-all',
+                          currentStageIndex === 4
+                            ? 'bg-[#15803d] text-white ring-4 ring-[#dcfce7]'
+                            : 'bg-neutral-100 text-neutral-400 ring-2 ring-white'
+                        )}
+                      >
+                        {currentStageIndex === 4 ? <CheckCircle2 size={16} /> : '4'}
+                      </span>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-body-sm font-bold text-ink">4. Extraction Order & Permit Issued</p>
+                          {currentStageIndex === 4 && (
+                            <span className="text-[11px] font-bold bg-[#dcfce7] text-[#166534] px-2 py-0.5 rounded-full">
+                              Permit Granted
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">
+                          {application.excavationOrder
+                            ? `Official Order: ${application.excavationOrder.orderNumber} issued. Movement passes (DigiTP) authorized.`
+                            : 'Official Government e-permit issued for extraction and electronic transit passes.'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Query Raised Banner */}
               {needsApplicantResponse(application) && (
@@ -657,18 +695,6 @@ Status                 : Digitally Archived
                         {formatMoney(application.demandNote.totalAmount)}
                       </span>
                     </div>
-                  </div>
-
-                  <div className="mt-3.5">
-                    <button
-                      type="button"
-                      onClick={() => navigate(ROUTES.applicationPayment(application.id, 'demand-note'))}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-body-sm font-bold shadow-xs transition-all active:scale-[0.99] cursor-pointer"
-                      style={{ backgroundColor: '#15803d', color: '#ffffff' }}
-                    >
-                      <IndianRupee size={16} className="text-white" />
-                      <span className="text-white">Pay Demand Note · {formatMoney(application.demandNote.totalAmount)}</span>
-                    </button>
                   </div>
                 </div>
               )}

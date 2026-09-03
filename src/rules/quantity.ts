@@ -19,7 +19,7 @@ function assertSameUnit(a: Quantity, b: Quantity): void {
   if (a.unit !== b.unit) throw new UnitMismatchError(a.unit, b.unit);
 }
 
-export function quantity(value: number, unit: MineralUnit = 'MT'): Quantity {
+export function quantity(value: number, unit: MineralUnit = 'Brass'): Quantity {
   return { value, unit };
 }
 

@@ -119,12 +119,9 @@ export function ExcavationStep({ draft, errors, update, minerals }: ExcavationSt
             onChange={(event) => {
               const val = event.target.value ? Number(event.target.value) : null;
               update('excavationQuantityBrass', val);
-              if (val) update('estimatedQuantity', Math.round(val * 4.5));
+              if (val) update('estimatedQuantity', val);
             }}
           />
-          <p className="mt-1 text-[11px] text-ink-muted">
-            ≈ {draft.excavationQuantityBrass ? Math.round(draft.excavationQuantityBrass * 4.5) : 0} MT (Metric Tonnes)
-          </p>
         </div>
 
         <Input

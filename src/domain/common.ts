@@ -22,7 +22,7 @@ export type ISODate = string;
  * Project Context uses MT throughout, so MT is the default. BRASS and CUM are
  * modelled but unused until confirmed.
  */
-export type MineralUnit = 'MT' | 'CUM' | 'BRASS';
+export type MineralUnit = 'Brass' | 'MT' | 'CUM' | 'BRASS';
 
 /** A quantity is always a value AND a unit. Never pass a bare number around. */
 export interface Quantity {

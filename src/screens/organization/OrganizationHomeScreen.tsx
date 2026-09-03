@@ -102,7 +102,7 @@ function OverviewSections({
       status: 'IN_TRANSIT',
       destination: 'NH-48 Road Widening Site',
       mineralName: 'Basalt Stone',
-      quantity: '500 MT',
+      quantity: '500 Brass',
       onClick: () => {
         const activeId = overview.activeDeliveries[0]?.id || 'del-001';
         navigate(ROUTES.liveVehicleTracking(activeId));
@@ -116,7 +116,7 @@ function OverviewSections({
       status: 'PASS_ISSUED',
       destination: 'Coastal Highway Bridge Site',
       mineralName: 'River Sand',
-      quantity: '200 MT',
+      quantity: '200 Brass',
       onClick: () => navigate(`${ROUTES.activity}?tab=live`),
     },
     {
@@ -127,7 +127,7 @@ function OverviewSections({
       status: 'RECEIVED',
       destination: 'NH-48 Road Widening Site',
       mineralName: 'Stone Aggregate',
-      quantity: '150 MT',
+      quantity: '150 Brass',
       onClick: () => navigate(`${ROUTES.activity}?tab=delivered`),
     },
   ];

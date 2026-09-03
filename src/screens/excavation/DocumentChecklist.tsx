@@ -95,7 +95,7 @@ export function DocumentChecklist({ attached, onAttach, onRemove }: DocumentChec
       <ul className="space-y-3">
         {filteredDocs.map((doc) => {
           const file = attached.find((a) => a.kind === doc.kind);
-          const isImportant = doc.importance === 'IMPORTANT';
+          const isMandatory = doc.importance === 'MANDATORY';
 
           return (
             <li
@@ -104,7 +104,9 @@ export function DocumentChecklist({ attached, onAttach, onRemove }: DocumentChec
                 'rounded-xl border p-3.5 transition-all',
                 file
                   ? 'border-success-300 bg-success-50/40 shadow-xs'
-                  : 'border-line bg-surface hover:border-neutral-300',
+                  : isMandatory
+                  ? 'border-line bg-surface hover:border-neutral-300'
+                  : 'border-line/70 bg-surface/80 hover:border-neutral-300',
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -119,29 +121,20 @@ export function DocumentChecklist({ attached, onAttach, onRemove }: DocumentChec
                   </span>
 
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-body-sm font-semibold text-ink">{doc.label}</p>
-                      <span
-                        className={cn(
-                          'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                          isImportant
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300/60'
-                            : 'bg-neutral-100 text-neutral-600 border border-neutral-200',
-                        )}
-                      >
-                        {isImportant ? 'Important' : 'Optional'}
-                      </span>
-                    </div>
+                    <p className="text-body-sm font-semibold text-ink">
+                      {doc.label}
+                      {isMandatory && <span className="text-danger-500 font-bold ml-1">*</span>}
+                    </p>
 
                     <p className="mt-0.5 text-caption text-ink-muted">
                       {file ? (
                         <span className="font-medium text-success-800">
                           {file.fileName} {file.documentNumber ? `· Ref: ${file.documentNumber}` : ''}
                         </span>
-                      ) : isImportant ? (
-                        'Recommended for faster approval'
+                      ) : isMandatory ? (
+                        'Mandatory document required to proceed'
                       ) : (
-                        'Can be furnished during scrutiny if required'
+                        'Optional — can be furnished during scrutiny if required'
                       )}
                     </p>
                   </div>

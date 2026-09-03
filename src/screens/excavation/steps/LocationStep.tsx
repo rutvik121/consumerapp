@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CloudDownload, MapPin, Plus, Trash2 } from 'lucide-react';
+import { CloudDownload, MapPin, Trash2 } from 'lucide-react';
 import type { GeoPoint, SurveyEntry } from '@/domain';
 import { Button, Input, Select, cn } from '@/design-system';
 import {
@@ -91,21 +91,6 @@ export function LocationStep({ draft, errors, update, patch }: LocationStepProps
       update('surveyEntries', updated);
       update('surveyNumber', currentSurveyInput.trim());
     }, 800);
-  }
-
-  function handleAddSurvey() {
-    if (!currentSurveyInput.trim()) return;
-    const newEntry: SurveyEntry = {
-      id: `survey-${Date.now()}`,
-      surveyNumber: currentSurveyInput.trim(),
-      areaInHectares: draft.totalPlotAreaHectare ?? 0.5,
-      sevenTwelveAttached: false,
-      ownerApprovalAttached: false,
-    };
-    const updated = [...draft.surveyEntries.filter((s) => s.surveyNumber !== newEntry.surveyNumber), newEntry];
-    update('surveyEntries', updated);
-    update('surveyNumber', currentSurveyInput.trim());
-    setCurrentSurveyInput('');
   }
 
   function handleRemoveSurvey(id: string) {
@@ -228,36 +213,31 @@ export function LocationStep({ draft, errors, update, patch }: LocationStepProps
           </label>
         </div>
 
-        <div className="flex gap-2 items-start">
-          <div className="flex-1">
+        {/* Survey No Input & Fetch 7/12 Button in one line */}
+        <div className="flex items-end gap-2">
+          <div className="flex-1 min-w-0">
             <Input
               label="Survey No. / CTS No."
               required
               placeholder="e.g. 142/1"
               value={currentSurveyInput}
-              onChange={(e) => setCurrentSurveyInput(e.target.value)}
+              onChange={(e) => {
+                setCurrentSurveyInput(e.target.value);
+                update('surveyNumber', e.target.value);
+              }}
             />
           </div>
 
           <Button
             type="button"
             variant="secondary"
-            className="mt-6 shrink-0"
+            className="shrink-0 h-[46px] mb-[1px] px-3.5"
             loading={fetching712}
-            leftIcon={<CloudDownload size={15} />}
+            disabled={fetching712 || !currentSurveyInput.trim()}
+            leftIcon={<CloudDownload size={16} />}
             onClick={handleFetch712}
           >
             Fetch 7/12
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="mt-6 shrink-0"
-            leftIcon={<Plus size={15} />}
-            onClick={handleAddSurvey}
-          >
-            Add
           </Button>
         </div>
 

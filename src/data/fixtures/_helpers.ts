@@ -1,7 +1,7 @@
 import type { MineralUnit, Quantity } from '@/domain';
 
-/** Terse quantity constructor for fixtures. MT is the default unit. */
-export function q(value: number, unit: MineralUnit = 'MT'): Quantity {
+/** Terse quantity constructor for fixtures. Brass is the default unit. */
+export function q(value: number, unit: MineralUnit = 'Brass'): Quantity {
   return { value, unit };
 }
 
