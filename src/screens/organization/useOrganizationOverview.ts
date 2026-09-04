@@ -57,6 +57,9 @@ export interface OrganizationOverview {
 
   /** Temporary Excavation module summary. Organization-only. */
   activeApplicationCount: number;
+  pendingApplicationsCount: number;
+  pendingDemandNotesCount: number;
+  permitIssuedCount: number;
   applicationsNeedingAttention: number;
 
   /** Lookups the screen needs to render a delivery row without extra calls. */
@@ -141,6 +144,15 @@ function compose({
     activeDeliveries,
 
     activeApplicationCount: applications.filter(isApplicationActive).length,
+    pendingApplicationsCount: applications.filter(
+      (app) => app.status === 'UNDER_REVIEW' || app.status === 'QUERY_RAISED' || app.status === 'DRAFT'
+    ).length,
+    pendingDemandNotesCount: applications.filter(
+      (app) => app.status === 'DEMAND_NOTE_ISSUED'
+    ).length,
+    permitIssuedCount: applications.filter(
+      (app) => app.status === 'ORDER_ISSUED'
+    ).length,
     applicationsNeedingAttention: applications.filter(
       (application) => application.status === 'QUERY_RAISED',
     ).length,

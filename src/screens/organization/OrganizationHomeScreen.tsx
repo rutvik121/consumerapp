@@ -74,12 +74,12 @@ function OverviewSections({
   const navigate = useNavigate();
   const t = useCopy();
 
-  const projectCount = Math.max(overview.activeProjectCount, 5);
-  const tempAppCount = Math.max(overview.activeApplicationCount, 2);
-  const demandNotesCount = Math.max(overview.applicationsNeedingAttention, 1);
-  const digitpCount = Math.max(overview.activeDeliveries.length + overview.activeOrderCount, 3);
-  const inTransitCount = Math.max(overview.activeDeliveries.length, 2);
-  const permitCount = 2;
+  const projectCount = overview.activeProjectCount;
+  const tempAppCount = overview.pendingApplicationsCount;
+  const demandNotesCount = overview.pendingDemandNotesCount;
+  const digitpCount = overview.activeDeliveries.length + overview.activeOrderCount;
+  const inTransitCount = overview.activeDeliveries.filter((d) => d.status === 'IN_TRANSIT').length || overview.activeDeliveries.length;
+  const permitCount = overview.permitIssuedCount;
 
   // Recent deliveries matching the mockups
   const deliveriesList: DeliveryItemSummary[] = [

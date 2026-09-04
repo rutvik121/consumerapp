@@ -151,7 +151,7 @@ export function TemporaryExcavationScreen() {
               <p className="mt-0.5 text-[11px] text-neutral-500">All submitted permits</p>
             </div>
 
-            {/* Card 2: Under Review */}
+            {/* Card 2: Pending Application */}
             <div
               onClick={() => setActiveTab('UNDER_REVIEW')}
               className={cn(
@@ -162,7 +162,7 @@ export function TemporaryExcavationScreen() {
               )}
             >
               <div className="flex items-center justify-between text-[#b45309]">
-                <span className="text-caption font-semibold">Under Review</span>
+                <span className="text-caption font-semibold">Pending Application</span>
                 <Clock size={15} />
               </div>
               <p className="mt-1 text-2xl font-bold tracking-tight text-[#b45309]">
@@ -236,7 +236,7 @@ export function TemporaryExcavationScreen() {
                   : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
               )}
             >
-              Under Review ({underReviewCount})
+              Pending Application ({underReviewCount})
             </button>
             <button
               type="button"

@@ -82,9 +82,9 @@ export function ConsumerHomeScreen() {
 function ConsumerHomeContent({ data }: { data: ConsumerHomeData }) {
   const navigate = useNavigate();
 
-  const projectCount = 1;
-  const digitpCount = 2;
-  const inTransitCount = 1;
+  const projectCount = data.projects.length;
+  const digitpCount = data.activeDeliveries.length;
+  const inTransitCount = data.activeDeliveries.filter((d) => d.status === 'IN_TRANSIT').length || 1;
 
   // Map real deliveries or provide realistic prototype preview deliveries matching the design
   const deliveriesList: DeliveryItemSummary[] = [
