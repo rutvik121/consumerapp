@@ -69,8 +69,8 @@ export function ConsumerHomeScreen() {
   return (
     <Screen hideAppBar>
       <HomeHeader
-        userName={user?.fullName || 'Ramesh Kumar Sharma'}
-        notificationCount={3}
+        userName={user?.fullName || 'Rohit Sanghavi'}
+        notificationCount={4}
       />
       {query.loading && <LoadingState variant="list" rows={4} />}
       {query.error && <ErrorState onRetry={query.reload} />}

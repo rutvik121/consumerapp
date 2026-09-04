@@ -45,7 +45,7 @@ export function OrganizationHomeScreen() {
   return (
     <Screen hideAppBar>
       <HomeHeader
-        userName={user?.fullName || 'Ramesh Kumar Sharma'}
+        userName={user?.fullName || 'Rohit Sanghavi'}
         notificationCount={alertCount}
         onNotificationClick={() => setAlertsOpen(true)}
       />

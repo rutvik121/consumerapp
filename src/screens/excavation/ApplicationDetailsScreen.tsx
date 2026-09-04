@@ -247,7 +247,7 @@ Sr.No  Account Head Details                 Amount (₹)
 1      Fees and Royalties                   ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.75), currency: 'INR' })}
        Total Amount (Part A)                ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.75), currency: 'INR' })}
 
-PART B : MAHAKHANIJ PORTAL
+PART B : MAHAKHANIJ PAYMENT
 Sr.No  Account Head Details                 Amount (₹)
 1      Ahmednagar DMF (10% of Royalty)       ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.10), currency: 'INR' })}
 2      SI Charges                           ${formatMoney({ amount: Math.round(application.demandNote.totalAmount.amount * 0.08), currency: 'INR' })}

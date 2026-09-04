@@ -276,7 +276,7 @@ Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
                       type="button"
                       onClick={() => {
                         const content = `================================================================================
-MAHAKHANIJ PORTAL — TAX INVOICE & DMF TRUST RECEIPT
+MAHAKHANIJ PAYMENT — TAX INVOICE & DMF TRUST RECEIPT
 GOVERNMENT OF MAHARASHTRA / DISTRICT COLLECTORATE
 ================================================================================
 Transaction Number     : BB5167841AE0492457C9BF1F
@@ -543,7 +543,7 @@ Payment Status         : VERIFIED & SETTLED
                     <span className="text-[10px] font-bold text-teal-800 bg-teal-100 px-1.5 py-0.2 rounded">Ready</span>
                   )}
                 </div>
-                <p className="text-caption font-bold">⛏️ MahaKhanij Portal</p>
+                <p className="text-caption font-bold">⛏️ MahaKhanij Payment</p>
                 <p className="text-[11px] text-neutral-500">DMF (10%) & Charges</p>
                 <p className="text-body-sm font-bold text-teal-800 tabular pt-0.5">
                   {formatMoney(mahakhanijDemandAmount)}
@@ -676,7 +676,7 @@ Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
           </div>
 
           {/* ========================================================
-              CARD 2 OF 2: MAHAKHANIJ PORTAL (DMF & CHARGES)
+              CARD 2 OF 2: MAHAKHANIJ PAYMENT (DMF & CHARGES)
              ======================================================== */}
           <div
             className={cn(
@@ -690,7 +690,7 @@ Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
           >
             <div className="flex items-center justify-between">
               <h3 className={cn('text-caption font-bold uppercase tracking-wider', isStep1Done || isStep2Done ? 'text-emerald-900' : 'text-neutral-600')}>
-                PAYMENT 2 OF 2 · MAHAKHANIJ PORTAL & TRUST
+                PAYMENT 2 OF 2 · MAHAKHANIJ PAYMENT & TRUST
               </h3>
               <span
                 className={cn(
@@ -742,7 +742,7 @@ Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
                     <strong className="font-mono font-bold">BB5167841AE0492457C9BF1F</strong>
                   </div>
                   <div className="flex justify-between border-t border-emerald-200/80 pt-1">
-                    <span className="text-emerald-800">DMF Portal Status:</span>
+                    <span className="text-emerald-800">DMF Payment Status:</span>
                     <span className="font-bold text-emerald-700 flex items-center gap-1">
                       <Check size={13} strokeWidth={3} /> Reconciled & Cleared
                     </span>
@@ -753,7 +753,7 @@ Payment Status         : SUCCESS / TREASURY SCROLL VERIFIED
                   type="button"
                   onClick={() => {
                     const content = `================================================================================
-MAHAKHANIJ PORTAL — TAX INVOICE & DMF TRUST RECEIPT
+MAHAKHANIJ PAYMENT — TAX INVOICE & DMF TRUST RECEIPT
 GOVERNMENT OF MAHARASHTRA / DISTRICT COLLECTORATE
 ================================================================================
 Transaction Number     : BB5167841AE0492457C9BF1F
