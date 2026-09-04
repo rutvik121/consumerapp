@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CloudDownload, MapPin, Trash2 } from 'lucide-react';
+import { MapPin, Plus, Trash2 } from 'lucide-react';
 import type { GeoPoint, SurveyEntry } from '@/domain';
 import { Button, Input, Select, cn } from '@/design-system';
 import {
@@ -234,10 +234,10 @@ export function LocationStep({ draft, errors, update, patch }: LocationStepProps
             className="shrink-0 h-[46px] mb-[1px] px-3.5"
             loading={fetching712}
             disabled={fetching712 || !currentSurveyInput.trim()}
-            leftIcon={<CloudDownload size={16} />}
+            leftIcon={<Plus size={16} />}
             onClick={handleFetch712}
           >
-            Fetch 7/12
+            Add survey
           </Button>
         </div>
 
