@@ -166,7 +166,7 @@ export function ReviewStep({
         onEdit={() => onEdit('DOCUMENTS')}
       />
 
-      {/* Calculated Statutory Fee Card with Collapsible Breakdown */}
+      {/* Calculated Application Fee Card with Collapsible Breakdown */}
       <div className="rounded-xl border border-line bg-surface p-4 shadow-xs">
         <div className="flex items-center gap-1.5">
           <Receipt size={16} className="text-primary-700" />
@@ -175,7 +175,7 @@ export function ReviewStep({
 
         <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-3">
           <div>
-            <span className="text-body font-semibold text-ink">Total Statutory Amount Payable</span>
+            <span className="text-body font-semibold text-ink">Total Application Fee Payable</span>
             <p className="text-caption text-ink-muted">
               Computed for <strong>{quantityBrass} Brass</strong> via GRAS Cyber Treasury
             </p>

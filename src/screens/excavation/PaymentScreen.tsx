@@ -129,7 +129,7 @@ export function PaymentScreen() {
 
   const purposeLabel =
     paymentPurpose === 'APPLICATION_FEE'
-      ? 'GRAS Cyber Treasury (Statutory Application Fee & Stamp Duty)'
+      ? 'GRAS Cyber Treasury (Application Fee & Stamp Duty)'
       : currentChannel === 'GRAS'
       ? 'GRAS Cyber Treasury (Mineral Extraction Royalty Head)'
       : 'MahaKhanij Gateway (DMF & SI Infrastructure)';
@@ -196,7 +196,7 @@ export function PaymentScreen() {
             </p>
             <p className="mt-0.5 text-caption text-neutral-500">
               {paymentPurpose === 'APPLICATION_FEE'
-                ? 'Statutory Application Fee Settled via GRAS Cyber Treasury'
+                ? 'Application Fee Settled via GRAS Cyber Treasury'
                 : 'GRAS Royalty & MahaKhanij DMF Fully Reconciled'}
             </p>
           </div>
@@ -353,7 +353,7 @@ Payment Status         : VERIFIED & SETTLED
     return (
       <Screen
         title="Application Fee Payment"
-        subtitle={application.applicationNumber || 'Statutory Assessment'}
+        subtitle={application.applicationNumber || 'Application Fee Assessment'}
         onBack
         footer={
           <button
@@ -374,7 +374,7 @@ Payment Status         : VERIFIED & SETTLED
           <div className="rounded-3xl border border-emerald-300 bg-[#f0fdf4] p-4.5 shadow-xs">
             <div className="flex items-center justify-between">
               <h3 className="text-caption font-bold uppercase tracking-wider text-emerald-900">
-                APPLICATION FEE & STATUTORY ASSESSMENT
+                APPLICATION FEE ASSESSMENT
               </h3>
               <span className="flex size-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-body-sm font-bold">
                 ₹
@@ -382,7 +382,7 @@ Payment Status         : VERIFIED & SETTLED
             </div>
 
             <p className="mt-1.5 text-caption text-emerald-800/90 leading-relaxed">
-              Pay the statutory application fee to submit your excavation proposal. The proposal is forwarded to the mining officer as soon as payment succeeds.
+              Pay the application fee to submit your excavation proposal. The proposal is forwarded to the mining officer as soon as payment succeeds.
             </p>
 
             {/* Inner White Breakdown Card */}
@@ -400,7 +400,7 @@ Payment Status         : VERIFIED & SETTLED
                 <span className="font-medium text-ink tabular">{quantityValue} Brass</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500">Statutory Fee:</span>
+                <span className="text-neutral-500">Application Fee:</span>
                 <span className="font-medium text-ink tabular">{formatMoney(appFeeBreakdown.baseFee)}</span>
               </div>
               <div className="flex justify-between items-center">
