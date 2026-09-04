@@ -195,6 +195,20 @@ export interface ApplicationDraft {
   purpose: string;
   remarks: string;
 
+  /* Project Details (Conditional on QUARRY_PROJECT_SELF_CONSUMPTION) */
+  totalExcavationQuantityBrass: number | null;
+  projectType: 'GOVERNMENT' | 'PRIVATE';
+  departmentName: string;
+  officeName: string;
+  workOrderNumber: string;
+  workOrderDocumentName?: string;
+  projectCode: string;
+  projectName: string;
+  projectAddress: string;
+  projectLatitude: string;
+  projectLongitude: string;
+  zeroRoyaltyScheme: 'NO' | 'YES';
+
   /* 3 · Quarry and location */
   category: LocationCategory;
   plotLocationType: PlotLocationType;
@@ -291,6 +305,21 @@ export function validateApplicationStep(
     }
     if (!draft.reasonForApplying.trim()) {
       errors.reasonForApplying = 'Enter reason for applying.';
+    }
+
+    if (draft.applicationType === 'QUARRY_PROJECT_SELF_CONSUMPTION') {
+      if (draft.totalExcavationQuantityBrass === null || draft.totalExcavationQuantityBrass <= 0) {
+        errors.totalExcavationQuantityBrass = 'Enter total excavation quantity in Brass.';
+      }
+      if (draft.projectType !== 'PRIVATE') {
+        if (!draft.departmentName?.trim()) errors.departmentName = 'Enter department name.';
+        if (!draft.officeName?.trim()) errors.officeName = 'Enter office name.';
+      }
+      if (!draft.projectCode?.trim()) errors.projectCode = 'Enter project code.';
+      if (!draft.projectName?.trim()) errors.projectName = 'Enter project name.';
+      if (!draft.projectAddress?.trim()) errors.projectAddress = 'Enter project address.';
+      if (!draft.projectLatitude?.trim()) errors.projectLatitude = 'Enter project latitude.';
+      if (!draft.projectLongitude?.trim()) errors.projectLongitude = 'Enter project longitude.';
     }
   }
 

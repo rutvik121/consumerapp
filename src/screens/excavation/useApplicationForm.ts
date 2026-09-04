@@ -279,6 +279,20 @@ function initialDraft(user: User | null, organization: Organization | null): App
     purpose: 'Commercial plot excavation and infrastructure fill',
     remarks: '',
 
+    /* Project Details (Conditional on QUARRY_PROJECT_SELF_CONSUMPTION) */
+    totalExcavationQuantityBrass: 500,
+    projectType: 'GOVERNMENT',
+    departmentName: '',
+    officeName: '',
+    workOrderNumber: '',
+    workOrderDocumentName: '',
+    projectCode: '',
+    projectName: '',
+    projectAddress: '',
+    projectLatitude: '19.4500',
+    projectLongitude: '73.3300',
+    zeroRoyaltyScheme: 'NO',
+
     /* 3 · Quarry and location */
     category: 'RURAL',
     plotLocationType: 'INTERIOR',

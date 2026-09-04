@@ -76,9 +76,32 @@ export function ReviewStep({
 
   const proposal: DetailItem[] = [
     { label: 'Application Type', value: appType?.label ?? safeDraft.applicationType ?? '—' },
+    ...(safeDraft.applicationType === 'QUARRY_PROJECT_SELF_CONSUMPTION'
+      ? [
+          { label: 'Project Type', value: safeDraft.projectType === 'PRIVATE' ? 'Private' : 'Government' },
+          { label: 'Department', value: safeDraft.departmentName || '—' },
+          { label: 'Office', value: safeDraft.officeName || '—' },
+          { label: 'Work Order Number', value: safeDraft.workOrderNumber || '—' },
+          ...(safeDraft.workOrderDocumentName ? [{ label: 'Work Order Doc', value: safeDraft.workOrderDocumentName }] : []),
+          { label: 'Project Code', value: safeDraft.projectCode || '—' },
+          { label: 'Project Name', value: safeDraft.projectName || '—' },
+          { label: 'Project Address', value: safeDraft.projectAddress || '—' },
+          {
+            label: 'Project Coordinates',
+            value:
+              safeDraft.projectLatitude && safeDraft.projectLongitude
+                ? `${safeDraft.projectLatitude}, ${safeDraft.projectLongitude}`
+                : '—',
+          },
+          { label: 'Zero Royalty Scheme', value: safeDraft.zeroRoyaltyScheme === 'YES' ? 'Yes' : 'No' },
+        ]
+      : []),
     { label: 'Lease Type', value: 'Temporary' },
     { label: 'Proposal Level', value: propLevel?.label ?? safeDraft.proposalLevel ?? '—' },
     { label: 'Mineral', value: mineral?.name ?? '—' },
+    ...(safeDraft.applicationType === 'QUARRY_PROJECT_SELF_CONSUMPTION' && safeDraft.totalExcavationQuantityBrass
+      ? [{ label: 'Total Excavation Qty', value: `${safeDraft.totalExcavationQuantityBrass} Brass`, numeric: true }]
+      : []),
     {
       label: 'Excavation Quantity',
       value: safeDraft.excavationQuantityBrass
